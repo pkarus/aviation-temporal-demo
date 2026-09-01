@@ -349,3 +349,52 @@ entry with a new entry rather than editing its historical conclusion.
   restore a human-readable alias in DV-43 or DV-46.
 - **Status:** accepted pre-implementation correction; v1.1.0 remains in Git history and is
   superseded by v1.1.1 after the renewed SPEC-03 adversarial gate passes.
+
+## D-0013 — Generated source serialization and fail-closed publication
+
+- **Date:** 2026-09-01
+- **Trigger:** DATA-02 reversible implementation-boundary review
+- **Question:** What generated-file format, byte contract, publication protocol, and rollback should
+  DATA-02 use so DATA-03 can load deterministic fixtures without committing 145,054 generated demo
+  rows or permitting two conforming generators to emit different artifacts?
+- **Alternatives:** commit generated rows; use an implicit Arrow/Parquet boundary; emit loosely
+  specified CSV/JSON directly into the final directory; emit a byte-frozen CSV/JSON package through
+  validated atomic publication.
+- **Evidence:** `build/*` is already reserved for regenerable artifacts, the environment does not
+  declare Arrow/Parquet as an explicit generator contract, Snowflake can load typed CSV with an
+  explicit file format, and DATA-01 freezes SOURCE_CONTRACT field order plus exact scalar types.
+  The demo scale is small enough to regenerate but large and noisy enough that committing the raw
+  output would obscure reviewed source and expected-answer changes. Direct writes can leave a stale
+  or partial manifest that appears current after a failure.
+- **Review:** Independent reviewer `/root/data01_final_review` rejected the initial proposal with
+  three Sev2 findings: empty CSV fields did not distinguish null from a legitimate empty string;
+  “canonical JSON” did not freeze serializer bytes or hash domains; and direct publication was not
+  fail-closed. The reviewer also corrected the rationale from “no PyArrow dependency” to avoiding an
+  explicit Arrow/Parquet boundary and required round-trip, hash, publication-fault, and ignore tests.
+- **Decision:** Commit generator code and tests, but publish generated source packages only under
+  ignored `build/generated_data/<scale>/`. Emit one CSV per SOURCE object with exactly one header row
+  in SOURCE_CONTRACT column order. CSV bytes are UTF-8 with LF endings, comma delimiter, double-quote
+  enclosure when required, and doubled embedded quotes. An unquoted empty field encodes null; every
+  non-null empty string is rejected before publication. NUMBER, FLOAT, BOOLEAN, DATE, TIME, and
+  TIMESTAMP_NTZ use one versioned exact scalar formatter, and DATA-03 must declare matching explicit
+  Snowflake file-format options, skip exactly one header row, enforce exact column counts, and fail on
+  conversion error. Emit the manifest as canonical JSON using sorted keys, compact separators,
+  `ensure_ascii=false`, `allow_nan=false`, UTF-8, and exactly one final LF. CSV file hashes cover exact
+  file bytes; ordered-row hashes cover versioned typed canonical rows; the manifest records both and
+  never hashes itself. Generate into a scale-specific temporary sibling, validate all counts, rows,
+  known answers, hashes, round trips, and expected-result ownership, write the manifest last, then
+  replace the target directory only after the package is complete. A failed run leaves no publishable
+  target manifest for that attempt.
+- **Confidence:** high; the boundary is deterministic, Snowflake-loadable, independently reviewed,
+  and does not alter any frozen semantic or expected answer.
+- **Affected artifacts/tests:** DATA-02 generator, generated manifests, DATA-03 file format/load
+  scripts, and generator unit tests. Tests round-trip null, the text `NULL`, comma, quote, CR/LF,
+  Unicode, leading/trailing spaces, and every contracted scalar type; reject non-null empty strings;
+  assert exact headers and row widths for all ten objects; independently recompute file and typed-row
+  hashes; prove two clean runs byte-identical and reordered input canonically identical; prove the
+  manifest has no self-hash cycle; inject a pre-publication failure and prove no partial/current
+  manifest appears; and use `git check-ignore` to prove generated packages remain untracked.
+- **Rollback:** Delete only `build/generated_data/<validated-scale>/` and regenerate. Reverting the
+  serializer requires a versioned manifest/file-format change, independent byte review, and rerunning
+  DATA-02 determinism plus DATA-03 clean-load/rerun gates; frozen expected answers remain untouched.
+- **Status:** accepted provisionally for DATA-02 and DATA-03.

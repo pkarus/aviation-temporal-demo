@@ -1,0 +1,245 @@
+{
+  "task_id": "DATA-02",
+  "status": "passed",
+  "owner": "/root/data_01",
+  "completed_at_utc": "2026-09-01T19:46:20Z",
+  "scope": "Implement and independently verify the deterministic smoke/demo generator for explicitly synthetic U.S.-domestic aviation source fixtures, with fail-closed publication, exact source-contract columns, stable typed identities and hashes, expected-result materialization, negative fixtures, filler isolation, and non-production labeling.",
+  "dependencies": {
+    "DATA-01": {
+      "status": "green",
+      "commit": "4bfd09f045314ee29c5b0a2f6a8b2636b3e2bcfd",
+      "spec_sha256": "b2d520a3fa1fcf6490b9e534cc0c799ef47b8877a490ad3d5469e90efabeaf32",
+      "report_sha256": "eb0fb2b270f845bfc21e97ce7b6520ea46d725d8cdbb9a28b56eb2909b22c7e6"
+    }
+  },
+  "skills_used": [],
+  "snowflake_operations": [],
+  "git_operations": [],
+  "changed_files": [
+    "data/__init__.py",
+    "data/generate_synthetic_data.py",
+    "tests/test_synthetic_data.py",
+    "build/task_reports/DATA-02.json"
+  ],
+  "ignored_generated_artifacts": [
+    "build/generated_data/smoke/",
+    "build/generated_data/demo/"
+  ],
+  "explicitly_not_modified_by_data_02": [
+    "EXPECTED_ANSWERS.yaml",
+    "SOURCE_CONTRACT.md",
+    "ATTRIBUTE_AUTHORITY.md",
+    "data/SYNTHETIC_DATA_SPEC.md",
+    "build/task_reports/DATA-01.json",
+    "Snowflake state",
+    "Git metadata"
+  ],
+  "authority_binding": {
+    "EXPECTED_ANSWERS.yaml_sha256": "412d6bd4443b12b64d4def4a26becd08a478ef75b4a8bda90b3244e75de6105f",
+    "SOURCE_CONTRACT.md_sha256": "838b965e7a715a80b029fdda51dad186a65e55f32ea48be6ce391abdbd6a4078",
+    "ATTRIBUTE_AUTHORITY.md_sha256": "5795d8fb93b1fe7912c6c0394f2101afa7fef3051e1a30ee9718df0dc0c446a1",
+    "DECISION_LOG.md_sha256": "b7b23c0ca211b6795dd7b1e375d982c07793963d323a88ed2b6c805b27925ce1",
+    "data/SYNTHETIC_DATA_SPEC.md_sha256": "b2d520a3fa1fcf6490b9e534cc0c799ef47b8877a490ad3d5469e90efabeaf32",
+    "build/task_reports/DATA-01.json_sha256": "eb0fb2b270f845bfc21e97ce7b6520ea46d725d8cdbb9a28b56eb2909b22c7e6",
+    "binding_decisions": ["D-0003", "D-0004", "D-0006", "D-0008", "D-0009", "D-0010", "D-0011", "D-0012", "D-0013"]
+  },
+  "implementation_artifacts": {
+    "data/generate_synthetic_data.py": {
+      "sha256": "05ed849c662dbd15e1b8def830950816f6aa4e66a53392dc4b8783a5b825a065",
+      "lines": 1416,
+      "evidence": "Pure deterministic constructors and assertions for all ten SOURCE objects; CLI --scale smoke|demo; sf-csv-v1 and typed-row-lp-v1; dv43-lp-v1; canonical sorting/hashing; source-derived Q03/Q05/Q06/Q07 validation; atomic publication."
+    },
+    "data/__init__.py": {
+      "sha256": "d7e33fee7e3b6c9027992ea805c813b68951bb590d3cf44d6ee55ddaf4fe0bf9"
+    },
+    "tests/test_synthetic_data.py": {
+      "sha256": "bdd1c457faf074d1053cea2c25bb8ce6201797638452e1ad8e56e6b188c7ce9c",
+      "tests": 23,
+      "evidence": "Independent scalar/CSV/LP/hash recomputation, exact headers and row widths, both scales, cross-scale containment, raw reorder proof, byte repeatability, failure injection, namespace/NF closure, generated ignore, and canonical JSON."
+    }
+  },
+  "generated_packages": {
+    "smoke": {
+      "path": "build/generated_data/smoke",
+      "manifest_sha256": "30cdda2e1bb5c32bd61e7076f79c45b4c4b12f98c5099fa447ab02f9dc4b916f",
+      "rows": 249,
+      "counts": {
+        "AIRCRAFT_MASTER": 6,
+        "AIRCRAFT_HISTORY": 24,
+        "AIRCRAFT_CONFIGURATION": 4,
+        "SCHEDULE_SNAPSHOT": 88,
+        "SCHEDULE_SNAPSHOT_CALENDAR": 10,
+        "PASSENGER_FORWARD": 9,
+        "PASSENGER_HISTORICAL": 13,
+        "AIRCRAFT_FLIGHT": 24,
+        "AIRPORT_REFERENCE": 11,
+        "AIRLINE_REFERENCE": 60
+      }
+    },
+    "demo": {
+      "path": "build/generated_data/demo",
+      "manifest_sha256": "e8a826e7400a999e1d0f2b1bd20ceba35fcd6bb5513f3baf060768548637c828",
+      "rows": 145054,
+      "counts": {
+        "AIRCRAFT_MASTER": 999,
+        "AIRCRAFT_HISTORY": 48000,
+        "AIRCRAFT_CONFIGURATION": 2000,
+        "SCHEDULE_SNAPSHOT": 70000,
+        "SCHEDULE_SNAPSHOT_CALENDAR": 10,
+        "PASSENGER_FORWARD": 10000,
+        "PASSENGER_HISTORICAL": 10000,
+        "AIRCRAFT_FLIGHT": 3900,
+        "AIRPORT_REFERENCE": 45,
+        "AIRLINE_REFERENCE": 100
+      }
+    },
+    "git_ignore_verified": true,
+    "manifest_self_hash": false,
+    "generated_files_tracked": false
+  },
+  "serialization_and_publication": {
+    "decision": "D-0013",
+    "csv_version": "sf-csv-v1",
+    "typed_row_version": "typed-row-lp-v1",
+    "json": "UTF-8, sorted keys, compact separators, ensure_ascii=false, allow_nan=false, one final LF",
+    "csv": "UTF-8, LF record separators, comma delimiter, double-quote enclosure, doubled embedded quotes, unquoted empty null, non-null empty string rejected",
+    "hash_domains": "Exact CSV file bytes and ordered typed rows are independently hashed and separately recorded.",
+    "publication": "Generate and validate in a scale-specific temporary sibling; write manifest last; publish only the complete directory; pre-publication failure preserves the prior target or leaves no target.",
+    "snowflake_boundary": "Manifest freezes CSV, NONE compression/escapes, LF record delimiter, one skipped header, MULTI_LINE, no trim/replacement/blank skipping, empty-as-null, exact column-count enforcement, UTF8."
+  },
+  "constructibility_and_validation": {
+    "source_objects": 10,
+    "contracted_fields": 195,
+    "field_coverage": "195/195",
+    "expected_rows_owned": 253,
+    "ownership_source_references_validated": 773,
+    "ownership_sha256": "e95ccd3dd0e52d2b1c0deedf62bac0a0190fdaff0557a5eb441cce057951b0cc",
+    "frozen_expected_rows_sha256": "f1da813e384604de69f8a1e711b728aa2a3180e7b081bd4582681a8a291afd17",
+    "q03_rows": 132,
+    "q03_source_materialization_sha256": "5b7eac141abc7daa656677352a14e5037d19666860a49dfbe6fd7ebd34904242",
+    "q05_rows": 35,
+    "q05_adjacent_counts": [7, 5, 9, 14],
+    "q05_source_materialization_sha256": "4f68d59fce6346e8f7064f55cec737fda8b961fc48d8e10a927afff02738d92a",
+    "q06_rows": 2,
+    "q06_source_materialization_sha256": "a09b8063c946b36ba58f18f61edca1e0e2cb8dea52a3fc0cf8d8dec12506d20c",
+    "q07_rows": 5,
+    "q07_source_materialization_sha256": "22851f74fb472960098b347fc0a696baa87a484312a43d0a09704299",
+    "negative_fixture_classes": ["NF-A01", "NF-A02", "NF-A03", "NF-A04", "NF-A05", "NF-S01", "NF-S02", "NF-S03", "NF-S04", "NF-S05", "NF-S06", "NF-S07", "NF-S08", "NF-S09", "NF-S10", "NF-F01", "NF-F02", "NF-R01", "NF-R02", "NF-X01", "NF-X02", "NF-E01"],
+    "negative_fixture_class_count": 22,
+    "identity_namespace_validation": "passed",
+    "cross_scale_smoke_contained_in_demo": true,
+    "customer_data_scan": "passed",
+    "us_scope": "Every non-null planned endpoint is in the nine-IATA whitelist; actual endpoints use matching SYN-AP internal IDs; aircraft build/base/storage locations are closed and whitelisted; CLOCK_BOUNDARY null destinations are exact frozen negative observations only.",
+    "scale_claim": "Representative synthetic functional shape only; non-production."
+  },
+  "determinism_known_answers": {
+    "schedule_prf": {
+      "input": "20260901|SOURCE.SCHEDULE_SNAPSHOT|100000|SS-39",
+      "sha256": "491861981a7e9e11dd9d7f5650a019f5cd99b2eff006d88f74b9b18081ded65d",
+      "ss39": 9712
+    },
+    "dv43_lp_v1": {
+      "payload_bytes": 610,
+      "sha256": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "dv46": "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "decoder_round_trip_and_null_domain_field_type_value_sensitivity": true
+    },
+    "two_clean_runs_byte_identical": true,
+    "reordered_raw_input_proven_different": true,
+    "reordered_canonical_packages_byte_identical": true,
+    "both_scales_confirmed": true
+  },
+  "commands": [
+    "Read AGENTS.md first-action authorities, DATA-02 definition, D-0013, final DATA-01 report, and data/SYNTHETIC_DATA_SPEC.md completely; use no skill.",
+    ".venv/bin/python -m py_compile data/generate_synthetic_data.py tests/test_synthetic_data.py",
+    ".venv/bin/python data/generate_synthetic_data.py --scale smoke",
+    ".venv/bin/python data/generate_synthetic_data.py --scale smoke --reordered-input",
+    ".venv/bin/python data/generate_synthetic_data.py --scale demo",
+    ".venv/bin/python data/generate_synthetic_data.py --scale demo --reordered-input",
+    ".venv/bin/pytest -q tests/test_synthetic_data.py",
+    ".venv/bin/pytest -q",
+    "git check-ignore build/generated_data/smoke/manifest.json build/generated_data/demo/aircraft_master.csv",
+    "git diff --check",
+    "shasum -a 256 implementation, authority, and generated manifest artifacts",
+    "Independent read-only adversarial review by /root/data_01/data02_adversarial"
+  ],
+  "test_evidence": [
+    {
+      "name": "final repository suite",
+      "exit_code": 0,
+      "duration_seconds": 19.84,
+      "output": "36 passed; independently rerun after final NF namespace repair."
+    },
+    {
+      "name": "final smoke generation",
+      "exit_code": 0,
+      "duration_seconds": 0.17,
+      "output": "249 rows; manifest 30cdda2e1bb5c32bd61e7076f79c45b4c4b12f98c5099fa447ab02f9dc4b916f."
+    },
+    {
+      "name": "final demo generation",
+      "exit_code": 0,
+      "duration_seconds": 15.78,
+      "output": "145054 rows; manifest e8a826e7400a999e1d0f2b1bd20ceba35fcd6bb5513f3baf060768548637c828."
+    },
+    {
+      "name": "both-scale clean/reordered determinism",
+      "exit_code": 0,
+      "output": "Independent final review observed different raw construction order and byte-identical canonical CSVs/manifests for fresh clean and reordered smoke/demo builds."
+    },
+    {
+      "name": "contract and package boundary",
+      "exit_code": 0,
+      "output": "10 tables/195 fields; exact headers/order/width/types; scalar and CR/LF/quote/comma/Unicode/space/null round trips; independently recomputed file and typed-row hashes; canonical JSON; no manifest self-hash."
+    },
+    {
+      "name": "semantic fixture closure",
+      "exit_code": 0,
+      "output": "253/253 rows and 773 ownership source references; Q03=132, Q05=35 [7,5,9,14], Q06=2, Q07=5; 22 exact NF classes; all namespaces, resolution, clock, codeshare, stopover, diversion, rotation, union, snapshot, and filler-isolation controls pass."
+    },
+    {
+      "name": "D-0012 and PRF known answers",
+      "exit_code": 0,
+      "output": "610-byte dv43-lp-v1 payload and a16873... digest/DV46; 46-byte PRF input and 491861... digest/SS39=9712 independently reproduced."
+    },
+    {
+      "name": "fail-closed publication and confidentiality",
+      "exit_code": 0,
+      "output": "Injected pre-publication failure exposes no partial current manifest and preserves prior package; generated paths ignored; customer-data scan passes; no Snowflake or Git mutation."
+    }
+  ],
+  "adversarial_review": {
+    "reviewer": "/root/data_01/data02_adversarial",
+    "mode": "independent and read-only; no file, Git, Snowflake, commit, push, or external-state mutation",
+    "audit_trail": [
+      {
+        "finding": "Generated default manifests became stale while late validation hashes were added.",
+        "severity": "release finding",
+        "resolution": "Regenerated both default packages and verified exact byte match with fresh independent builds."
+      },
+      {
+        "finding": "Same-count replacements could evade the mandatory visibly-synthetic/numeric namespace invariant, and the exact 22-class NF inventory was not manifest evidence.",
+        "severity": "Sev2",
+        "resolution": "Added fail-closed identity/reference assertions for all ten source domains, exact numeric/prefix/reference exceptions, manifest NF inventory, and an independent literal test."
+      }
+    ],
+    "final_verdict": "PASS",
+    "severity_counts": {"Sev1": 0, "Sev2": 0, "Sev3": 0},
+    "reviewed_hashes": {
+      "generator": "05ed849c662dbd15e1b8def830950816f6aa4e66a53392dc4b8783a5b825a065",
+      "tests": "bdd1c457faf074d1053cea2c25bb8ce6201797638452e1ad8e56e6b188c7ce9c",
+      "smoke_manifest": "30cdda2e1bb5c32bd61e7076f79c45b4c4b12f98c5099fa447ab02f9dc4b916f",
+      "demo_manifest": "e8a826e7400a999e1d0f2b1bd20ceba35fcd6bb5513f3baf060768548637c828"
+    }
+  },
+  "timings": {
+    "final_smoke_generation_seconds": 0.17,
+    "final_demo_generation_seconds": 15.78,
+    "final_independent_full_suite_seconds": 19.84
+  },
+  "rollback": {
+    "snowflake_state_changed": false,
+    "procedure": "Delete only build/generated_data/<scale>/ and regenerate with data/generate_synthetic_data.py. Reverting the serializer or file-format boundary requires a versioned decision/manifest change and renewed DATA-02/DATA-03 byte and load gates. Frozen expected answers remain untouched."
+  },
+  "unresolved_issues": []
+}
