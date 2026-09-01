@@ -40,3 +40,116 @@ entry with a new entry rather than editing its historical conclusion.
 - **Tests:** `gh repo view` reports `isPrivate: true`; SSH push to `origin/main` succeeded.
 - **Rollback:** transfer the repository or replace `origin` after explicit owner selection.
 - **Status:** executed; private remote is `git@github.com:pkarus/aviation-temporal-demo.git`.
+
+## D-0003 — Aircraft end-of-life boundary
+
+- **Date:** 2026-09-01
+- **Trigger:** SPEC-01
+- **Question:** Is `AIRCRAFT_END_OF_LIFE_DATE` inclusive or exclusive for as-of reconstruction?
+- **Alternatives:** inclusive terminal day; exclusive half-open boundary; leave unspecified.
+- **Evidence:** The source describes an end-of-life date but does not define terminal-day
+  inclusivity. All modeled validity uses half-open intervals, and source `9999-12-31` means unknown
+  future rather than a finite bound.
+- **Review:** Independent SPEC-01 review confirmed that an explicit boundary and rollback test are
+  required and found the exclusive treatment coherent and testable.
+- **Decision:** Treat a real end-of-life date as exclusive:
+  `existence_from <= date < end_of_life_date`. Null or source-sentinel EOL maps to an open model
+  interval.
+- **Confidence:** medium; binding for this release but not customer-confirmed.
+- **Affected artifacts/tests:** `SEMANTIC_DECISIONS.md` P0-03; HT-05 and HT-08 through HT-10; all
+  aircraft as-of queries.
+- **Rollback:** If authoritative clarification makes the terminal day inclusive, normalize to
+  `end_of_life_date + 1 day`, update frozen fixtures, and rerun the named tests and every aircraft
+  as-of oracle.
+- **Status:** accepted provisionally for the release.
+
+## D-0004 — Same-day audit sequence versus date-visible state
+
+- **Date:** 2026-09-01
+- **Trigger:** SPEC-01
+- **Question:** Which same-day aircraft observation is visible to a calendar-date as-of query when
+  no intraday effective timestamp exists?
+- **Alternatives:** first event; last event; zero-width intervals for every event; separate audit and
+  daily projections.
+- **Evidence:** The source provides event date and deterministic sequence but no intraday effective
+  timestamp. Multiple same-day transitions must remain auditable, including `A -> B -> A`, while a
+  date-level query requires one unambiguous value.
+- **Review:** Independent review required explicit interval ownership and confirmed the final design:
+  audit observations have no date interval; the final-per-day projection owns half-open as-of
+  intervals.
+- **Decision:** Preserve every event-ordered audit observation for sequence/spell analysis. Use the
+  final relevant observation per aircraft, dimension, and date for date-visible state. Same-day
+  status reversions remain audit spells with zero calendar-day duration.
+- **Confidence:** high under the supplied date-grain source.
+- **Affected artifacts/tests:** `SEMANTIC_DECISIONS.md` P0-01/P0-02; NF-A01/NF-A02; HT-01 through
+  HT-05.
+- **Rollback:** If authoritative intraday effective timestamps become available, evaluate visibility
+  at timestamp grain while preserving stable audit identities, then rerun HT-01 through HT-05 and
+  status/as-of oracles.
+- **Status:** accepted provisionally for the release.
+
+## D-0005 — Temporal treatment of APU, dimensions, and weights
+
+- **Date:** 2026-09-01
+- **Trigger:** SPEC-01
+- **Question:** Should APU, aircraft-level dimensions, and weights be immutable identity attributes
+  or temporal state?
+- **Alternatives:** always immutable; always temporal; use source-lineage-specific treatment.
+- **Evidence:** The requirements contain conflicting prose, while the event-history/change-detection
+  description treats these groups as potentially changing. Projecting a current master value
+  backward would fabricate history.
+- **Review:** Independent review found the lineage-specific treatment complete and testable,
+  provided SPEC-02 assigns every reduced column exactly one owner and temporal treatment.
+- **Decision:** Version historically observed values in `aircraft_state`. Treat master-only copies as
+  `CURRENT_ONLY` and prohibit them from historical as-of reconstruction.
+- **Confidence:** medium pending exact field-level source inventory.
+- **Affected artifacts/tests:** `SEMANTIC_DECISIONS.md` P0-04; HT-11; aircraft reconstruction and
+  attribute-authority contracts.
+- **Rollback:** Move a field only when authoritative lineage proves immutability or supplies history;
+  update the authority matrix and frozen manifest, then rerun HT-11 and every affected reconstruction
+  oracle.
+- **Status:** accepted provisionally for the release.
+
+## D-0006 — Schedule-key-changing amendments
+
+- **Date:** 2026-09-01
+- **Trigger:** SPEC-01
+- **Question:** Can a schedule removal and addition caused by a key-changing date amendment be
+  asserted as one exact modification?
+- **Alternatives:** force a heuristic pair; treat all as unrelated; preserve exact presence facts
+  plus conservative candidate evidence.
+- **Evidence:** Schedule identity includes effective/discontinue dates, so changing either changes
+  the key. The supplied source has no stable amendment identifier.
+- **Review:** Independent review confirmed that categorical candidates, ambiguity groups, and
+  unpaired events are coherent and preserve exact source facts.
+- **Decision:** Keep key-preserving modifications and key additions/removals exact. Emit key-shift
+  links only as medium-confidence unique candidates, low-confidence ambiguous groups, or unpaired
+  events. Never replace exact presence facts or promote a candidate without a source-stable amendment
+  ID.
+- **Confidence:** high.
+- **Affected artifacts/tests:** `SEMANTIC_DECISIONS.md` P0-07; NF-S05; HT-19 through HT-22;
+  agent/notebook/HTML label tests.
+- **Rollback:** Promote key-shift links only after contracting a stable source amendment identifier;
+  retain prior candidate evidence and rerun HT-19 through HT-22 and interface-label tests.
+- **Status:** accepted provisionally for the release.
+
+## D-0007 — Physical capacity and codeshare de-duplication
+
+- **Date:** 2026-09-01
+- **Trigger:** SPEC-01
+- **Question:** How should physical operating capacity avoid codeshare double counting when no stable
+  physical-service group identifier is supplied?
+- **Alternatives:** sum every operating-carrier row; fuzzy-group schedules; count a source-controlled
+  base representative and expose unresolved services.
+- **Evidence:** Marketing and operating roles differ, and marketing copies can represent the same
+  physical service. Fuzzy time/equipment grouping cannot establish exact physical identity.
+- **Review:** Independent review accepted the conservative representative rule and required the
+  possible undercount to remain visible rather than be silently guessed.
+- **Decision:** For operating/physical capacity, count only an unambiguous non-codeshare/base row
+  whose marketing carrier equals the operating carrier. Exclude marketing-only copies. Report a
+  codeshare-only service without such a row as `UNRESOLVED_PHYSICAL_SERVICE`.
+- **Confidence:** medium because the reduced source lacks a stable physical-service group key.
+- **Affected artifacts/tests:** `SEMANTIC_DECISIONS.md` P0-09; NF-S07; HT-26 through HT-29.
+- **Rollback:** Adopt a stable source physical-service identifier when available, compare old/new
+  complete results, and rerun HT-26 through HT-29 before replacing the conservative rule.
+- **Status:** accepted provisionally for the release.
