@@ -37,6 +37,6 @@ entry with a new entry rather than editing its historical conclusion.
 - **Decision:** create `pkarus/aviation-temporal-demo` as private. Repository transfer remains
   available if an organization is later selected.
 - **Confidence:** high
-- **Tests:** verify remote visibility is private and fetch/push succeed.
+- **Tests:** `gh repo view` reports `isPrivate: true`; SSH push to `origin/main` succeeded.
 - **Rollback:** transfer the repository or replace `origin` after explicit owner selection.
-- **Status:** approved by the user's request to create and push a private remote.
+- **Status:** executed; private remote is `git@github.com:pkarus/aviation-temporal-demo.git`.
