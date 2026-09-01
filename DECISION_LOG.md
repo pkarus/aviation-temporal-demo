@@ -153,3 +153,32 @@ entry with a new entry rather than editing its historical conclusion.
 - **Rollback:** Adopt a stable source physical-service identifier when available, compare old/new
   complete results, and rerun HT-26 through HT-29 before replacing the conservative rule.
 - **Status:** accepted provisionally for the release.
+
+## D-0008 — Historical passenger UTC-offset sign convention
+
+- **Date:** 2026-09-01
+- **Trigger:** SPEC-02
+- **Question:** What sign does the historical passenger source use for
+  `departure_utc_offset_minutes` and `arrival_utc_offset_minutes` when deriving dated UTC timestamps
+  from local date/time?
+- **Alternatives:** offset is local minus UTC; offset is UTC minus local; leave every offset-derived
+  UTC timestamp unresolved.
+- **Evidence:** The supplied schema names both fields as UTC offset minutes and supplies local time,
+  operating date, arrival-day indicator, and UTC time, but does not define the sign. The conventional
+  UTC-offset interpretation is `local = UTC + offset`, so `UTC = local - offset`. Forward passenger
+  rows already carry expanded UTC timestamps and remain authoritative for themselves. Schedule UTC
+  `TIME` without offset/date evidence remains unresolved under P0-08.
+- **Review:** Independent reviewer `/root/spec_02/spec_02_redteam` found the unstated sign
+  release-blocking for HT-25 and required a source-visible convention, boundary tests, and rollback.
+- **Decision:** Provisionally interpret source offset minutes as `local - UTC`. Build departure local
+  timestamp from operating date plus local departure time; build arrival local timestamp from
+  operating date plus arrival-day indicator plus local arrival time; derive UTC by subtracting the
+  respective offset minutes. Null/non-finite offset yields `UNRESOLVED_UTC_DATE`; never infer the sign
+  from clock ordering.
+- **Confidence:** medium-low; binding for the release but not customer-confirmed.
+- **Affected artifacts/tests:** `SOURCE_CONTRACT.md` and `ATTRIBUTE_AUTHORITY.md` UTC derivations;
+  NF-S10; HT-25; both-clock schedule/passenger outputs and interface limitation labels.
+- **Rollback:** If authoritative lineage defines the opposite sign, change only the offset normalizer
+  from subtraction to addition, regenerate the affected fixtures/expected manifest, compare complete
+  old/new results, and rerun HT-25 plus every UTC-instance and both-clock query/interface test.
+- **Status:** accepted provisionally pending authoritative confirmation.

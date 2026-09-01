@@ -1,0 +1,271 @@
+{
+  "task_id": "SPEC-02",
+  "status": "passed",
+  "completed_at_utc": "2026-09-01T17:34:55Z",
+  "scope": "Source, attribute-authority, and Neo4j-to-RAI ontology contracts only.",
+  "skills_used": [
+    {
+      "name": "rai:rai-ontology",
+      "skill_file": "/Users/piotrkraus/.codex/plugins/cache/relationalai/rai/3.1.0/skills/rai-ontology/SKILL.md",
+      "influence": "Required source-grounded concept identities, multiplicity proof before functional Properties, association concepts for temporal/multi-attribute links, explicit same-type roles, and physical-to-semantic lineage."
+    }
+  ],
+  "snowflake_operations": [],
+  "git_operations": [],
+  "changed_files": [
+    "SOURCE_CONTRACT.md",
+    "ATTRIBUTE_AUTHORITY.md",
+    "NEO4J_RAI_MAPPING.md",
+    "build/task_reports/SPEC-02.json"
+  ],
+  "orchestrator_owned_change_observed": {
+    "file": "DECISION_LOG.md",
+    "change": "D-0008 was appended by the primary orchestrator after SPEC-02 escalated the reviewed UTC-offset sign ambiguity.",
+    "modified_by_spec_02_agent": false,
+    "final_sha256": "aabf0c3d369bffae90ef68efb20050ba708bf8bb2df9ca93ea5b533f8cde54ee"
+  },
+  "explicitly_not_modified": [
+    "SEMANTIC_DECISIONS.md",
+    "frozen expected answers",
+    "data or implementation code",
+    "Snowflake state",
+    "Git metadata"
+  ],
+  "commands": [
+    "wc -l BRIEF.md ADVERSARIAL_REVIEW.md TASK_GRAPH.md DECISION_LOG.md && sed -n '1,240p' BRIEF.md && sed -n '1,260p' ADVERSARIAL_REVIEW.md && sed -n '1,320p' TASK_GRAPH.md && sed -n '1,320p' DECISION_LOG.md",
+    "sed -n '1,210p' TASK_GRAPH.md && sed -n '211,430p' TASK_GRAPH.md",
+    "if [ -f build/task_reports/SPEC-02.json ]; then sed -n '1,320p' build/task_reports/SPEC-02.json; else echo NO_EXISTING_SPEC_02_REPORT; fi",
+    "sed -n '1,240p' /Users/piotrkraus/.codex/plugins/cache/relationalai/rai/3.1.0/skills/rai-ontology/SKILL.md && sed -n '241,520p' /Users/piotrkraus/.codex/plugins/cache/relationalai/rai/3.1.0/skills/rai-ontology/SKILL.md",
+    "sed -n '1,220p' SEMANTIC_DECISIONS.md && sed -n '221,440p' SEMANTIC_DECISIONS.md && sed -n '441,620p' SEMANTIC_DECISIONS.md",
+    "sed -n '232,339p' SEMANTIC_DECISIONS.md",
+    "sed -n '1,260p' build/task_reports/SPEC-01.json",
+    "sed -n '1,340p' '/Users/piotrkraus/Downloads/drive-download-20260901T154912Z-1-001/use-case-1-schema.md'",
+    "sed -n '1,220p' '/Users/piotrkraus/Downloads/drive-download-20260901T154912Z-1-001/use-case-1-aircraft-over-time.md'",
+    "sed -n '1,170p' '/Users/piotrkraus/Downloads/drive-download-20260901T154912Z-1-001/use-case-2-schema.md'; sed -n '171,340p' '/Users/piotrkraus/Downloads/drive-download-20260901T154912Z-1-001/use-case-2-schema.md'; sed -n '341,520p' '/Users/piotrkraus/Downloads/drive-download-20260901T154912Z-1-001/use-case-2-schema.md'",
+    "sed -n '1,240p' '/Users/piotrkraus/Downloads/drive-download-20260901T154912Z-1-001/use-case-2-passenger-flights-route-states.md'",
+    "git status --short && rg --files | sort | sed -n '1,240p'",
+    "apply_patch: add SOURCE_CONTRACT.md",
+    "apply_patch: add ATTRIBUTE_AUTHORITY.md",
+    "apply_patch: add NEO4J_RAI_MAPPING.md",
+    "apply_patch: incorporate independent-review identity, multiplicity, time, matching, resolution, and limitation repairs",
+    "apply_patch: change only the two opening authority ranges from D-0003 through D-0007 to D-0003 through D-0008 in SOURCE_CONTRACT.md and NEO4J_RAI_MAPPING.md",
+    "wc -l <the four confidential requirement files> && shasum -a 256 <the four confidential requirement files>",
+    "jq empty build/task_reports/SPEC-02.json",
+    "awk -F'|' 'NF==7 && /^\\| (AM|AH|AC|SS|SC|PF|PH|AF|AP|AL)-[0-9][0-9] / {gsub(/^ +| +$/, \"\", $2); print $2}' SOURCE_CONTRACT.md | sort; repeat with NF==8 against ATTRIBUTE_AUTHORITY.md; assert 195 rows/195 unique on each side and diff -u the results",
+    "rg -o '^\\| DV-[0-9]{2} ' ATTRIBUTE_AUTHORITY.md; compare the unique results with DV-01..DV-53; extract every DV reference from all three contracts and assert comm -23 is empty",
+    "rg -c '^\\| P0-[0-9]{2} \\|' NEO4J_RAI_MAPPING.md; rg -c '^\\| HT-[0-9]{2} \\|' NEO4J_RAI_MAPPING.md; section-bounded awk counts for the supplied Neo4j node and edge mapping tables",
+    "! rg -n '/Users/|CONFIDENTIAL|Confidential|confidential|[0-9][[:space:]]+(million|billion)|[0-9]+[MmBb][+ ]|TODO|TBD|FIXME|PLACEHOLDER' SOURCE_CONTRACT.md ATTRIBUTE_AUTHORITY.md NEO4J_RAI_MAPPING.md",
+    "git diff --check -- SOURCE_CONTRACT.md ATTRIBUTE_AUTHORITY.md NEO4J_RAI_MAPPING.md build/task_reports/SPEC-02.json",
+    "wc -l SOURCE_CONTRACT.md ATTRIBUTE_AUTHORITY.md NEO4J_RAI_MAPPING.md build/task_reports/SPEC-02.json",
+    "shasum -a 256 SOURCE_CONTRACT.md ATTRIBUTE_AUTHORITY.md NEO4J_RAI_MAPPING.md DECISION_LOG.md build/task_reports/SPEC-02.json",
+    "git status --short -- SOURCE_CONTRACT.md ATTRIBUTE_AUTHORITY.md NEO4J_RAI_MAPPING.md build/task_reports/SPEC-02.json DECISION_LOG.md",
+    "collaboration review by /root/spec_02/spec_02_redteam",
+    "shasum -a 256 SOURCE_CONTRACT.md ATTRIBUTE_AUTHORITY.md NEO4J_RAI_MAPPING.md DECISION_LOG.md build/task_reports/SPEC-02.json",
+    "rg -n 'D-0003 through D-000[0-9]|D-0003.*D-0007|D-0007.*binding|proposed D-0008|binding provisional D-0008|D-0008' SOURCE_CONTRACT.md NEO4J_RAI_MAPPING.md ATTRIBUTE_AUTHORITY.md",
+    "printf 'source_reverted_stream  '; sed 's/D-0003 through D-0008/D-0003 through D-0007/' SOURCE_CONTRACT.md | shasum -a 256; printf 'mapping_reverted_stream '; sed 's/D-0003 through D-0008/D-0003 through D-0007/' NEO4J_RAI_MAPPING.md | shasum -a 256",
+    "assert one D-0003-through-D-0008 authority binding in each repaired contract and zero stale D-0003-through-D-0007 upper bounds"
+  ],
+  "confidential_source_evidence": [
+    {
+      "alias": "UC1 schema requirements",
+      "lines_read": 283,
+      "sha256": "42bb6b90fae927d04c828c204afeab255537d0642971d8c58a80876a6c1dfe9f"
+    },
+    {
+      "alias": "UC1 temporal question requirements",
+      "lines_read": 132,
+      "sha256": "a39c1b4581b9872a59cc65ebfe65bcdfb8aef959b2b05130f38a72472d6e1230"
+    },
+    {
+      "alias": "UC2 schema requirements",
+      "lines_read": 472,
+      "sha256": "f808b898316cdc9d5158c6d7c09baa248cf4dc6a1a9ebb06eab79e2637416077"
+    },
+    {
+      "alias": "UC2 temporal question requirements",
+      "lines_read": 166,
+      "sha256": "1fda429a96db5bf14483ec5e62e17a5352a47e3ff691954f17d5ac36d0bac177"
+    }
+  ],
+  "confidentiality_evidence": [
+    "All four external documents were read completely as source requirements and remained outside the repository.",
+    "The three reusable SPEC-02 contracts contain no external path, customer identifier, source database path, copied confidentiality label, customer row, or confidential scale identifier.",
+    "A final scan for /Users/, customer-name markers, copied confidentiality labels, object/row-count labels, and unresolved markers returned no matches in the three contracts.",
+    "External source hashes matched the SPEC-01 pre-authoring inventory after SPEC-02."
+  ],
+  "artifact_summary": {
+    "SOURCE_CONTRACT.md": {
+      "lines": 548,
+      "source_objects": 10,
+      "raw_and_control_field_ids": 195,
+      "sha256": "838b965e7a715a80b029fdda51dad186a65e55f32ea48be6ce391abdbd6a4078"
+    },
+    "ATTRIBUTE_AUTHORITY.md": {
+      "lines": 380,
+      "raw_and_control_authority_rows": 195,
+      "derived_field_rows": 53,
+      "sha256": "5795d8fb93b1fe7912c6c0394f2101afa7fef3051e1a30ee9718df0dc0c446a1"
+    },
+    "NEO4J_RAI_MAPPING.md": {
+      "lines": 245,
+      "supplied_node_mappings": 11,
+      "supplied_edge_mappings": 13,
+      "p0_rows": 15,
+      "hard_test_rows": 49,
+      "sha256": "d6ed9cea8431a63b753a0b0ad3166a3180894d35f73e6c7b35ca8bea4e55ddf0"
+    }
+  },
+  "contract_coverage": {
+    "source_grain_key_type_nullability": "complete for the reduced 195-field source/control inventory",
+    "one_owner_one_temporal_treatment": true,
+    "stable_identities": true,
+    "association_and_multiplicity_rules": true,
+    "half_open_intervals_and_sentinels": true,
+    "end_event_provenance_separate": true,
+    "same_day_audit_and_daily_state_separate": true,
+    "schedule_version_grain_and_multi_open": true,
+    "snapshot_completeness_and_gaps": true,
+    "exact_candidate_ambiguous_unpaired": true,
+    "knowledge_and_operating_clocks": true,
+    "marketing_and_operating_carrier_roles": true,
+    "typed_passenger_union": true,
+    "optional_one_to_many_fulfillment": true,
+    "actual_rotation_and_plan_actual_separation": true,
+    "code_resolution_cardinality_and_method_map": true,
+    "mixed_engine_and_current_only_limitations": true,
+    "complete_supplied_node_and_edge_mapping": true,
+    "all_p0_rules_mapped": true,
+    "all_hard_tests_mapped": true
+  },
+  "independent_review": {
+    "reviewer": "/root/spec_02/spec_02_redteam",
+    "mode": "read-only; no skill; no file, Git, Snowflake, or external-state mutation",
+    "rounds": [
+      {
+        "verdict": "fail",
+        "findings": [
+          "Resolution result identity could not represent zero candidates and lacked occurrence context.",
+          "As-of query status was conflated with dimension resolution status.",
+          "Schedule and fulfillment candidate/group identities, typed hashes, quarantine, and flight-number normalization were underspecified.",
+          "Rotation endpoint and exact fulfillment identity rules were ambiguous."
+        ],
+        "resolution": "Added DV-33 through DV-46, split result/candidate concepts, fixed typed serialization and stable context tokens, contracted PH-01=AF-01 exact evidence, and made AF-09/DV-45 authoritative."
+      },
+      {
+        "verdict": "fail",
+        "findings": [
+          "Historical UTC-offset sign required a reviewed provisional convention and rollback.",
+          "Null-route exact changes, candidate-null eligibility, actual numeric flag normalization, and code-system resolution methods needed precision.",
+          "Passenger source lineage required an ID-or-hash token and RouteState required valid Route cardinality."
+        ],
+        "resolution": "Escalated and integrated D-0008; added DV-47 through DV-53, the closed resolution map, null-safe candidate requirements, exact-change preservation, explicit flag rules, and invalid-route eligibility boundaries."
+      },
+      {
+        "verdict": "pass",
+        "findings": [],
+        "resolution": "No unresolved severity-1, severity-2, or severity-3 artifact findings. Final PASS was rechecked against the recorded final hashes after D-0008 was appended."
+      },
+      {
+        "verdict": "pass",
+        "focus": "Narrow authority-header repair and final-hash drift proof",
+        "findings": [],
+        "observed_hashes": {
+          "SOURCE_CONTRACT.md": "838b965e7a715a80b029fdda51dad186a65e55f32ea48be6ce391abdbd6a4078",
+          "ATTRIBUTE_AUTHORITY.md": "5795d8fb93b1fe7912c6c0394f2101afa7fef3051e1a30ee9718df0dc0c446a1",
+          "NEO4J_RAI_MAPPING.md": "d6ed9cea8431a63b753a0b0ad3166a3180894d35f73e6c7b35ca8bea4e55ddf0",
+          "DECISION_LOG.md": "aabf0c3d369bffae90ef68efb20050ba708bf8bb2df9ca93ea5b533f8cde54ee"
+        },
+        "resolution": "Reviewer verified one D-0003-through-D-0008 authority statement in each repaired contract and zero stale D-0007 upper bounds. Stream-reverting only those two phrases reproduced the previously recorded document hashes exactly, proving no other semantic drift. No severity-1, severity-2, or severity-3 finding."
+      }
+    ]
+  },
+  "decision_log_integration": {
+    "new_decision": "D-0008 — Historical passenger UTC-offset sign convention",
+    "reason": "The source names UTC-offset-minute fields but does not define sign; HT-25 requires a dated UTC construction.",
+    "reviewed_treatment": "Binding provisional offset_minutes = local - UTC; UTC = local timestamp - offset; null/non-finite offset is UNRESOLVED_UTC_DATE.",
+    "tests": "Positive, negative, and zero offsets; departure and arrival; arrival-day crossing; midnight date shift; expanded timestamp precedence; null/non-finite unresolved; HT-25 and every UTC/both-clock interface test.",
+    "rollback": "On authoritative opposite-sign evidence, change subtraction to addition, regenerate affected fixtures/manifest, compare complete results, and rerun the named tests.",
+    "appended_by_primary_orchestrator": true
+  },
+  "test_evidence": [
+    {
+      "name": "raw/control field inventory bijection",
+      "exit_code": 0,
+      "output": "195 distinct source Field IDs; 195 distinct authority rows; no missing, extra, or duplicate ID; each authority row has one non-empty owner and one named temporal-treatment token."
+    },
+    {
+      "name": "derived-field continuity and reference integrity",
+      "exit_code": 0,
+      "output": "DV-01 through DV-53 contiguous and unique; no explicitly referenced undefined DV."
+    },
+    {
+      "name": "semantic and mapping coverage",
+      "exit_code": 0,
+      "output": "15 P0 rows; 49 HT rows; 11 supplied Neo4j node mappings; 13 supplied Neo4j edge mappings; D-0003 through D-0008 and required semantic markers present."
+    },
+    {
+      "name": "Markdown and diff hygiene",
+      "exit_code": 0,
+      "output": "All Markdown table rows close correctly; git diff --check passed."
+    },
+    {
+      "name": "confidentiality and unresolved-marker scan",
+      "exit_code": 0,
+      "output": "No prohibited external path/customer/source-scale marker and no TBD/TODO/FIXME/PLACEHOLDER in the three contracts."
+    },
+    {
+      "name": "independent adversarial review",
+      "exit_code": 0,
+      "output": "PASS on repaired final contract hashes; exact phrase-only drift proof reproduced both prior hashes; no unresolved severity-1/2/3 artifact findings."
+    },
+    {
+      "name": "binding-decision authority header repair",
+      "exit_code": 0,
+      "output": "SOURCE_CONTRACT.md and NEO4J_RAI_MAPPING.md each contain exactly one D-0003-through-D-0008 authority range and contain zero stale D-0003-through-D-0007 upper bounds."
+    },
+    {
+      "name": "source immutability",
+      "exit_code": 0,
+      "output": "All four confidential source hashes equal the SPEC-01 inventory."
+    }
+  ],
+  "timings": {
+    "timing_basis": "Tool-reported command wall times and UTC task timestamps; prose/reasoning time is not fabricated as command time.",
+    "task_started_at_utc": "2026-09-01T17:06:41Z",
+    "task_completed_at_utc": "2026-09-01T17:34:55Z",
+    "elapsed_seconds": 1694,
+    "mandated_repository_reads_seconds": 0.2,
+    "ontology_skill_read_seconds": 0.1,
+    "frozen_semantics_and_dependency_report_reads_seconds": 0.3,
+    "confidential_source_reads_and_hash_checks_seconds": 0.5,
+    "final_structural_validation_seconds": 0.3,
+    "independent_review_rounds": 4
+  },
+  "unresolved_risks": [
+    "D-0008 is binding provisionally with medium-low confidence until authoritative offset-sign confirmation; its tests and one-operation rollback are frozen.",
+    "The finite aircraft end-of-life boundary remains provisionally exclusive under D-0003.",
+    "Master-only APU/dimension/weight copies remain CURRENT_ONLY under D-0005 and cannot fill historical gaps.",
+    "The D-0006 key-shift rule intentionally leaves non-overlapping or incomplete candidates unpaired rather than forcing a match.",
+    "D-0007 can visibly undercount codeshare-only physical services without a stable source-controlled representative.",
+    "Alias-union code resolution is deliberately conservative; ambiguous candidates stay unlinked.",
+    "Forward passenger rows have no exact fulfillment ID in the reduced source and can produce only heuristic/ambiguous/unmatched evidence."
+  ],
+  "open_semantic_issues": [],
+  "g1_status": {
+    "spec_02_contract_scope": "green",
+    "decision_log_protocol": "green; D-0008 appended by primary orchestrator",
+    "data_01_fixture_realization": "downstream owner must add concrete synthetic row IDs/dates without changing these assertions"
+  },
+  "success_criteria": {
+    "every_modeled_field_traces_to_source_or_derivation": true,
+    "every_in_scope_attribute_has_one_owner_and_treatment": true,
+    "stable_identity_and_multiplicity_rules_complete": true,
+    "all_supplied_neo4j_nodes_and_edges_mapped": true,
+    "all_p0_and_hard_test_rules_mapped": true,
+    "limitations_and_omissions_explicit": true,
+    "independent_review_passed": true,
+    "new_reversible_ambiguity_reviewed_logged_tested_and_rollback_defined": true,
+    "no_snowflake_mutation": true,
+    "no_git_operation": true
+  }
+}
