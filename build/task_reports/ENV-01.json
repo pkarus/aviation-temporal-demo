@@ -1,0 +1,153 @@
+{
+  "task_id": "ENV-01",
+  "status": "passed",
+  "completed_at_utc": "2026-09-01T16:48:40Z",
+  "scope": "Reproducible Python/RelationalAI environment and read-only connection validation",
+  "skills_used": [
+    "rai:rai-setup"
+  ],
+  "commands": [
+    "uvx --from 'relationalai==1.20.1' rai --version",
+    "uv python find 3.13",
+    "uv lock",
+    "uv venv --clear --python 3.13 .venv",
+    "uv sync --frozen",
+    ".venv/bin/rai connect",
+    "snow sql -c rai --role RAI_DEMO_AVIATION_TEMPORAL --format json --query \"SELECT CURRENT_ORGANIZATION_NAME() AS ORGANIZATION, CURRENT_ACCOUNT_NAME() AS ACCOUNT, CURRENT_ACCOUNT() AS ACCOUNT_LOCATOR, CURRENT_REGION() AS REGION, CURRENT_USER() AS CURRENT_USER, CURRENT_ROLE() AS CURRENT_ROLE, CURRENT_WAREHOUSE() AS CURRENT_WAREHOUSE\"",
+    ".venv/bin/python --version",
+    "uv --version",
+    ".venv/bin/rai --version",
+    "snow --version",
+    ".venv/bin/jupyter-lab --version",
+    ".venv/bin/python -c '<print installed SDK, connector, Snowpark, and capability versions>'",
+    ".venv/bin/rai models --help",
+    "uv lock --check",
+    "uv sync --frozen --check",
+    "uv run --frozen pytest -q tests/test_environment.py"
+  ],
+  "changed_files": [
+    ".python-version",
+    "pyproject.toml",
+    "uv.lock",
+    "environment/version_manifest.json",
+    "tests/test_environment.py",
+    "build/task_reports/ENV-01.json"
+  ],
+  "artifacts": {
+    "python_pin": ".python-version",
+    "direct_dependency_manifest": "pyproject.toml",
+    "lockfile": "uv.lock",
+    "version_manifest": "environment/version_manifest.json",
+    "verification_test": "tests/test_environment.py",
+    "lockfile_sha256": "9c4b43a73de687c5c51a045b07177930e76ee604ce4b299864ee44667271a959"
+  },
+  "versions": {
+    "python": "3.13.13",
+    "uv": "0.11.11",
+    "relationalai_sdk": "1.20.1",
+    "rai_cli": "1.20.1",
+    "snowflake_cli": "3.16.0",
+    "snowflake_connector": "4.7.2",
+    "snowpark": "1.54.0",
+    "jupyterlab": "4.6.3",
+    "ipykernel": "7.3.0",
+    "nbclient": "0.11.0",
+    "nbformat": "5.11.1",
+    "pytest": "9.1.1",
+    "pandas": "3.0.5",
+    "matplotlib": "3.11.1",
+    "plotly": "7.0.0",
+    "pyyaml": "6.0.3"
+  },
+  "timings_seconds": {
+    "lock_resolution": 0.44,
+    "fresh_venv_creation": 0.03,
+    "clean_frozen_sync": 3.29,
+    "second_fresh_venv_creation": 1.78,
+    "second_clean_frozen_sync_from_cache": 0.62,
+    "rai_connect": 17.17,
+    "final_environment_tests": 1.57
+  },
+  "test_evidence": {
+    "fresh_environment": {
+      "command": "uv venv --clear --python 3.13 .venv",
+      "output": "Using CPython 3.13.13; Creating virtual environment at: .venv",
+      "copied_from_sibling": false
+    },
+    "clean_install": {
+      "command": "uv sync --frozen",
+      "output": "First fresh run: prepared 167 packages in 2.73s and installed 167 packages in 496ms. Second cleared-environment run: installed the same 167 locked packages from cache in 584ms. Both exited 0.",
+      "result": "passed"
+    },
+    "lock_integrity": {
+      "command": "uv lock --check && uv sync --frozen --check",
+      "output": "Resolved 173 packages in 3ms; Checked 167 packages in 4ms; Would make no changes",
+      "result": "passed"
+    },
+    "environment_tests": {
+      "command": "uv run --frozen pytest -q tests/test_environment.py",
+      "output": "13 passed in 1.57s",
+      "coverage": [
+        "Python and all direct dependency versions equal exact pins",
+        "uv.lock and version manifest exist and agree with the runtime",
+        "relationalai.semantics.Model and Model.Table are available",
+        "the project-local rai CLI reports 1.20.1",
+        "rai models exposes deployment commands",
+        "notebook, test, table, YAML, and chart modules import"
+      ],
+      "result": "passed"
+    },
+    "rai_connection": {
+      "command": ".venv/bin/rai connect",
+      "output": [
+        "Config: rai",
+        "Type: snowflake",
+        "Authenticator: programmatic_access_token",
+        "Account: ajb85638",
+        "User: piotr.kraus@relational.ai",
+        "Warehouse: RAI_XS",
+        "Connected successfully"
+      ],
+      "result": "passed"
+    },
+    "live_identity_read_only": {
+      "command_connection": "rai",
+      "command_role": "RAI_DEMO_AVIATION_TEMPORAL",
+      "output": {
+        "organization": "NDSOEBE",
+        "account": "RAI_SALES_ENGINEERING_AWS_US_WEST_2",
+        "account_locator": "AJB85638",
+        "region": "AWS_US_WEST_2",
+        "current_user": "piotr.kraus@relational.ai",
+        "current_role": "RAI_DEMO_AVIATION_TEMPORAL",
+        "current_warehouse": "RAI_XS"
+      },
+      "mutation_performed": false,
+      "result": "passed"
+    },
+    "selected_sdk_capabilities": {
+      "model_table_api": true,
+      "model_deployment_cli": true,
+      "graph_module_import_surface_present": true,
+      "graph_runtime_execution_validated": false,
+      "graph_path_allowed_on_critical_path": false,
+      "result": "passed"
+    }
+  },
+  "success_criteria": {
+    "fresh_uv_virtual_environment": true,
+    "exact_python_pin": true,
+    "exact_direct_dependency_pins": true,
+    "lockfile_exists": true,
+    "clean_frozen_install_succeeds": true,
+    "project_local_rai_connect_reaches_verified_account": true,
+    "version_manifest_saved": true,
+    "preview_dependency_policy_enforced": true
+  },
+  "unresolved_risks": [
+    "Authentication is intentionally not committed. A new host must provide a working Snowflake CLI connection named rai and make it the default before .venv/bin/rai connect can reproduce the live check.",
+    "The local rai Snowflake profile currently reports ACCOUNTADMIN and ERICSSON_ONTOLOGY as its default role/database. No mutation was performed. Every later Snowflake mutation remains required to pass -c rai and --role RAI_DEMO_AVIATION_TEMPORAL explicitly, and live model execution must prove the intended role context.",
+    "The relationalai graph module is installed but no live graph runtime/path execution was authorized or required for ENV-01. It is not on the critical path; QUERY-ROT must retain the ordinary self-reference baseline unless its own optional runtime gate passes.",
+    "Snowflake CLI is a host tool and is recorded, not installed through uv.lock."
+  ]
+}

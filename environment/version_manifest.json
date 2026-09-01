@@ -1,0 +1,55 @@
+{
+  "generated_at_utc": "2026-09-01T16:48:04Z",
+  "platform": {
+    "os": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "runtime": {
+    "python": "3.13.13",
+    "uv": "0.11.11",
+    "uv_lock_sha256": "9c4b43a73de687c5c51a045b07177930e76ee604ce4b299864ee44667271a959"
+  },
+  "relationalai": {
+    "sdk": "1.20.1",
+    "cli": "1.20.1",
+    "model_table_api": true,
+    "model_deploy_cli": true,
+    "optional_graph_module_present": true,
+    "optional_graph_runtime_validated": false,
+    "optional_graph_on_critical_path": false
+  },
+  "snowflake": {
+    "cli": "3.16.0",
+    "connector": "4.7.2",
+    "snowpark": "1.54.0",
+    "connection": "rai",
+    "connect_result": "success",
+    "organization": "NDSOEBE",
+    "account": "RAI_SALES_ENGINEERING_AWS_US_WEST_2",
+    "account_locator": "AJB85638",
+    "region": "AWS_US_WEST_2",
+    "user": "piotr.kraus@relational.ai",
+    "implementation_role_read_only_probe": "RAI_DEMO_AVIATION_TEMPORAL",
+    "warehouse": "RAI_XS"
+  },
+  "direct_dependencies": {
+    "ipykernel": "7.3.0",
+    "jupyterlab": "4.6.3",
+    "matplotlib": "3.11.1",
+    "nbclient": "0.11.0",
+    "nbformat": "5.11.1",
+    "pandas": "3.0.5",
+    "plotly": "7.0.0",
+    "pyyaml": "6.0.3",
+    "pytest": "9.1.1",
+    "relationalai": "1.20.1"
+  },
+  "verification": {
+    "lock_resolution_seconds": 0.44,
+    "fresh_venv_creation_seconds": 0.03,
+    "clean_frozen_sync_seconds": 3.29,
+    "rai_connect_seconds": 17.17,
+    "environment_test_seconds": 1.55,
+    "environment_tests_passed": 13
+  }
+}
