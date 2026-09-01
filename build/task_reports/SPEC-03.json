@@ -1,8 +1,8 @@
 {
   "task_id": "SPEC-03",
   "status": "passed",
-  "completed_at_utc": "2026-09-01T18:38:08Z",
-  "scope": "Freeze the eight demo questions, independent expected-result manifest, and bounded Neo4j-to-RAI parity claims before DATA-01, SQL-oracle, ontology, or query implementation; under D-0010/D-0011, supersede the constructibility-defective v1.0 schedule universe with an independently recomputable v1.1 one-universe closure.",
+  "completed_at_utc": "2026-09-01T19:07:38Z",
+  "scope": "Freeze the eight demo questions, independent expected-result manifest, and bounded Neo4j-to-RAI parity claims before DATA-01, SQL-oracle, ontology, or query implementation; under D-0010/D-0011 repair the shared schedule universe, and under D-0012 narrowly supersede the impossible v1.1.0 null-ID lineage alias with a verified dv43-lp-v1 digest while preserving every other expected result.",
   "dependencies": {
     "SPEC-01": "green",
     "SPEC-02": "green"
@@ -45,9 +45,9 @@
   ],
   "orchestrator_owned_change_observed": {
     "file": "DECISION_LOG.md",
-    "change": "The primary orchestrator appended accepted D-0009, D-0010, and D-0011 after independent reviews; SPEC-03 reread and bound all artifacts to those append-only entries. D-0010 requires the one-universe Q05 event closure; D-0011 moves the gap-control sequence to October so August adjacency remains exact.",
+    "change": "The primary orchestrator appended accepted D-0009 through D-0012 after independent reviews; SPEC-03 reread and bound all artifacts to those append-only entries. D-0012 binds the 610-byte dv43-lp-v1 vector and replaces exactly one impossible expected lineage scalar without changing any business result.",
     "modified_by_spec_03_agent": false,
-    "final_sha256": "79d3a6d82f9e72fc90793535bdf3ee59aa06616828b8c0f485b712934e4c887a"
+    "final_sha256": "ae50665ad0139d6cfd505ffaaeae9ca818a8f58619aed1c4bb0c066b4f4c7a81"
   },
   "question_catalog": [
     {"question_id": "Q01", "catalog_id": "aircraft_as_of", "title": "Reconstruct an aircraft as of a date", "classification": "rules: derivation / validation", "feasibility": "MODEL_GAP"},
@@ -60,8 +60,8 @@
     {"question_id": "Q08", "catalog_id": "actual_rotation_enriched", "title": "Reconstruct and enrich an actual aircraft rotation", "classification": "rules: validation / derivation", "feasibility": "MODEL_GAP"}
   ],
   "manifest": {
-    "schema_version": "1.1.0",
-    "manifest_id": "aviation-temporal-spec03-us-synthetic-v1.1",
+    "schema_version": "1.1.1",
+    "manifest_id": "aviation-temporal-spec03-us-synthetic-v1.1.1",
     "freeze_status": "FROZEN_BEFORE_DATA_AND_QUERY_IMPLEMENTATION",
     "questions": 8,
     "question_result_sets": 24,
@@ -87,26 +87,32 @@
     "q06_canonical_rows": 2,
     "q07_canonical_rows": 5,
     "cross_question_event_closure": true,
-    "explicit_route_anchor_ss06_ss10_ss11_mapping": true
+    "explicit_route_anchor_ss06_ss10_ss11_mapping": true,
+    "dv43_serialization_version": "dv43-lp-v1",
+    "dv43_known_vector_bytes": 610,
+    "dv43_known_vector_frames": 75,
+    "dv43_expected_sha256": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+    "v1_1_0_to_v1_1_1_expected_row_scalar_changes": ["TT32-R11.passenger_source_row_token"],
+    "all_question_result_sets_unchanged_from_v1_1_0": true
   },
   "artifact_summary": {
     "DEMO_QUESTIONS.md": {
-      "lines": 321,
-      "bytes": 24079,
-      "sha256": "84fdd60efb8626df7180579a453ccf2eea4f2114124847921edf0b69d343c469",
-      "evidence": "Eight questions with deterministic parameters, reasoner classification, feasibility, complete result-set references, SQL and RAI shapes, declared order, bounded parity claim, Snowflake differentiation, limitations, and P0/HT/DV/NF/D-0010/D-0011 traceability; Q05-Q07 explicitly share one unfiltered source universe."
+      "lines": 335,
+      "bytes": 25203,
+      "sha256": "2cae18bcc69629b394f0b597a18d90ec991569db16a9f785e3d544fa1bdb2946",
+      "evidence": "Eight questions retain their deterministic parameters/classification/shapes/claims; D-0012 adds the dv43-lp-v1 known-answer and makes the SYN-PAX label explicitly presentation-only without changing a business answer."
     },
     "EXPECTED_ANSWERS.yaml": {
-      "lines": 1765,
-      "bytes": 141893,
-      "sha256": "feaad78afa8346826b54dcf6e82b69bf72c5539bfec43632f70cb4342c0cdf19",
-      "evidence": "Parseable typed v1.1 manifest with 253 complete rows, 2,107 typed fields, empty/error outcomes, ordering, 22 fixture anchors, HT-01 through HT-49, a complete SS-04..SS-38 source construction with explicit SS-06/10/11 mapping, and a machine-checkable 35-row cross-question event closure."
+      "lines": 1779,
+      "bytes": 143278,
+      "sha256": "412d6bd4443b12b64d4def4a26becd08a478ef75b4a8bda90b3244e75de6105f",
+      "evidence": "Parseable typed v1.1.1 manifest with the same 253 rows/2,107 fields; exact D-0012 digest/token in the scope anchor, NF-F02 inventory, and TT32-R11; 610-byte known-answer metadata; all question result sets and schedule closure unchanged."
     },
     "NEO4J_PARITY_MATRIX.md": {
-      "lines": 94,
-      "bytes": 13669,
-      "sha256": "6d5ea05116c7386bff96f1d634c339d5ab9a7b4184911c85190c201c2d6e9218",
-      "evidence": "Eight bounded workload mappings, an explicit EVENT_CLOSED evidence state, allowed Snowflake-native differentiation, required limitations, and prohibited universal/performance/cost/security claims."
+      "lines": 101,
+      "bytes": 14431,
+      "sha256": "42c36eff84cb77c0944e59b8665be5ab0dc4818e456d79631ee1838ffebf7000",
+      "evidence": "Eight bounded workload mappings remain intact; D-0012 adds the lineage known-answer gate and prohibits treating passenger presentation text as identity."
     }
   },
   "semantic_and_scope_evidence": {
@@ -139,6 +145,22 @@
       "october_gap_control": "2026-10-05 complete, 10-12 missing, 10-19 incomplete, 10-26 complete; prior eligible for 10-26 is 10-05",
       "route_anchor_mapping": "schedule_key lookup maps flight_number/planned_origin_iata/planned_destination_iata to SS-06/SS-10/SS-11"
     },
+    "d_0012_lineage_known_answer": {
+      "serialization_version": "dv43-lp-v1",
+      "field_order": "PF-01 through PF-19 ascending",
+      "wire_tags": ["N", "V"],
+      "payload_length_bytes": 610,
+      "frame_count": 75,
+      "sha256": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "dv46_token": "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "presentation_token": "SYN-PAX-VALID-NULL-ID-01",
+      "presentation_token_role": "PRESENTATION_ONLY_NOT_IDENTITY",
+      "head_v1_1_0_reverse_transform_passed": true,
+      "expected_rows_changed": 1,
+      "changed_expected_scalar": "TT32-R11.passenger_source_row_token",
+      "all_other_expected_scalars_unchanged": true,
+      "all_q01_q08_result_sets_unchanged": true
+    },
     "us_scope": {
       "policy": "D-0009 synthetic U.S.-domestic core; public airport labels only and no ontology-derived country/domestic classification.",
       "whitelist_iata": ["SFO", "LAX", "LAS", "SEA", "DEN", "ORD", "PHX", "BOS", "MIA"],
@@ -150,31 +172,52 @@
     }
   },
   "commands": [
-    "Read BRIEF.md, ADVERSARIAL_REVIEW.md, TASK_GRAPH.md, DECISION_LOG.md including D-0010/D-0011, the SPEC-03 definition/report, and ORCHESTRATOR_PROMPT.md completely in AGENTS.md first-action order.",
+    "Read BRIEF.md, ADVERSARIAL_REVIEW.md, TASK_GRAPH.md, DECISION_LOG.md including D-0012, the SPEC-03 definition/report, and ORCHESTRATOR_PROMPT.md completely in AGENTS.md first-action order.",
     "Read /Users/piotrkraus/.codex/plugins/cache/relationalai/rai/3.1.0/skills/rai-discovery/SKILL.md completely, followed only by references/rules.md and references/graph.md.",
     "Read SEMANTIC_DECISIONS.md, SOURCE_CONTRACT.md, ATTRIBUTE_AUTHORITY.md, and NEO4J_RAI_MAPPING.md as frozen authority.",
-    "python3 - <<'PY' [parse v1.1 YAML; validate all declared schemas/cardinalities, 2,107 literal scalar types, 253 unique row IDs, 8 questions, 24 result sets, 198 question rows, 11 truth tables/55 rows, HT-01..49, and 22 NF anchors] PY",
+    "python3 - <<'PY' [parse v1.1.1 YAML; validate all declared schemas/cardinalities, 2,107 literal scalar types, 253 unique row IDs, 8 questions, 24 result sets, 198 question rows, 11 truth tables/55 rows, HT-01..49, and 22 NF anchors] PY",
     "python3 - <<'PY' [materialize all 22 source anchors from common SS-04..SS-38, anchored_route_field_mapping, fixed overrides, presence maps, and transitions; compare derived Q05 exact rows and presence-evidence closure; derive Q06 markets; validate Q06/Q07 hashes and D-0011 adjacency] PY",
     "python3 - <<'PY' [derive Q07 operating-date-eligible keys at knowledge 2026-08-31; assert exactly PHY_BASE_700, PHY_BASE_701, MKT_COPY_702, CSH_ONLY_900 and no target/shadow extra row] PY",
     "python3 - <<'PY' [validate anchored_route_field_mapping: SS-01 lookup plus SS-06/SS-10/SS-11 typed mapping and 22 one-to-one joins] PY",
     "python3 - <<'PY' [validate nine-airport U.S. scenario whitelist, 22 named schedule routes, SYN operational identity patterns, and reserved flight-number range] PY",
     "if rg -n '/Users/|NDSOEBE|AJB85638|RAI_SALES_ENGINEERING|CONFIDENTIAL|Confidential|TODO|TBD|FIXME|PLACEHOLDER' DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md; then exit 1; else echo PASS; fi",
-    "git show HEAD:EXPECTED_ANSWERS.yaml | python3 [canonical Q06 and full Q07 HEAD/current hash comparison]",
+    "python3 - <<'PY' [load `git show HEAD:EXPECTED_ANSWERS.yaml` v1.1.0 and current YAML; recursively allowlist 14 D-0012 metadata/trace/token paths; prove 253 identical row IDs and exactly TT32-R11.passenger_source_row_token changes among expected scalars; prove all Q01-Q08 result_sets and closure equal; hash Q05/Q06/Q07] PY",
+    "python3 - <<'PY' [validate dv43-lp-v1 metadata: 610 bytes, PF-01..19 order, N/V tags, exact 64-lowercase-hex SHA-256 and FORWARD|digest; assert old alias and dv43_fixture_token absent and SYN-PAX token presentation-only] PY",
     "git diff --check -- DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md",
     "wc -l DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md",
     "wc -c DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md",
     "shasum -a 256 DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md DECISION_LOG.md",
-    "collaboration independent read-only adversarial review by /root/spec_03/spec03_v11_adversarial",
+    "collaboration fresh independent read-only v1.1.1 review by /root/data_01/data01_adversarial; Ruby recomputation and reversible HEAD diff",
     "jq empty build/task_reports/SPEC-03.json",
-    "python3 - <<'PY' [JSON report/YAML manifest v1.1 count, hash, status, unresolved-issue, and green-gate reconciliation] PY",
+    "python3 - <<'PY' [JSON report/YAML manifest v1.1.1 count, hash, status, unresolved-issue, and green-gate reconciliation] PY",
     "git diff --check -- DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md build/task_reports/SPEC-03.json",
     "shasum -a 256 DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md DECISION_LOG.md build/task_reports/SPEC-03.json"
   ],
   "test_evidence": [
     {
-      "name": "v1.1 YAML schema, cardinality, literal type, and uniqueness",
+      "name": "v1.1.1 YAML schema, cardinality, literal type, and uniqueness",
       "exit_code": 0,
       "output": "8 questions; 24 result sets; 198 question rows; 11 truth tables; 55 truth rows; 253 total rows; 2,107 typed fields; exact schemas/cardinalities; 253 unique row IDs; HT-01..49 and 22 NF anchors."
+    },
+    {
+      "name": "D-0012 dv43-lp-v1 known-answer",
+      "exit_code": 0,
+      "output": "Python metadata validation and independent Ruby byte construction agree: 610 bytes, 75 frames, PF-01..PF-19 in order, N/V wire tags, SHA-256 a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7, and DV-46 FORWARD|digest."
+    },
+    {
+      "name": "v1.1.0 to v1.1.1 reversible narrow diff",
+      "exit_code": 0,
+      "output": "Recursive allowlist and exact reverse transform passed: only version/authority, D-0012 known-answer, source-token, and trace paths changed; exactly one expected-row scalar changed (TT32-R11.passenger_source_row_token); all other 252 rows and all row IDs/order are identical."
+    },
+    {
+      "name": "question and schedule closure preservation",
+      "exit_code": 0,
+      "output": "Every Q01-Q08 parsed result_sets object and cross_question_event_closure is identical to HEAD v1.1.0. Q05 hash 7dc0f124..., Q06 full hash 5203cb15..., Q07 full hash 252a1849... unchanged."
+    },
+    {
+      "name": "presentation versus lineage identity",
+      "exit_code": 0,
+      "output": "Old human alias and dv43_fixture_token are absent. Scope anchor, NF-F02, and TT32-R11 use exact FORWARD|digest; SYN-PAX-VALID-NULL-ID-01 remains unchanged and is explicitly presentation-only, never identity."
     },
     {
       "name": "D-0010 one-universe event closure",
@@ -219,7 +262,7 @@
     {
       "name": "renewed independent adversarial review",
       "exit_code": 0,
-      "output": "PASS on final current hashes with no Sev1, Sev2, or Sev3 findings; independently recomputed Q05/Q06/Q07 and validated mapping, ordering, types, scope, D-0011, and claims."
+      "output": "Fresh v1.1.1 PASS with Sev1=0, Sev2=0, Sev3=0; reviewer independently recomputed the Ruby known-answer and reversible HEAD diff, validated all 253 rows/types/order, confirmed all question and closure hashes unchanged, and passed claims/confidentiality/diff hygiene."
     },
     {
       "name": "task-report reconciliation",
@@ -228,7 +271,7 @@
     }
   ],
   "independent_review": {
-    "reviewer": "/root/spec_03/spec03_redteam for v1.0 and /root/spec_03/spec03_v11_adversarial for D-0010/D-0011 v1.1 supersession",
+    "reviewer": "/root/spec_03/spec03_redteam for v1.0, /root/spec_03/spec03_v11_adversarial for v1.1.0, and fresh /root/data_01/data01_adversarial follow-up for D-0012 v1.1.1",
     "mode": "read-only; no file, Git, Snowflake, or external-state mutation",
     "rounds": [
       {
@@ -291,20 +334,42 @@
         "NEO4J_PARITY_MATRIX.md": "6d5ea05116c7386bff96f1d634c339d5ab9a7b4184911c85190c201c2d6e9218",
         "DECISION_LOG.md": "79d3a6d82f9e72fc90793535bdf3ee59aa06616828b8c0f485b712934e4c887a"
       }
+    },
+    "reopened_v1_1_1_review": {
+      "reviewer": "/root/data_01/data01_adversarial fresh follow-up turn",
+      "verdict": "pass",
+      "severity_findings": {"Sev1": 0, "Sev2": 0, "Sev3": 0},
+      "mode": "read-only; no skill; no file, Git, Snowflake, or external-state mutation",
+      "scope": "Independent D-0012 known-answer recomputation, reversible HEAD v1.1.0 diff, identity-boundary audit, full manifest preservation, documentation/traceability, confidentiality, claims, and diff hygiene.",
+      "evidence": [
+        "Independent Ruby dv43-lp-v1 construction produced 610 bytes, 75 frames, and SHA-256 a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7; DV-46 is FORWARD|digest.",
+        "Recursive HEAD/current YAML diff plus exact reverse transform proved only authorized D-0012 metadata/trace/source-token paths and TT32-R11.passenger_source_row_token changed.",
+        "All Q01-Q08 question objects are semantically identical: 24 result sets and 198 rows; all 11 truth tables retain 55 rows and 253 unique ordered IDs; 2,107 typed fields pass.",
+        "Q05/Q06/Q07 full result-set hashes remain 7dc0f124..., 5203cb15..., and 252a1849...; Q06 canonical remains 8513a82b....",
+        "Old alias is absent; SYN-PAX-VALID-NULL-ID-01 appears only in explicitly presentation-bearing fields and never lineage identity.",
+        "HT-01 through HT-49 and 22 NF anchors remain intact except explicit D-0012 trace metadata; claims, confidentiality, and git diff hygiene pass."
+      ],
+      "observed_hashes": {
+        "DEMO_QUESTIONS.md": "2cae18bcc69629b394f0b597a18d90ec991569db16a9f785e3d544fa1bdb2946",
+        "EXPECTED_ANSWERS.yaml": "412d6bd4443b12b64d4def4a26becd08a478ef75b4a8bda90b3244e75de6105f",
+        "NEO4J_PARITY_MATRIX.md": "42c36eff84cb77c0944e59b8665be5ab0dc4818e456d79631ee1838ffebf7000",
+        "DECISION_LOG.md": "ae50665ad0139d6cfd505ffaaeae9ca818a8f58619aed1c4bb0c066b4f4c7a81"
+      }
     }
   },
   "timings": {
     "timing_basis": "UTC completion and first observable artifact birth plus tool-reported wall times; unrecorded reading/reasoning time is not fabricated.",
     "first_observed_artifact_birth_at_utc": "2026-09-01T17:49:40Z",
-    "task_completed_at_utc": "2026-09-01T18:38:08Z",
-    "observable_artifact_window_seconds": 2878,
+    "task_completed_at_utc": "2026-09-01T19:07:38Z",
+    "observable_artifact_window_seconds": 4678,
     "final_structural_content_audit_seconds": 0.30,
     "final_literal_type_audit_seconds": 0.30,
     "final_event_closure_audit_seconds": 0.30,
     "final_confidentiality_scan_seconds": 0.10,
     "final_diff_hygiene_seconds": 0.10,
-    "independent_review_rounds": 5,
-    "reopened_v1_1_review_rounds": 1
+    "independent_review_rounds": 6,
+    "reopened_v1_1_review_rounds": 1,
+    "reopened_v1_1_1_review_rounds": 1
   },
   "residual_nonblocking_risks": [
     "All parity rows remain DESIGNED_NOT_YET_EXECUTED until DATA-01 and later SQL/RAI live gates equal the frozen manifest.",
@@ -329,6 +394,9 @@
     "d_0011_snapshot_adjacency": true,
     "q06_canonical_and_q07_full_result_preservation": true,
     "explicit_ss06_ss10_ss11_anchor_mapping": true,
+    "d_0012_dv43_lp_v1_known_answer": true,
+    "v1_1_0_to_v1_1_1_one_expected_scalar_diff": true,
+    "passenger_presentation_token_not_identity": true,
     "structural_content_confidentiality_validation": true,
     "spec_03_gate": "green"
   }

@@ -1,12 +1,13 @@
-schema_version: "1.1.0"
-manifest_id: "aviation-temporal-spec03-us-synthetic-v1.1"
+schema_version: "1.1.1"
+manifest_id: "aviation-temporal-spec03-us-synthetic-v1.1.1"
 status: "FROZEN_BEFORE_DATA_AND_QUERY_IMPLEMENTATION"
 frozen_at: "2026-09-01"
 authority:
   source: "Hand-specified from named synthetic fixture intent"
   independence: "No generator, Snowflake oracle, ontology, or PyRel query existed when frozen"
   mutation_rule: "Do not edit to reconcile an implementation mismatch; use reviewed semantic supersession"
-  supersession: "D-0010 and D-0011 repair the v1.0.0 shared schedule universe; all other v1.0.0 result sets remain semantically frozen."
+  supersession: "D-0010 and D-0011 repair the v1.0.0 shared schedule universe; D-0012 replaces the impossible v1.1.0 null-ID lineage alias with its dv43-lp-v1 SHA-256 token; no other expected result scalar changes."
+  binding_decisions: ["D-0009", "D-0010", "D-0011", "D-0012"]
 scope:
   geography: "Explicitly synthetic U.S.-domestic flight scenarios"
   airport_whitelist:
@@ -219,7 +220,7 @@ scope:
     - {source_token: "SYN-PF-6102", flight_number: 723, operating_date: "2026-08-31", planned_origin_iata: "BOS", planned_destination_iata: "MIA", canonical_passenger_token: "SYN-PAX-AMB-A"}
     - {source_token: "SYN-PF-6103", flight_number: 723, operating_date: "2026-08-31", planned_origin_iata: "ORD", planned_destination_iata: "MIA", intermediate_stop_iata: "BOS", canonical_passenger_token: "SYN-PAX-AMB-B"}
     - {source_token: "SYN-PH-7200", flight_number: 725, operating_date: "2026-08-31", planned_origin_iata: "SFO", planned_destination_iata: "LAX", canonical_passenger_token: "SYN-PAX-DIVERSION-01", exact_actual_flight_id: 7200}
-    - {source_token: "FORWARD|SYN-DV43-VALID-KEY-NULL-ID-01", source_system: "FORWARD", stable_source_row_id: null, source_row_token_basis: "DV43_HASH_FALLBACK", dv43_fixture_token: "SYN-DV43-VALID-KEY-NULL-ID-01", flight_number: 726, operating_date: "2026-08-31", marketing_airline_id: "SYN-MKT-FUL", operating_airline_id: "SYN-OP-FUL", planned_origin_iata: "MIA", planned_destination_iata: "BOS", canonical_passenger_token: "SYN-PAX-VALID-NULL-ID-01", passenger_key_status: "VALID", quarantine_status: "NOT_QUARANTINED", expected_fulfillment_status: "UNMATCHED"}
+    - {source_token: "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7", source_system: "FORWARD", stable_source_row_id: null, source_row_token_basis: "DV43_HASH_FALLBACK", dv43_expected_sha256: "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7", flight_number: 726, operating_date: "2026-08-31", marketing_airline_id: "SYN-MKT-FUL", operating_airline_id: "SYN-OP-FUL", planned_origin_iata: "MIA", planned_destination_iata: "BOS", canonical_passenger_token: "SYN-PAX-VALID-NULL-ID-01", passenger_key_status: "VALID", quarantine_status: "NOT_QUARANTINED", expected_fulfillment_status: "UNMATCHED"}
   anchored_fulfillment_actual_routes:
     - {flight_id: 5101, flight_number: 720, actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAX"}
     - {flight_id: 5102, flight_number: 721, actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAX"}
@@ -233,6 +234,19 @@ scope:
     operating_airline_id: "SYN-OP-FUL"
     airline_resolution_status: "EXACT"
     assertion: "All NF-F02 valid passenger and actual match candidates use these resolved fictional carrier roles and operating_date 2026-08-31 unless the fixture is explicitly invalid/quarantined."
+  dv43_known_answer:
+    decision: "D-0012"
+    serialization_version: "dv43-lp-v1"
+    source_system: "FORWARD"
+    source_field_order: "PF-01 through PF-19 ascending"
+    payload_length_bytes: 610
+    hash_algorithm: "SHA-256"
+    expected_sha256: "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7"
+    expected_dv46_source_row_token: "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7"
+    byte_grammar: "LP(s)=ASCII decimal UTF-8 byte length, ASCII colon, then bytes; payload starts LP(FORWARD), then for each PF field appends LP(Field-ID), LP(exact Snowflake type tag), and LP(N) for null or LP(V)+LP(canonical scalar) for non-null."
+    passenger_presentation_token: "SYN-PAX-VALID-NULL-ID-01"
+    passenger_presentation_token_role: "PRESENTATION_ONLY_NOT_IDENTITY"
+    assertion: "The passenger presentation token is never an identity or DV-43 input substitute; the 64-lowercase-hex digest alone supplies the null-ID DV-46 suffix."
   clock_authority_rules:
     - "AP-09 time_zone_name is geography/conversion lineage only."
     - "A source-expanded passenger timestamp wins over AP-09-derived interpretation."
@@ -381,7 +395,7 @@ fixture_anchors:
     dates: ["2026-08-31"]
     owned_expected: ["TT-PASSENGER-UNION"]
   - fixture_id: "NF-F02"
-    source_ids: ["SYN-PH-5101", "SYN-PH-5102", "SYN-PH-5103", "SYN-PH-7200", "SYN-AF-5101", "SYN-AF-5102", "SYN-AF-5103", "SYN-AF-7101", "SYN-AF-7102", "SYN-AF-7199", "SYN-AF-7200", "SYN-PF-6101", "SYN-PF-6102", "SYN-PF-6103", "FORWARD|SYN-DV43-VALID-KEY-NULL-ID-01", "SYN-INVALID-PF-6199", "SYN-QUARANTINE-PF-HASH-01"]
+    source_ids: ["SYN-PH-5101", "SYN-PH-5102", "SYN-PH-5103", "SYN-PH-7200", "SYN-AF-5101", "SYN-AF-5102", "SYN-AF-5103", "SYN-AF-7101", "SYN-AF-7102", "SYN-AF-7199", "SYN-AF-7200", "SYN-PF-6101", "SYN-PF-6102", "SYN-PF-6103", "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7", "SYN-INVALID-PF-6199", "SYN-QUARANTINE-PF-HASH-01"]
     dates: ["2026-08-31"]
     owned_expected: ["TT-FULFILLMENT", "TT-PLAN-ACTUAL-DIVERSION"]
   - fixture_id: "NF-R01"
@@ -1643,7 +1657,7 @@ contract_truth_tables:
       - {row_id: "TT30-R02", passenger_key: "SYN-MKT-A|701|LAX|LAS|2026-08-31", selected_source: "FORWARD", historical_lineage_retained: false, forward_lineage_retained: true, historical_only_field: null}
 
   - truth_table_id: "TT-FULFILLMENT"
-    traceability: ["P0-10", "HT-31", "HT-32", "NF-F02", "DV-22", "DV-23", "DV-39", "DV-40", "DV-41", "DV-42"]
+    traceability: ["P0-10", "HT-31", "HT-32", "NF-F02", "DV-22", "DV-23", "DV-39", "DV-40", "DV-41", "DV-42", "D-0012"]
     output_schema:
       - {name: "row_id", type: "VARCHAR", nullable: false}
       - {name: "fixture_case", type: "VARCHAR", nullable: false}
@@ -1666,7 +1680,7 @@ contract_truth_tables:
       - {row_id: "TT32-R08", fixture_case: "NULL_KEY_AND_SOURCE_ID", match_status: "QUARANTINED", passenger_token: "SYN-QUARANTINE-PF-HASH-01", passenger_key_status: "QUARANTINED", passenger_source_row_token: null, actual_flight_id: null, group_id: null, confirmed_link: false}
       - {row_id: "TT32-R09", fixture_case: "AMBIGUOUS_MEMBER_A", match_status: "AMBIGUOUS_GROUP_MEMBER", passenger_token: "SYN-PAX-AMB-A", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|6102", actual_flight_id: 7102, group_id: "SYN-FUL-AMB-01", confirmed_link: false}
       - {row_id: "TT32-R10", fixture_case: "AMBIGUOUS_MEMBER_B", match_status: "AMBIGUOUS_GROUP_MEMBER", passenger_token: "SYN-PAX-AMB-B", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|6103", actual_flight_id: 7102, group_id: "SYN-FUL-AMB-01", confirmed_link: false}
-      - {row_id: "TT32-R11", fixture_case: "VALID_KEY_MISSING_SOURCE_ID", match_status: "UNMATCHED", passenger_token: "SYN-PAX-VALID-NULL-ID-01", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|SYN-DV43-VALID-KEY-NULL-ID-01", actual_flight_id: null, group_id: null, confirmed_link: false}
+      - {row_id: "TT32-R11", fixture_case: "VALID_KEY_MISSING_SOURCE_ID", match_status: "UNMATCHED", passenger_token: "SYN-PAX-VALID-NULL-ID-01", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7", actual_flight_id: null, group_id: null, confirmed_link: false}
 
   - truth_table_id: "TT-PLAN-ACTUAL-DIVERSION"
     traceability: ["P0-10", "HT-33", "NF-F02", "PF-08", "PF-09", "AF-08", "AF-09", "AF-10", "AF-12", "DV-45"]
@@ -1745,7 +1759,7 @@ hard_test_coverage:
   "HT-29": ["Q06-CANONICAL", "CROSS-QUESTION-EVENT-CLOSURE-V1.1"]
   "HT-30": ["TT-PASSENGER-UNION"]
   "HT-31": ["TT-FULFILLMENT"]
-  "HT-32": ["TT-FULFILLMENT"]
+  "HT-32": ["TT-FULFILLMENT", "D-0012", "dv43-lp-v1"]
   "HT-33": ["TT-PLAN-ACTUAL-DIVERSION", "Q08-ANOMALIES"]
   "HT-34": ["Q08-CANONICAL", "TT-US-CLOCK-AUTHORITY"]
   "HT-35": ["Q08-ANOMALIES"]
@@ -1755,11 +1769,11 @@ hard_test_coverage:
   "HT-39": ["Q01-UNKNOWN-GAP"]
   "HT-40": ["TT-MIXED-ENGINE-LIMIT"]
   "HT-41": ["MODEL-01 live gate"]
-  "HT-42": ["All Q01-Q08 result sets", "CROSS-QUESTION-EVENT-CLOSURE-V1.1"]
+  "HT-42": ["All Q01-Q08 result sets", "CROSS-QUESTION-EVENT-CLOSURE-V1.1", "D-0012 253-row ownership reconciliation"]
   "HT-43": ["MODEL-02 inventory gate"]
   "HT-44": ["NF-E01 timing metadata"]
   "HT-45": ["Claim scan over release artifacts"]
   "HT-46": ["Q01", "Q02", "Q03", "Q04"]
   "HT-47": ["All catalog_id and typed parameters"]
   "HT-48": ["Q01-INVALID-AIRCRAFT-ID", "Q06-INVALID-DATE", "Q06-MISSING-CARRIER-ROLE", "Q07-MISSING-CARRIER-ROLE", "Q07-MISSING-KNOWLEDGE-DATE", "Q07-MISSING-OPERATING-DATE", "TT-MIXED-ENGINE-LIMIT"]
-  "HT-49": ["Q05 exact/candidate/ambiguous/unpaired labels", "CROSS-QUESTION-EVENT-CLOSURE-V1.1", "Q08 plan/actual fields"]
+  "HT-49": ["Q05 exact/candidate/ambiguous/unpaired labels", "CROSS-QUESTION-EVENT-CLOSURE-V1.1", "Q08 plan/actual fields", "D-0012 presentation token is not identity"]

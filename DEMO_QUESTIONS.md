@@ -15,10 +15,12 @@ contracted, but `DATA-04` and `MODEL-01` must materialize/map them before execut
 `READY`. No question is blocked by a known data gap for its bounded fixture answer.
 
 All eight questions target the binding D-0009 synthetic U.S.-domestic core. D-0010 and D-0011
-supersede only the v1.0 schedule-universe construction: manifest v1.1.0 uses one unfiltered source
+supersede only the v1.0 schedule-universe construction: manifest v1.1.1 uses one unfiltered source
 universe, repairs every Q05 event forced by Q06/Q07 fixtures, and moves the missing/incomplete
 snapshot control outside the August adjacency window. No Q06 canonical row or Q07 result set was
-changed. The closed airport
+changed. D-0012 narrowly supersedes v1.1.0 by replacing one impossible human-readable null-ID
+lineage alias with its independently verified DV-43 digest; no business result, row ID, cardinality,
+schedule closure, or Q05/Q06/Q07 result changes. The closed airport
 whitelist is `SFO`, `LAX`, `LAS`, `SEA`, `DEN`, `ORD`, `PHX`, `BOS`, and `MIA`, with corresponding synthetic actual-source
 internal IDs `SYN-AP-*`. Public airport IATA/ICAO codes, names, and IANA time-zone names are
 geography labels only. Planned endpoints use whitelisted IATA labels; actual endpoints use the
@@ -39,6 +41,13 @@ exact events and 13 separately labeled amendment
 evidence rows. Every exact presence event is machine-accounted for as unique-candidate, ambiguous,
 or exactly one unpaired row. A separate October 5/12/19/26 control freezes complete, missing,
 incomplete, and post-gap behavior without inserting an eligible date into the Q05 window.
+
+The D-0012 lineage known-answer uses byte grammar `dv43-lp-v1`. `LP(s)` writes the ASCII decimal
+length of the UTF-8 bytes, an ASCII colon, and the bytes. The named PF-01-through-PF-19 vector is
+exactly 610 bytes and hashes to
+`a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7`; its null-ID DV-46 token is
+`FORWARD|` followed by that digest. `SYN-PAX-VALID-NULL-ID-01` is presentation text only and is never
+passenger identity, source-row identity, or a substitute DV-43 input.
 
 All comparisons use typed values, null-safe equality, the declared row order, and the complete result
 set. An empty result is an expected answer, not a failed query. Dates are ISO calendar dates and
@@ -309,7 +318,7 @@ installed-version live equality test adds demonstrable value.
   the public IATA labels used on the plan side.
 - **Traceability:** P0-02/P0-10/P0-11/P0-12/P0-15; HT-30 through HT-40/42/49;
   DV-05 through DV-09/DV-20 through DV-25/DV-38 through DV-45/DV-52/53;
-  NF-F01/F02/R01/R02/X01/X02.
+  NF-F01/F02/R01/R02/X01/X02; D-0012 `dv43-lp-v1` known-answer and presentation-only token rule.
 
 ## Interface-wide negative behavior
 
@@ -319,3 +328,8 @@ comparison prompts. Exact empty sets remain empty. Interfaces preserve `exact`, 
 `ambiguous`, `unpaired`, and `plan` versus `actual` labels. These behaviors are frozen by
 `EXPECTED_ANSWERS.yaml` scenarios and P0-15; later agent work may improve wording but not silently
 choose missing semantics.
+
+For a retained forward passenger row with null stable source ID, the interface exposes only
+`FORWARD|<64-lowercase-hex DV-43>` as lineage identity; a human-readable passenger token remains
+presentation-only. These behaviors are frozen by D-0012, `TT32-R11`, HT-32/42/49, and the
+`EXPECTED_ANSWERS.yaml` known-answer metadata.

@@ -20,7 +20,12 @@ every exact change forced by Q06/Q07 fixtures; no fixture-family filter or quest
 is allowed. The five August weekly dates are the only eligible complete dates in the Q05 window.
 The missing/incomplete control is isolated to October 5/12/19/26 so it cannot violate adjacency.
 
-`EXPECTED_ANSWERS.yaml` version `1.1.0` is the independent authority. A row below becomes `PROVEN`
+Under D-0012, manifest v1.1.1 also binds the null-source-ID passenger lineage to the 610-byte
+`dv43-lp-v1` known-answer. Its DV-46 identity is `FORWARD|` plus the independently verified
+64-lowercase-hex SHA-256 digest; `SYN-PAX-VALID-NULL-ID-01` remains presentation-only. This narrow
+repair changes no business result, row ID, cardinality, schedule event, or Q05/Q06/Q07 result set.
+
+`EXPECTED_ANSWERS.yaml` version `1.1.1` is the independent authority. A row below becomes `PROVEN`
 only when its complete SQL and RAI result sets independently equal the frozen result sets and every
 named boundary/negative assertion passes. Before that, status is `DESIGNED_NOT_YET_EXECUTED`.
 
@@ -35,7 +40,7 @@ named boundary/negative assertion passes. Before that, status is `DESIGNED_NOT_Y
 | Q05 `schedule_four_week_changes` | Snapshot-to-snapshot additions, removals, and modifications | `ScheduleExactChange` preserves exact key/content facts; separate `ScheduleAmendmentEvidence` preserves medium candidates, low ambiguous groups, members, and unpaired facts over one unfiltered universe | `Q05-CANONICAL` 35 rows (22 exact + 13 evidence) plus October `Q05-INELIGIBLE-ENDPOINT`; `CROSS-QUESTION-EVENT-CLOSURE-V1.1`; HT-12/13/15-22/49; D-0010/D-0011 | “For the four frozen adjacent complete weekly comparisons, RAI matches all 35 exact/evidence rows and preserves bounded candidate/ambiguity classifications without promoting them.” | Snowflake completeness controls, deterministic reduction, SQL reconciliation, RAI rules, and lineage are jointly governed | No stable amendment ID; non-overlapping key shifts may remain unpaired; missing/incomplete snapshots prove no absence; functional synthetic scope is not a performance claim | `DESIGNED_NOT_YET_EXECUTED` |
 | Q06 `market_latest_vs_seven_days` | Market entry/exit set difference across schedule snapshots | Eligible endpoint filtering and deterministic classification at `(carrier_role, exact airline, directional route)` over the same unfiltered universe | `Q06-CANONICAL` exactly 2 rows, October `Q06-INCOMPLETE-ENDPOINT`, `Q06-MISSING-CARRIER-ROLE`; Q06 canonical v1.0 hash preserved; HT-12/14/26/29/38/48; D-0010/D-0011 | “For the frozen exact endpoints and marketing role, RAI returns the same two-row entry/exit set as the manifest and SQL oracle and refuses ineligible endpoints.” | Completeness evidence and exact resolution status remain visible with the semantic result | Ambiguous carrier resolution cannot create an exact airline market; this is a knowledge-clock comparison; stable positive market shadows deliberately prevent unrelated zero-crossings | `DESIGNED_NOT_YET_EXECUTED` |
 | Q07 `route_capacity_two_clocks` | Active route-state frequency/capacity under knowledge and operating time | Multi-open `RouteState` associations, required DV-30/DV-31 clocks, weekday predicate, separate marketing/operating Airline roles, D-0007 physical representative, and cabin-quality derivations | All Q07 v1.0 result sets/hash unchanged: 3 marketing + 2 operating canonical rows, knowledge-end empty, and typed errors; four terminal deltas, clock null→`PHX`→null, operating-ineligible shadow; truth tables; HT-18/23-29/38/48; D-0010 | “For the frozen clock/carrier scenarios, RAI reproduces the unchanged five canonical route-frequency/capacity rows, keeps marketing and operating results distinct, and does not double-count the proven physical representative.” | Shared governed schedules, quality evidence, reusable clock rules, SQL oracle, and curated agent parameters are one Snowflake workflow | Codeshare-only physical service is unresolved and excluded without a stable service-group ID; UTC `TIME` alone remains unresolved; the clock shadow is construction evidence, not an additional target row | `DESIGNED_NOT_YET_EXECUTED` |
-| Q08 `actual_rotation_enriched` | Multi-hop actual aircraft rotation and aircraft-history enrichment | Validated AF-20 `next_flight` self-reference with visited set/step bound, actual continuity/time/date rules, typed anomalies, and per-leg type/engine as-of joins | `Q08-CANONICAL`, `Q08-ANOMALIES`, `Q08-NOT-FOUND`; `TT-US-CLOCK-AUTHORITY`; HT-30-40/49 | “For the frozen actual-leg chain and anomaly fixtures, ordinary RAI self-reference traversal reproduces the supplied rotation workload and enriches each valid leg from independent aircraft history.” | Actual operations, plan/actual distinction, history, SQL validation, semantic traversal, and agent access remain governed together | This is not arbitrary path analytics; actual endpoints/times never borrow plan values; optional graph paths require live equality and added value | `DESIGNED_NOT_YET_EXECUTED` |
+| Q08 `actual_rotation_enriched` | Multi-hop actual aircraft rotation and aircraft-history enrichment | Validated AF-20 `next_flight` self-reference with visited set/step bound, actual continuity/time/date rules, typed anomalies, and per-leg type/engine as-of joins | `Q08-CANONICAL`, `Q08-ANOMALIES`, `Q08-NOT-FOUND`; `TT-US-CLOCK-AUTHORITY`; `TT32-R11` D-0012 lineage known-answer; HT-30-40/42/49 | “For the frozen actual-leg chain and anomaly fixtures, ordinary RAI self-reference traversal reproduces the supplied rotation workload and enriches each valid leg from independent aircraft history.” | Actual operations, plan/actual distinction, history, SQL validation, semantic traversal, and agent access remain governed together | This is not arbitrary path analytics; actual endpoints/times never borrow plan values; optional graph paths require live equality and added value; passenger presentation labels never substitute for lineage identity | `DESIGNED_NOT_YET_EXECUTED` |
 
 ## Representation-level parity
 
@@ -50,13 +55,14 @@ named boundary/negative assertion passes. Before that, status is `DESIGNED_NOT_Y
 | route `STARTS`/`ENDS` | labeled Route origin/destination relationships | Exact link only at cardinality one | Raw planned IATA and resolution candidates remain visible when unresolved |
 | airline `OPERATES`/`COMMERCIALIZES` | separate operating/marketing relationships | Direct role parity | Missing role is an error/clarification, never a default |
 | `ROUTE_STATE-[:SCHEDULES]->PASSENGER_FLIGHT` | clock-qualified scheduling relationship | Bounded plan-link parity | Typed historical/forward union and source precedence are explicit |
-| `AIRCRAFT_FLIGHT-[:FULFILLED]->PASSENGER_FLIGHT` | `ExactFulfillment` association | Optional one-to-many parity where shared source ID proves it | Heuristic and ambiguous candidates are separate and never satisfy the exact edge |
+| `AIRCRAFT_FLIGHT-[:FULFILLED]->PASSENGER_FLIGHT` | `ExactFulfillment` association | Optional one-to-many parity where shared source ID proves it | Heuristic and ambiguous candidates are separate and never satisfy the exact edge; null source IDs use D-0012 `FORWARD|<DV-43>` lineage rather than a display alias |
 | actual flight `STARTED`/`ENDED` | labeled actual-origin/destination links to `SYN-AP-*` Airport identities | Direct actual-endpoint parity | Planned IATA never repairs or overwrites actual endpoints |
 | actual flight `NEXT_FLIGHT_ID` path | validated same-type self-reference | Required Q08 parity baseline | Invalid edges become typed anomaly evidence; graph path enumeration is optional |
 
 ## Evidence state machine
 
-1. `SPECIFIED`: this contract and the frozen manifest exist and parse.
+1. `SPECIFIED`: this contract and the frozen manifest exist and parse; the D-0012 610-byte
+   `dv43-lp-v1` known-answer yields the exact 64-lowercase-hex DV-43/DV-46 token.
 2. `EVENT_CLOSED`: one-universe materialization independently recomputes Q05 counts `7,5,9,14`,
    accounts for every exact addition/removal exactly once, returns only the two Q06 market
    zero-crossings, preserves the Q06 canonical hash, and preserves the full Q07 result-set hash.
@@ -91,4 +97,5 @@ more scalable, cheaper, more secure, or better.
 - “The supplied schema identifies a complete mixed-engine set.”
 - “The ontology inferred that a flight is domestic” or that any synthetic row describes a real
   carrier's operation.
+- “A passenger presentation token is a DV-43 digest or source-row identity.”
 - “Graph path enumeration is required or proven” before the optional installed-runtime equality gate.

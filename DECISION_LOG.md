@@ -300,3 +300,52 @@ entry with a new entry rather than editing its historical conclusion.
   cadence-selected subsequence that skips complete snapshots. If adopted, supersede the manifest,
   expose the selection rule in every interface, and rerun adjacency, gap, and complete-result tests.
 - **Status:** accepted as part of the pre-implementation v1.1.0 correction.
+
+## D-0012 — Bind DV-43 bytes and replace the null-ID lineage alias
+
+- **Date:** 2026-09-01
+- **Trigger:** DATA-01 expected-row constructibility gate
+- **Question:** How can the valid `PASSENGER_FORWARD` fixture with null PF-01 produce the frozen
+  DV-46 lineage token when the v1.1.0 manifest used the human-readable suffix
+  `SYN-DV43-VALID-KEY-NULL-ID-01` instead of a SHA-256 digest and the source contract did not spell
+  out the byte framing needed to compute one independent literal?
+- **Alternatives:** weaken DV-43/DV-46 to permit aliases; give the fixture a non-null stable source
+  ID and lose the required null-ID fallback case; retain the display alias only as presentation,
+  bind a versioned length-prefixed byte grammar, and supersede the one impossible lineage scalar
+  with its independently computed digest.
+- **Evidence:** `SOURCE_CONTRACT.md` requires DV-43 to be SHA-256 over typed normalized fields and
+  DV-46 for a retained PF row with null PF-01 to be `FORWARD|<DV-43>`. `ATTRIBUTE_AUTHORITY.md`
+  assigns the same semantic ownership. The v1.1.0 TT32-R11/source anchor instead froze
+  `FORWARD|SYN-DV43-VALID-KEY-NULL-ID-01`; its suffix is neither hexadecimal nor a SHA-256 output,
+  and no alias mechanism exists. DATA-01 therefore proved that no conforming raw row could produce
+  the expected scalar.
+- **Review:** Independent DATA-01 reviewer `/root/data_01/data01_adversarial` classified the defect
+  Sev1 and rejected weakening the hash contract. Independent reviewer `/root/dv43_token_review`
+  recomputed the chosen framing in both Python and Ruby, round-tripped the payload exactly, and
+  verified sensitivity to null-versus-empty, source token, Field ID, type tag, and value changes.
+- **Decision:** Supersede the ambiguous prose-level framing for this release with byte grammar
+  `dv43-lp-v1`. `LP(s)` is the ASCII decimal length of the UTF-8 byte string, then ASCII `:`, then
+  those bytes. A PF payload begins with `LP(FORWARD)`. Each PF-01-through-PF-19 field in ascending
+  Field-ID order appends `LP(Field-ID)`, `LP(the exact SOURCE_CONTRACT Snowflake type tag)`, and
+  `LP(N)` for null; a non-null field instead appends `LP(V)` followed by `LP(the canonical scalar)`.
+  `N` and `V` are the wire tags and explicitly supersede the earlier informal backticked `NULL`
+  wording; canonical scalar rules otherwise remain unchanged. For the named valid-key/null-ID row,
+  the complete payload is 610 bytes and SHA-256 is
+  `a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7`; DV-46 is therefore
+  `FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7`. Keep
+  `SYN-PAX-VALID-NULL-ID-01` only as the human-readable passenger presentation token. Supersede the
+  expected manifest to v1.1.1; no other expected row or business result changes.
+- **Confidence:** high; two independent implementations produced the same known-answer vector and
+  the repair restores the already chosen hash semantics rather than changing them.
+- **Affected artifacts/tests:** `EXPECTED_ANSWERS.yaml`, `DEMO_QUESTIONS.md`,
+  `NEO4J_PARITY_MATRIX.md`, the SPEC-03 report, `data/SYNTHETIC_DATA_SPEC.md`, DATA-02 hash helpers,
+  TT32-R11, NF-F02, DV-43/DV-46, HT-32/42/49. Add a 610-byte known-answer test, a decoder
+  round-trip test, null/empty/domain/Field-ID/type/value sensitivity tests, a 64-lowercase-hex DV-46
+  assertion for every null-ID retained PF/PH row, 253-row ownership reconciliation, and a proof that
+  every result except the corrected lineage scalar remains byte-for-byte equal to v1.1.0.
+- **Rollback:** If authoritative source-system hashing evidence requires another byte framing,
+  append a superseding decision; version the grammar and manifest, recompute the known-answer vector
+  independently in two implementations, and rerun every hash/lineage/expected-result gate. Never
+  restore a human-readable alias in DV-43 or DV-46.
+- **Status:** accepted pre-implementation correction; v1.1.0 remains in Git history and is
+  superseded by v1.1.1 after the renewed SPEC-03 adversarial gate passes.
