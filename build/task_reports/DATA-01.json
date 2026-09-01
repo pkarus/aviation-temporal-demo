@@ -1,0 +1,248 @@
+{
+  "task_id": "DATA-01",
+  "status": "passed",
+  "owner": "/root/data_01",
+  "completed_at_utc": "2026-09-01T19:18:04Z",
+  "scope": "Specify deterministic, non-production synthetic U.S.-domestic aviation fixtures for DATA-02, with complete source constructors, frozen expected-answer ownership, negative fixtures, deterministic scale/filler rules, and no generator or Snowflake mutation.",
+  "dependencies": {
+    "SPEC-03": {
+      "status": "green",
+      "commit": "9d1b2351661469dac29c050c4be1d789bde4d66d",
+      "manifest_version": "1.1.1",
+      "report_status": "passed"
+    }
+  },
+  "skills_used": [],
+  "snowflake_operations": [],
+  "git_operations": [],
+  "changed_files": [
+    "data/SYNTHETIC_DATA_SPEC.md",
+    "build/task_reports/DATA-01.json"
+  ],
+  "explicitly_not_modified": [
+    "EXPECTED_ANSWERS.yaml",
+    "DEMO_QUESTIONS.md",
+    "NEO4J_PARITY_MATRIX.md",
+    "DECISION_LOG.md",
+    "SEMANTIC_DECISIONS.md",
+    "SOURCE_CONTRACT.md",
+    "ATTRIBUTE_AUTHORITY.md",
+    "NEO4J_RAI_MAPPING.md",
+    "Snowflake state",
+    "Git metadata"
+  ],
+  "authority_binding": {
+    "commit": "9d1b2351661469dac29c050c4be1d789bde4d66d",
+    "DECISION_LOG.md_sha256": "ae50665ad0139d6cfd505ffaaeae9ca818a8f58619aed1c4bb0c066b4f4c7a81",
+    "DEMO_QUESTIONS.md_sha256": "2cae18bcc69629b394f0b597a18d90ec991569db16a9f785e3d544fa1bdb2946",
+    "EXPECTED_ANSWERS.yaml_sha256": "412d6bd4443b12b64d4def4a26becd08a478ef75b4a8bda90b3244e75de6105f",
+    "NEO4J_PARITY_MATRIX.md_sha256": "42c36eff84cb77c0944e59b8665be5ab0dc4818e456d79631ee1838ffebf7000",
+    "SPEC-03.json_sha256": "23e333791a5f2c89348699480400d340f9ac10b3daca88363b294e3847814d8a",
+    "binding_decisions": ["D-0003", "D-0004", "D-0006", "D-0008", "D-0009", "D-0010", "D-0011", "D-0012"]
+  },
+  "scale_budgets": {
+    "smoke": {
+      "AIRCRAFT_MASTER": 6,
+      "AIRCRAFT_HISTORY": 24,
+      "AIRCRAFT_CONFIGURATION": 4,
+      "SCHEDULE_SNAPSHOT": 88,
+      "SCHEDULE_SNAPSHOT_CALENDAR": 10,
+      "PASSENGER_FORWARD": 9,
+      "PASSENGER_HISTORICAL": 13,
+      "AIRCRAFT_FLIGHT": 24,
+      "AIRPORT_REFERENCE": 11,
+      "AIRLINE_REFERENCE": 60,
+      "total": 249
+    },
+    "demo": {
+      "AIRCRAFT_MASTER": 999,
+      "AIRCRAFT_HISTORY": 48000,
+      "AIRCRAFT_CONFIGURATION": 2000,
+      "SCHEDULE_SNAPSHOT": 70000,
+      "SCHEDULE_SNAPSHOT_CALENDAR": 10,
+      "PASSENGER_FORWARD": 10000,
+      "PASSENGER_HISTORICAL": 10000,
+      "AIRCRAFT_FLIGHT": 3900,
+      "AIRPORT_REFERENCE": 45,
+      "AIRLINE_REFERENCE": 100,
+      "total": 145054
+    },
+    "every_table_below_500000": true,
+    "scale_claim": "Representative non-production functional shape only."
+  },
+  "artifact_summary": {
+    "data/SYNTHETIC_DATA_SPEC.md": {
+      "lines": 776,
+      "bytes": 55065,
+      "sha256": "b2d520a3fa1fcf6490b9e534cc0c799ef47b8877a490ad3d5469e90efabeaf32",
+      "evidence": "Complete deterministic constructors for ten source objects and 195 contracted fields; exact smoke/demo budgets; 22 schedule keys and 81 canonical observations; 24 result sets and 253 expected-row owners; all NF/P0/HT/DV controls; U.S. whitelist, clock, resolution, filler-isolation, rollback, and known-answer hash rules."
+    }
+  },
+  "constructibility": {
+    "source_objects": 10,
+    "contracted_fields": 195,
+    "full_source_field_coverage": "195/195",
+    "question_result_sets": 24,
+    "question_rows": 198,
+    "truth_tables": 11,
+    "truth_rows": 55,
+    "expected_rows_owned": 253,
+    "expected_rows_unique": 253,
+    "ownership_missing": 0,
+    "ownership_extra": 0,
+    "fixture_classes": 22,
+    "p0_rules": 15,
+    "hard_tests": 49,
+    "derived_fields": 53,
+    "schedule_source_keys": 22,
+    "canonical_schedule_observations": 81,
+    "q05_rows": 35,
+    "q05_adjacent_pair_counts": [7, 5, 9, 14],
+    "q06_rows": 2,
+    "q07_rows": 5,
+    "october_gap_previous_eligible_date": "2026-10-05",
+    "october_gap_post_endpoint": "2026-10-26"
+  },
+  "determinism_known_answers": {
+    "dv43_lp_v1": {
+      "payload_bytes": 610,
+      "frames": 75,
+      "sha256": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "dv46": "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "presentation_token": "SYN-PAX-VALID-NULL-ID-01",
+      "presentation_token_is_identity": false
+    },
+    "schedule_prf_ss39": {
+      "input": "20260901|SOURCE.SCHEDULE_SNAPSHOT|100000|SS-39",
+      "input_bytes": 46,
+      "sha256": "491861981a7e9e11dd9d7f5650a019f5cd99b2eff006d88f74b9b18081ded65d",
+      "first_two_bytes_big_endian": 18712,
+      "ss39": 9712,
+      "source_tokens": 10,
+      "counter_width_ascii_digits": 6,
+      "constructor_ordinals_scale_stable": true
+    }
+  },
+  "filler_isolation": {
+    "aircraft_start_after_2024": true,
+    "golden_aircraft_excluded": true,
+    "august_schedule_filler_keys": 12000,
+    "august_schedule_filler_rows": 60000,
+    "august_filler_present_at_all_five_endpoints": true,
+    "august_filler_watched_content_identical": true,
+    "august_filler_operating_ineligible_on_2026_09_07": true,
+    "incomplete_snapshot_rows": 9917,
+    "incomplete_snapshot_extra_diagnostics": 9912,
+    "incomplete_rows_create_absence_inference": false,
+    "airport_airline_filler_aliases_disjoint": true,
+    "passenger_actual_filler_compatibility_intersection_empty": true,
+    "AF_8999_absent": true,
+    "smoke_demo_expected_ownership_hash_equal": true
+  },
+  "us_scope": {
+    "policy": "D-0009 explicitly synthetic U.S.-domestic scenario; no ontology-derived domestic classification.",
+    "whitelist_iata": ["SFO", "LAX", "LAS", "SEA", "DEN", "ORD", "PHX", "BOS", "MIA"],
+    "planned_endpoint_form": "whitelisted IATA",
+    "actual_endpoint_form": "SYN-AP-* internal ID",
+    "aircraft_locations_whitelisted": true,
+    "airport_and_airline_resolution_controls": true,
+    "ap09_never_overrides_expanded_or_offset_evidence": true,
+    "af06_selected_day_af07_lineage_only": true
+  },
+  "commands": [
+    "Read AGENTS.md first-action files, ORCHESTRATOR_PROMPT.md, DATA-01 definition, SPEC-03 report, SEMANTIC_DECISIONS.md, SOURCE_CONTRACT.md, ATTRIBUTE_AUTHORITY.md, NEO4J_RAI_MAPPING.md, DEMO_QUESTIONS.md, EXPECTED_ANSWERS.yaml, and NEO4J_PARITY_MATRIX.md completely; reread D-0012 and v1.1.1 changes after supersession.",
+    "git rev-parse HEAD main origin/main; git log -1 --oneline --decorate; shasum -a 256 authority artifacts",
+    "python3 inline structural gate: exact budgets/distributions; ten source objects/195 fields; full constructors; 22-key/81-observation manifest match; 24 result sets; 253/253 ownership; NF/P0/HT/DV closure; U.S. scope; clock/resolution/filler assertions",
+    "python3 inline D-0012 gate: build dv43-lp-v1 PF-01..PF-19 payload; assert 610 bytes and expected SHA-256/DV-46",
+    "python3 inline PRF gate: SHA-256 of 20260901|SOURCE.SCHEDULE_SNAPSHOT|100000|SS-39; assert digest and SS-39=9712",
+    "git diff --check -- data/SYNTHETIC_DATA_SPEC.md",
+    "rg claim/confidentiality/placeholder and residual-review wording markers in data/SYNTHETIC_DATA_SPEC.md",
+    "wc -l -c data/SYNTHETIC_DATA_SPEC.md; shasum -a 256 data/SYNTHETIC_DATA_SPEC.md authority artifacts",
+    "Independent read-only adversarial reviews by /root/data_01/data01_adversarial and /root/data01_final_review"
+  ],
+  "test_evidence": [
+    {
+      "name": "dependency and authority binding",
+      "exit_code": 0,
+      "duration_seconds": 0.4,
+      "output": "HEAD=main=origin/main=9d1b235; EXPECTED schema 1.1.1; SPEC-03 report passed with no unresolved issues."
+    },
+    {
+      "name": "budget and exact distribution arithmetic",
+      "exit_code": 0,
+      "duration_seconds": 0.4,
+      "output": "smoke=249; demo=145054; every table below 500000; AM/AH/AC/SS/SC/PF/PH/AF/AP/AL component arithmetic reconciles."
+    },
+    {
+      "name": "source contract and ownership closure",
+      "exit_code": 0,
+      "duration_seconds": 0.4,
+      "output": "10 source objects; 195 unique contracted fields; complete constructors; 24 result sets; 253/253 unique owners; missing=0; extra=0; NF=22; P0=15; HT=49; DV=53."
+    },
+    {
+      "name": "shared schedule universe and isolation",
+      "exit_code": 0,
+      "duration_seconds": 0.4,
+      "output": "22 keys; 81 canonical observations exactly match frozen materialization; smoke SS=88; demo SS=70000; Q05 35 rows and 7/5/9/14 pairs; Q06/Q07 preservation and October gap/filler isolation pass."
+    },
+    {
+      "name": "D-0012 known-answer",
+      "exit_code": 0,
+      "duration_seconds": 0.3,
+      "output": "dv43-lp-v1 payload=610 bytes/75 frames; SHA-256 a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7; DV-46 exact; passenger label presentation-only."
+    },
+    {
+      "name": "PRF and SS-39 known-answer",
+      "exit_code": 0,
+      "duration_seconds": 0.1,
+      "output": "46-byte input hashes to 491861981a7e9e11dd9d7f5650a019f5cd99b2eff006d88f74b9b18081ded65d and yields SS-39=9712; ten exact SOURCE.* tokens and six-digit scale-stable ordinals are bound."
+    },
+    {
+      "name": "U.S. scope, clocks, resolution, confidentiality, and diff hygiene",
+      "exit_code": 0,
+      "duration_seconds": 0.4,
+      "output": "Nine-airport whitelist, planned/actual/aircraft locations, D-0008/DST/AP-09/AF-06-vs-AF-07, AP+AL controls, non-production claim discipline, confidentiality scan, and git diff --check pass."
+    },
+    {
+      "name": "final independent adversarial review",
+      "exit_code": 0,
+      "output": "PASS on SHA-256 b2d520a3fa1fcf6490b9e534cc0c799ef47b8877a490ad3d5469e90efabeaf32; Sev1=0, Sev2=0, Sev3=0; final hash stable after complete reread; reviewer made no mutation."
+    }
+  ],
+  "adversarial_review": {
+    "mode": "independent and read-only; no file, Git, Snowflake, commit, push, or external-state mutation",
+    "audit_trail": [
+      {
+        "reviewer": "/root/data_01/data01_adversarial",
+        "verdict": "fail then repaired",
+        "findings": [
+          "Sev1: v1.1.0 froze a human-readable null-ID DV-46 suffix that could not be a SHA-256 digest.",
+          "Sev2: sentinel-row ownership, incomplete-diagnostic construction, PF-6201 full timestamps, AP+AL NF-X01, and SC-05 cross-scale byte wording required repair.",
+          "Sev3: two AP/AL and exact-required carrier wording corrections."
+        ],
+        "resolution": "D-0012 and reviewed SPEC-03 v1.1.1 replaced the impossible scalar with dv43-lp-v1; all local constructor/ownership/wording findings were repaired and revalidated."
+      },
+      {
+        "reviewer": "/root/data01_final_review",
+        "verdict": "initial finding then final PASS",
+        "finding": "PRF source-object token and zero-padded row-index width/assignment were ambiguous, making ordinary non-golden SS-39 underdetermined.",
+        "resolution": "Bound ten exact SOURCE.* tokens, six-digit scale-stable constructor ordinal namespaces, physical-order independence, and a PRF/SS-39 known-answer vector.",
+        "final_verdict": "PASS",
+        "final_artifact_sha256": "b2d520a3fa1fcf6490b9e534cc0c799ef47b8877a490ad3d5469e90efabeaf32",
+        "severity_counts": {"Sev1": 0, "Sev2": 0, "Sev3": 0}
+      }
+    ]
+  },
+  "timings": {
+    "artifact_work_started_at_utc": "2026-09-01T18:49:13Z",
+    "completed_at_utc": "2026-09-01T19:18:04Z",
+    "artifact_work_elapsed_seconds": 1731,
+    "final_combined_validator_seconds": 0.4,
+    "prf_known_answer_validator_seconds": 0.1
+  },
+  "rollback": {
+    "data_state_changed": false,
+    "procedure": "Remove only DATA-01's uncommitted specification/report and regenerate them from committed SPEC-03 authority. DATA-02 later rolls back generated files by deleting its generated output directory and regenerating; frozen expected artifacts remain untouched. Any semantic/hash framing change requires an appended reviewed decision and manifest supersession."
+  },
+  "unresolved_issues": []
+}
