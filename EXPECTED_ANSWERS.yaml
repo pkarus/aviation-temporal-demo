@@ -1,11 +1,12 @@
-schema_version: "1.0.0"
-manifest_id: "aviation-temporal-spec03-us-synthetic-v1"
+schema_version: "1.1.0"
+manifest_id: "aviation-temporal-spec03-us-synthetic-v1.1"
 status: "FROZEN_BEFORE_DATA_AND_QUERY_IMPLEMENTATION"
 frozen_at: "2026-09-01"
 authority:
   source: "Hand-specified from named synthetic fixture intent"
   independence: "No generator, Snowflake oracle, ontology, or PyRel query existed when frozen"
   mutation_rule: "Do not edit to reconcile an implementation mismatch; use reviewed semantic supersession"
+  supersession: "D-0010 and D-0011 repair the v1.0.0 shared schedule universe; all other v1.0.0 result sets remain semantically frozen."
 scope:
   geography: "Explicitly synthetic U.S.-domestic flight scenarios"
   airport_whitelist:
@@ -76,6 +77,106 @@ scope:
     - {schedule_key: "SYN-SK-CLOCK_BOUNDARY_001", flight_number: 713, planned_origin_iata: "ORD", planned_destination_iata: "PHX"}
     - {schedule_key: "SYN-SK-MKT_ENTRY_714", flight_number: 714, planned_origin_iata: "SEA", planned_destination_iata: "DEN"}
     - {schedule_key: "SYN-SK-MKT_EXIT_715", flight_number: 715, planned_origin_iata: "BOS", planned_destination_iata: "MIA"}
+    - {schedule_key: "SYN-SK-CLOCK_SHADOW_001", flight_number: 716, planned_origin_iata: "ORD", planned_destination_iata: "PHX"}
+    - {schedule_key: "SYN-SK-UNPAIR_MARKET_SHADOW", flight_number: 717, planned_origin_iata: "BOS", planned_destination_iata: "MIA"}
+    - {schedule_key: "SYN-SK-GAP_CONTROL_001", flight_number: 718, planned_origin_iata: "SEA", planned_destination_iata: "DEN"}
+  schedule_source_universe:
+    universe_id: "SYN-SCHEDULE-UNIVERSE-01"
+    selection_rule: "Every eligible canonical SOURCE.SCHEDULE_SNAPSHOT observation in this one universe participates; Q05, Q06, Q07, and TT-SNAPSHOT-COMPLETENESS apply no fixture-family or question-private filter."
+    binding_decisions: ["D-0006", "D-0010", "D-0011"]
+    anchored_route_field_mapping:
+      lookup_key: {anchor_field: "schedule_key", source_field_id: "SS-01", source_column: "schedule_key"}
+      mapped_fields:
+        - {anchor_field: "flight_number", source_field_id: "SS-06", source_column: "flight_number"}
+        - {anchor_field: "planned_origin_iata", source_field_id: "SS-10", source_column: "departure_station_code_iata"}
+        - {anchor_field: "planned_destination_iata", source_field_id: "SS-11", source_column: "arrival_station_code_iata"}
+      assertion: "Join each source_anchor to exactly one anchored_schedule_routes row by schedule_key; copy these three typed anchor fields before fixed_overrides and content_transitions."
+    snapshot_control:
+      - {publish_date: "2026-08-03", snapshot_status: "PRESENT_COMPLETE", q05_eligible: true}
+      - {publish_date: "2026-08-10", snapshot_status: "PRESENT_COMPLETE", q05_eligible: true}
+      - {publish_date: "2026-08-17", snapshot_status: "PRESENT_COMPLETE", q05_eligible: true}
+      - {publish_date: "2026-08-24", snapshot_status: "PRESENT_COMPLETE", q05_eligible: true}
+      - {publish_date: "2026-08-31", snapshot_status: "PRESENT_COMPLETE", q05_eligible: true}
+      - {publish_date: "2026-09-07", snapshot_status: "PRESENT_COMPLETE", q05_eligible: false}
+      - {publish_date: "2026-10-05", snapshot_status: "PRESENT_COMPLETE", q05_eligible: false}
+      - {publish_date: "2026-10-12", snapshot_status: "MISSING", q05_eligible: false}
+      - {publish_date: "2026-10-19", snapshot_status: "PRESENT_INCOMPLETE", q05_eligible: false}
+      - {publish_date: "2026-10-26", snapshot_status: "PRESENT_COMPLETE", q05_eligible: false}
+    q05_window_assertions:
+      start_knowledge_date: "2026-08-03"
+      end_knowledge_date: "2026-08-31"
+      eligible_complete_dates: ["2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"]
+      intervening_eligible_complete_dates_not_listed: []
+      adjacent_pairs: [["2026-08-03", "2026-08-10"], ["2026-08-10", "2026-08-17"], ["2026-08-17", "2026-08-24"], ["2026-08-24", "2026-08-31"]]
+    materialization_rules:
+      - "Emit one SS-01/SS-03 row exactly when presence_by_complete_snapshot is true; never emit a row for a missing snapshot."
+      - "Start with common_ss04_through_ss38; apply anchored_route_field_mapping; then apply fixed_overrides; then apply every content_transition in effective_publish_date order whose date is not after SS-03."
+      - "An explicit null in fixed_overrides or a content_transition overrides the anchored route default; null is a watched value, not an omitted field."
+      - "Every unlisted presence date is false. Every unlisted content field retains the immediately prior selected value."
+      - "SS-02, SS-39, and SS-40 are deterministic lineage/de-duplication inputs outside the SS-04..SS-38 comparison and may not alter expected events."
+    common_ss04_through_ss38:
+      marketing_carrier_internal: "SYN-MKT-Z"
+      operating_carrier_internal: "SYN-OP-Z"
+      service_type_iata: "J"
+      effective_date: "2026-09-01"
+      discontinue_date: "2026-09-06"
+      departure_terminal: "SYN-T-DEFAULT"
+      arrival_terminal: "SYN-T-DEFAULT"
+      is_operating_monday: true
+      is_operating_tuesday: true
+      is_operating_wednesday: true
+      is_operating_thursday: true
+      is_operating_friday: true
+      is_operating_saturday: true
+      is_operating_sunday: true
+      days_pattern: "1111111"
+      weekly_frequency: 1
+      passenger_departure_utc_time: "16:00:00"
+      passenger_arrival_utc_time: "18:00:00"
+      passenger_departure_local_time: "09:00:00"
+      passenger_arrival_local_time: "11:00:00"
+      arrival_day_indicator: 0
+      scheduled_block_minutes: 120
+      equipment_subtype_code_iata: "SYN-EQ-NB"
+      total_seats: 100.0
+      first_class_seats: 0.0
+      business_class_seats: 10.0
+      premium_economy_seats: 5.0
+      economy_class_seats: 90.0
+      is_codeshare: false
+      codeshare_carrier_internal: null
+      number_of_intermediate_stops: 0
+      intermediate_stop_station_codes_iata: null
+    source_anchors:
+      - {schedule_key: "SYN-SK-BASE_100", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-A", operating_carrier_internal: "SYN-OP-A", departure_terminal: "T1", total_seats: 180.0}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": true}, content_transitions: [{effective_publish_date: "2026-08-10", field_name: "total_seats", prior_value: 180.0, new_value: 186.0}, {effective_publish_date: "2026-08-31", field_name: "departure_terminal", prior_value: "T1", new_value: "T2"}]}
+      - {schedule_key: "SYN-SK-REMOVE_200", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-REMOVE", operating_carrier_internal: "SYN-OP-REMOVE"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": false, "2026-08-17": false, "2026-08-24": false, "2026-08-31": false}, content_transitions: []}
+      - {schedule_key: "SYN-SK-ADD_300", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-E", operating_carrier_internal: "SYN-OP-E", weekly_frequency: 3}, presence_by_complete_snapshot: {"2026-08-03": false, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": true}, content_transitions: [{effective_publish_date: "2026-08-24", field_name: "weekly_frequency", prior_value: 3, new_value: 4}]}
+      - {schedule_key: "SYN-SK-SHIFT_OLD", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-C", operating_carrier_internal: "SYN-OP-C", effective_date: "2026-09-01", discontinue_date: "2026-10-31"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": false, "2026-08-24": false, "2026-08-31": false}, content_transitions: []}
+      - {schedule_key: "SYN-SK-SHIFT_NEW", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-C", operating_carrier_internal: "SYN-OP-C", effective_date: "2026-09-08", discontinue_date: "2026-11-07"}, presence_by_complete_snapshot: {"2026-08-03": false, "2026-08-10": false, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-AMB_OLD", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-D", operating_carrier_internal: "SYN-OP-D", effective_date: "2026-09-01", discontinue_date: "2026-10-31"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": false, "2026-08-31": false}, content_transitions: []}
+      - {schedule_key: "SYN-SK-AMB_NEW_A", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-D", operating_carrier_internal: "SYN-OP-D", effective_date: "2026-09-08", discontinue_date: "2026-11-07"}, presence_by_complete_snapshot: {"2026-08-03": false, "2026-08-10": false, "2026-08-17": false, "2026-08-24": true, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-AMB_NEW_B", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-D", operating_carrier_internal: "SYN-OP-D", effective_date: "2026-09-15", discontinue_date: "2026-11-14"}, presence_by_complete_snapshot: {"2026-08-03": false, "2026-08-10": false, "2026-08-17": false, "2026-08-24": true, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-UNPAIR_OLD", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-E", operating_carrier_internal: "SYN-OP-E", effective_date: "2026-09-01", discontinue_date: "2026-09-30"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": false}, content_transitions: []}
+      - {schedule_key: "SYN-SK-UNPAIR_NEW", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-E", operating_carrier_internal: "SYN-OP-E", effective_date: "2026-11-01", discontinue_date: "2026-11-30"}, presence_by_complete_snapshot: {"2026-08-03": false, "2026-08-10": false, "2026-08-17": false, "2026-08-24": false, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-STABLE_010", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-STABLE", operating_carrier_internal: "SYN-OP-STABLE"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-REAPPEAR_400", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-REAPPEAR", operating_carrier_internal: "SYN-OP-REAPPEAR"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": false, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-PHY_BASE_700", fixed_overrides: {marketing_carrier_internal: "SYN-OP-A", operating_carrier_internal: "SYN-OP-A", effective_date: "2026-09-01", discontinue_date: "2026-09-07", departure_terminal: "SYN-T-CAP-PRE-700", weekly_frequency: 7, total_seats: 180.0, first_class_seats: 8.0, business_class_seats: 20.0, premium_economy_seats: 20.0, economy_class_seats: 152.0}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": false}, content_transitions: [{effective_publish_date: "2026-08-31", field_name: "departure_terminal", prior_value: "SYN-T-CAP-PRE-700", new_value: "SYN-T-CAP-LIVE-700"}]}
+      - {schedule_key: "SYN-SK-PHY_BASE_701", fixed_overrides: {marketing_carrier_internal: "SYN-OP-A", operating_carrier_internal: "SYN-OP-A", effective_date: "2026-09-01", discontinue_date: "2026-09-07", departure_terminal: "SYN-T-CAP-PRE-701", weekly_frequency: 3, total_seats: 100.0, first_class_seats: 0.0, business_class_seats: 12.0, premium_economy_seats: 8.0, economy_class_seats: 88.0}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": false}, content_transitions: [{effective_publish_date: "2026-08-31", field_name: "departure_terminal", prior_value: "SYN-T-CAP-PRE-701", new_value: "SYN-T-CAP-LIVE-701"}]}
+      - {schedule_key: "SYN-SK-MKT_COPY_702", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-B", operating_carrier_internal: "SYN-OP-A", effective_date: "2026-09-01", discontinue_date: "2026-09-07", departure_terminal: "SYN-T-CAP-PRE-702", weekly_frequency: 7, total_seats: 180.0, first_class_seats: 8.0, business_class_seats: 20.0, premium_economy_seats: 20.0, economy_class_seats: 152.0, is_codeshare: true, codeshare_carrier_internal: "SYN-OP-A"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": false}, content_transitions: [{effective_publish_date: "2026-08-31", field_name: "departure_terminal", prior_value: "SYN-T-CAP-PRE-702", new_value: "SYN-T-CAP-LIVE-702"}]}
+      - {schedule_key: "SYN-SK-CSH_ONLY_900", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-X", operating_carrier_internal: "SYN-OP-X", effective_date: "2026-09-01", discontinue_date: "2026-09-07", departure_terminal: "SYN-T-CAP-PRE-900", weekly_frequency: 2, is_codeshare: true, codeshare_carrier_internal: "SYN-OP-X"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": false}, content_transitions: [{effective_publish_date: "2026-08-31", field_name: "departure_terminal", prior_value: "SYN-T-CAP-PRE-900", new_value: "SYN-T-CAP-LIVE-900"}]}
+      - {schedule_key: "SYN-SK-CLOCK_BOUNDARY_001", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-CLOCK", operating_carrier_internal: "SYN-OP-CLOCK", effective_date: "2026-09-01", discontinue_date: "2026-09-07", arrival_station_code_iata: null}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": true}, content_transitions: [{effective_publish_date: "2026-08-24", field_name: "arrival_station_code_iata", prior_value: null, new_value: "PHX"}, {effective_publish_date: "2026-08-31", field_name: "arrival_station_code_iata", prior_value: "PHX", new_value: null}]}
+      - {schedule_key: "SYN-SK-MKT_ENTRY_714", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-ENTRY", operating_carrier_internal: "SYN-OP-ENTRY"}, presence_by_complete_snapshot: {"2026-08-03": false, "2026-08-10": false, "2026-08-17": false, "2026-08-24": false, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-MKT_EXIT_715", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-EXIT", operating_carrier_internal: "SYN-OP-EXIT"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": false}, content_transitions: []}
+      - {schedule_key: "SYN-SK-CLOCK_SHADOW_001", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-CLOCK", operating_carrier_internal: "SYN-OP-CLOCK", effective_date: "2026-09-01", discontinue_date: "2026-09-06"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true, "2026-09-07": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-UNPAIR_MARKET_SHADOW", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-E", operating_carrier_internal: "SYN-OP-E"}, presence_by_complete_snapshot: {"2026-08-03": true, "2026-08-10": true, "2026-08-17": true, "2026-08-24": true, "2026-08-31": true}, content_transitions: []}
+      - {schedule_key: "SYN-SK-GAP_CONTROL_001", fixed_overrides: {marketing_carrier_internal: "SYN-MKT-GAP", operating_carrier_internal: "SYN-OP-GAP", effective_date: "2026-10-01", discontinue_date: "2026-11-30"}, presence_by_complete_snapshot: {"2026-10-05": true, "2026-10-26": false}, content_transitions: []}
+    constructibility_assertions:
+      - "The four Q07 capacity keys retain carrier, route, bounds, weekdays, frequency, and capacity at 2026-08-24 and 2026-08-31; only departure_terminal changes on 2026-08-31."
+      - "The Q07 capacity keys are absent at the next eligible complete 2026-09-07 snapshot, so their knowledge intervals close at 2026-09-07."
+      - "CLOCK_BOUNDARY route resolution is invalid outside [2026-08-24,2026-08-31) and valid ORD->PHX only inside it; its schedule identity fields and operating bounds never change."
+      - "CLOCK_SHADOW keeps SYN-MKT-CLOCK|ORD->PHX positive at both Q06 endpoints (count 1 to 2 to 1 across 2026-08-17, 2026-08-24, 2026-08-31) but is operating-ineligible on 2026-09-07."
+      - "ADD_300 protects the SYN-MKT-E|SEA->DEN market when UNPAIR_NEW appears; UNPAIR_MARKET_SHADOW protects SYN-MKT-E|BOS->MIA when UNPAIR_OLD disappears."
+      - "Only MKT_ENTRY_714 has a zero-to-positive marketing-market transition and only MKT_EXIT_715 has a positive-to-zero transition between 2026-08-24 and 2026-08-31."
   anchored_capacity_states:
     - {schedule_key: "SYN-SK-PHY_BASE_700", knowledge_valid_from: "2026-08-31", knowledge_valid_to: "2026-09-07", operating_effective_date: "2026-09-01", operating_discontinue_date: "2026-09-07", monday: true, marketing_airline_id: "SYN-OP-A", operating_airline_id: "SYN-OP-A", is_codeshare: false, weekly_frequency: 7, total_seats: 180.0, first_seats: 8.0, business_seats: 20.0, premium_economy_seats: 20.0, economy_including_premium_seats: 152.0}
     - {schedule_key: "SYN-SK-PHY_BASE_701", knowledge_valid_from: "2026-08-31", knowledge_valid_to: "2026-09-07", operating_effective_date: "2026-09-01", operating_discontinue_date: "2026-09-07", monday: true, marketing_airline_id: "SYN-OP-A", operating_airline_id: "SYN-OP-A", is_codeshare: false, weekly_frequency: 3, total_seats: 100.0, first_seats: 0.0, business_seats: 12.0, premium_economy_seats: 8.0, economy_including_premium_seats: 88.0}
@@ -171,6 +272,45 @@ canonicalization:
       AMBIGUOUS_GROUP_MEMBER: 60
       UNPAIRED_ADDITION: 70
       UNPAIRED_REMOVAL: 80
+cross_question_event_closure:
+  closure_id: "CROSS-QUESTION-EVENT-CLOSURE-V1.1"
+  decisions: ["D-0010", "D-0011"]
+  source_universe_id: "SYN-SCHEDULE-UNIVERSE-01"
+  q05_expected_cardinality: 35
+  q05_rows_by_adjacent_pair:
+    - {previous_knowledge_date: "2026-08-03", comparison_date: "2026-08-10", expected_count: 7, row_ids: ["Q05-R001", "Q05-R002", "Q05-R003", "Q05-R020", "Q05-R021", "Q05-R022", "Q05-R023"]}
+    - {previous_knowledge_date: "2026-08-10", comparison_date: "2026-08-17", expected_count: 5, row_ids: ["Q05-R024", "Q05-R004", "Q05-R005", "Q05-R006", "Q05-R025"]}
+    - {previous_knowledge_date: "2026-08-17", comparison_date: "2026-08-24", expected_count: 9, row_ids: ["Q05-R007", "Q05-R026", "Q05-R008", "Q05-R009", "Q05-R010", "Q05-R011", "Q05-R012", "Q05-R013", "Q05-R014"]}
+    - {previous_knowledge_date: "2026-08-24", comparison_date: "2026-08-31", expected_count: 14, row_ids: ["Q05-R015", "Q05-R027", "Q05-R028", "Q05-R029", "Q05-R030", "Q05-R031", "Q05-R032", "Q05-R016", "Q05-R033", "Q05-R017", "Q05-R018", "Q05-R034", "Q05-R019", "Q05-R035"]}
+  exact_presence_partner_closure:
+    unique_candidate_pairs: [{exact_row_ids: ["Q05-R004", "Q05-R005"], evidence_row_ids: ["Q05-R006"]}]
+    ambiguous_candidate_groups: [{exact_row_ids: ["Q05-R008", "Q05-R009", "Q05-R010"], evidence_row_ids: ["Q05-R011", "Q05-R012", "Q05-R013", "Q05-R014"]}]
+    unpaired_exact_to_evidence:
+      - {exact_row_id: "Q05-R002", unpaired_row_id: "Q05-R021", side: "ADDED", schedule_key: "SYN-SK-ADD_300"}
+      - {exact_row_id: "Q05-R003", unpaired_row_id: "Q05-R022", side: "REMOVED", schedule_key: "SYN-SK-REMOVE_200"}
+      - {exact_row_id: "Q05-R020", unpaired_row_id: "Q05-R023", side: "REMOVED", schedule_key: "SYN-SK-REAPPEAR_400"}
+      - {exact_row_id: "Q05-R024", unpaired_row_id: "Q05-R025", side: "ADDED", schedule_key: "SYN-SK-REAPPEAR_400"}
+      - {exact_row_id: "Q05-R016", unpaired_row_id: "Q05-R018", side: "ADDED", schedule_key: "SYN-SK-UNPAIR_NEW"}
+      - {exact_row_id: "Q05-R017", unpaired_row_id: "Q05-R019", side: "REMOVED", schedule_key: "SYN-SK-UNPAIR_OLD"}
+      - {exact_row_id: "Q05-R032", unpaired_row_id: "Q05-R034", side: "ADDED", schedule_key: "SYN-SK-MKT_ENTRY_714"}
+      - {exact_row_id: "Q05-R033", unpaired_row_id: "Q05-R035", side: "REMOVED", schedule_key: "SYN-SK-MKT_EXIT_715"}
+    rule: "Every EXACT_ADDITION or EXACT_REMOVAL not consumed by exactly one unique candidate or one ambiguous group has exactly one unpaired evidence row with matching comparison date, side, and schedule key; no exact presence row may be both partnered and unpaired."
+  q06_preservation:
+    canonical_expected_cardinality: 2
+    allowed_change_rows: ["Q06-R001", "Q06-R002"]
+    prior_v1_0_and_current_canonical_result_set_sha256: "8513a82b4b666032fb3c4136830d96cefa924e61aeb6c573b2a8f20f38a8e227"
+    current_v1_1_result_sets_sha256: "5203cb15e9971b3df73ae1c3b0b57b1b77dc0a645e148cc5968bade0ea9ef232"
+    intentional_noncanonical_change: "D-0011 moves Q06-INCOMPLETE-ENDPOINT to 2026-10-26 versus incomplete 2026-10-19; canonical two-row output is unchanged."
+  q07_preservation:
+    canonical_expected_cardinality: 5
+    allowed_change_rows: ["Q07-R001", "Q07-R002", "Q07-R003", "Q07-R004", "Q07-R005"]
+    prior_v1_0_result_sets_sha256: "252a18496a59cc871dbe019ad7b2ac79674310b44435602b215d7c46b8091f2f"
+  hash_canonicalization: "SHA-256 of UTF-8 json.dumps(the named parsed result-set object or result_sets list, sort_keys=True, separators=(',', ':'), ensure_ascii=False) after YAML parse."
+  required_assertions:
+    - "Q05 uses all and only the four adjacent eligible complete pairs in q05_window_assertions."
+    - "The 16 D-0010 repair rows are Q05-R020 through Q05-R035; no pre-v1.1 Q05 row is removed or rewritten."
+    - "Q06-CANONICAL retains its v1.0 parsed result-set hash and Q07 retains its full v1.0 parsed result_sets hash; D-0011 intentionally changes only Q06-INCOMPLETE-ENDPOINT parameters."
+    - "The October gap-control sequence is outside the Q05 window and the immediately previous eligible complete snapshot for 2026-10-26 is 2026-10-05."
 fixture_anchors:
   - fixture_id: "NF-A01"
     source_ids: ["101020", "101021", "101022", "101023", "101024"]
@@ -206,24 +346,24 @@ fixture_anchors:
     dates: ["2026-08-03", "2026-08-10"]
     owned_expected: ["Q05-CANONICAL"]
   - fixture_id: "NF-S03"
-    source_ids: ["SC-20260818-MISSING", "SC-20260820-INCOMPLETE", "SC-20260827-COMPLETE"]
-    dates: ["2026-08-18", "2026-08-20", "2026-08-27"]
+    source_ids: ["SC-20261005-COMPLETE", "SC-20261012-MISSING", "SC-20261019-INCOMPLETE", "SC-20261026-COMPLETE", "SYN-SK-GAP_CONTROL_001"]
+    dates: ["2026-10-05", "2026-10-12", "2026-10-19", "2026-10-26"]
     owned_expected: ["Q05-INELIGIBLE-ENDPOINT", "Q06-INCOMPLETE-ENDPOINT", "TT-SNAPSHOT-COMPLETENESS"]
   - fixture_id: "NF-S04"
     source_ids: ["SYN-SK-REAPPEAR_400"]
     dates: ["2026-08-03", "2026-08-10", "2026-08-17"]
-    owned_expected: ["TT-SNAPSHOT-COMPLETENESS"]
+    owned_expected: ["Q05-CANONICAL", "TT-SNAPSHOT-COMPLETENESS"]
   - fixture_id: "NF-S05"
-    source_ids: ["SYN-SK-BASE_100", "SYN-SK-SHIFT_OLD", "SYN-SK-SHIFT_NEW", "SYN-SK-AMB_OLD", "SYN-SK-AMB_NEW_A", "SYN-SK-AMB_NEW_B", "SYN-SK-UNPAIR_OLD", "SYN-SK-UNPAIR_NEW"]
+    source_ids: ["SYN-SK-BASE_100", "SYN-SK-REMOVE_200", "SYN-SK-ADD_300", "SYN-SK-SHIFT_OLD", "SYN-SK-SHIFT_NEW", "SYN-SK-AMB_OLD", "SYN-SK-AMB_NEW_A", "SYN-SK-AMB_NEW_B", "SYN-SK-UNPAIR_OLD", "SYN-SK-UNPAIR_NEW", "SYN-SK-UNPAIR_MARKET_SHADOW"]
     dates: ["2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"]
     owned_expected: ["Q05-CANONICAL"]
   - fixture_id: "NF-S06"
-    source_ids: ["SYN-SK-PHY_BASE_700", "SYN-SK-PHY_BASE_701", "SYN-SK-MKT_COPY_702"]
-    dates: ["2026-08-31", "2026-09-07"]
+    source_ids: ["SYN-SK-PHY_BASE_700", "SYN-SK-PHY_BASE_701", "SYN-SK-MKT_COPY_702", "SYN-SK-CLOCK_BOUNDARY_001", "SYN-SK-CLOCK_SHADOW_001"]
+    dates: ["2026-08-17", "2026-08-24", "2026-08-31", "2026-09-07"]
     owned_expected: ["Q07-MARKETING", "Q07-OPERATING", "TT-BOTH-CLOCKS"]
   - fixture_id: "NF-S07"
-    source_ids: ["SYN-OP-A", "SYN-MKT-B", "SYN-OP-X", "SYN-SK-CSH_ONLY_900"]
-    dates: ["2026-08-31", "2026-09-07"]
+    source_ids: ["SYN-OP-A", "SYN-MKT-B", "SYN-OP-X", "SYN-SK-CSH_ONLY_900", "SYN-SK-MKT_ENTRY_714", "SYN-SK-MKT_EXIT_715"]
+    dates: ["2026-08-24", "2026-08-31", "2026-09-07"]
     owned_expected: ["Q06-CANONICAL", "Q07-MARKETING", "Q07-OPERATING"]
   - fixture_id: "NF-S08"
     source_ids: ["CABIN-CONSISTENT", "CABIN-MISMATCH", "CABIN-NULL", "CABIN-NEGATIVE", "CABIN-PREMIUM-GT-ECONOMY"]
@@ -1155,15 +1295,22 @@ questions:
       - result_set_id: "Q05-CANONICAL"
         parameters: {start_knowledge_date: "2026-08-03", end_knowledge_date: "2026-08-31", cadence_days: 7}
         invocation_status: "OK"
-        expected_cardinality: 19
+        expected_cardinality: 35
         rows:
           - {row_id: "Q05-R001", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-CHG-20260810-BASE-SEATS", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-BASE_100", related_schedule_key: null, field_name: "total_seats", old_value: "180", new_value: "186", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R002", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-ADD-20260810-300", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-ADD_300", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R003", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-REM-20260810-200", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-REMOVE_200", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R020", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-REM-20260810-REAPPEAR", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-REAPPEAR_400", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R021", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-UNPAIR-ADD-20260810-300", event_class: "UNPAIRED_ADDITION", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-ADD_300", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "ADDED", member_schedule_key: "SYN-SK-ADD_300", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R022", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-UNPAIR-REM-20260810-200", event_class: "UNPAIRED_REMOVAL", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-REMOVE_200", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "REMOVED", member_schedule_key: "SYN-SK-REMOVE_200", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R023", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-UNPAIR-REM-20260810-REAPPEAR", event_class: "UNPAIRED_REMOVAL", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-REAPPEAR_400", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "REMOVED", member_schedule_key: "SYN-SK-REAPPEAR_400", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R024", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-ADD-20260817-REAPPEAR", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-REAPPEAR_400", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R004", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-ADD-20260817-SHIFT-NEW", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-SHIFT_NEW", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R005", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-REM-20260817-SHIFT-OLD", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-SHIFT_OLD", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R006", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-CAND-20260817-01", event_class: "CANDIDATE_UNIQUE", exactness: "CANDIDATE", confidence: "MEDIUM", schedule_key: "SYN-SK-SHIFT_OLD", related_schedule_key: "SYN-SK-SHIFT_NEW", field_name: null, old_value: null, new_value: null, group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R025", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-UNPAIR-ADD-20260817-REAPPEAR", event_class: "UNPAIRED_ADDITION", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-REAPPEAR_400", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "ADDED", member_schedule_key: "SYN-SK-REAPPEAR_400", crosses_snapshot_gap: false}
           - {row_id: "Q05-R007", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-CHG-20260824-ADD300-FREQ", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-ADD_300", related_schedule_key: null, field_name: "weekly_frequency", old_value: "3", new_value: "4", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R026", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-CHG-20260824-CLOCK-ROUTE-OPEN", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-CLOCK_BOUNDARY_001", related_schedule_key: null, field_name: "arrival_station_code_iata", old_value: null, new_value: "PHX", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R008", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-ADD-20260824-AMB-A", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-AMB_NEW_A", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R009", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-ADD-20260824-AMB-B", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-AMB_NEW_B", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R010", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-REM-20260824-AMB-OLD", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-AMB_OLD", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
@@ -1172,12 +1319,21 @@ questions:
           - {row_id: "Q05-R013", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-AMB-20260824-01-M2", event_class: "AMBIGUOUS_GROUP_MEMBER", exactness: "AMBIGUOUS", confidence: "LOW", schedule_key: null, related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: "SYN-AMB-20260824-01", member_side: "ADDED", member_schedule_key: "SYN-SK-AMB_NEW_A", crosses_snapshot_gap: false}
           - {row_id: "Q05-R014", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-AMB-20260824-01-M3", event_class: "AMBIGUOUS_GROUP_MEMBER", exactness: "AMBIGUOUS", confidence: "LOW", schedule_key: null, related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: "SYN-AMB-20260824-01", member_side: "ADDED", member_schedule_key: "SYN-SK-AMB_NEW_B", crosses_snapshot_gap: false}
           - {row_id: "Q05-R015", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-CHG-20260831-BASE-TERMINAL", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-BASE_100", related_schedule_key: null, field_name: "departure_terminal", old_value: "T1", new_value: "T2", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R027", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-CHG-20260831-CAP-700-TERMINAL", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-PHY_BASE_700", related_schedule_key: null, field_name: "departure_terminal", old_value: "SYN-T-CAP-PRE-700", new_value: "SYN-T-CAP-LIVE-700", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R028", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-CHG-20260831-CAP-701-TERMINAL", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-PHY_BASE_701", related_schedule_key: null, field_name: "departure_terminal", old_value: "SYN-T-CAP-PRE-701", new_value: "SYN-T-CAP-LIVE-701", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R029", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-CHG-20260831-CAP-702-TERMINAL", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-MKT_COPY_702", related_schedule_key: null, field_name: "departure_terminal", old_value: "SYN-T-CAP-PRE-702", new_value: "SYN-T-CAP-LIVE-702", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R030", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-CHG-20260831-CAP-900-TERMINAL", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-CSH_ONLY_900", related_schedule_key: null, field_name: "departure_terminal", old_value: "SYN-T-CAP-PRE-900", new_value: "SYN-T-CAP-LIVE-900", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R031", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-CHG-20260831-CLOCK-ROUTE-CLOSE", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-CLOCK_BOUNDARY_001", related_schedule_key: null, field_name: "arrival_station_code_iata", old_value: "PHX", new_value: null, group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R032", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-ADD-20260831-MKT-ENTRY", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-MKT_ENTRY_714", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R016", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-ADD-20260831-UNPAIR-NEW", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-UNPAIR_NEW", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R033", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-REM-20260831-MKT-EXIT", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-MKT_EXIT_715", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R017", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-REM-20260831-UNPAIR-OLD", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-UNPAIR_OLD", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
           - {row_id: "Q05-R018", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-UNPAIR-ADD-20260831", event_class: "UNPAIRED_ADDITION", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-UNPAIR_NEW", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "ADDED", member_schedule_key: "SYN-SK-UNPAIR_NEW", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R034", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-UNPAIR-ADD-20260831-MKT-ENTRY", event_class: "UNPAIRED_ADDITION", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-MKT_ENTRY_714", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "ADDED", member_schedule_key: "SYN-SK-MKT_ENTRY_714", crosses_snapshot_gap: false}
           - {row_id: "Q05-R019", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-UNPAIR-REM-20260831", event_class: "UNPAIRED_REMOVAL", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-UNPAIR_OLD", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "REMOVED", member_schedule_key: "SYN-SK-UNPAIR_OLD", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R035", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-UNPAIR-REM-20260831-MKT-EXIT", event_class: "UNPAIRED_REMOVAL", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-MKT_EXIT_715", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "REMOVED", member_schedule_key: "SYN-SK-MKT_EXIT_715", crosses_snapshot_gap: false}
       - result_set_id: "Q05-INELIGIBLE-ENDPOINT"
-        parameters: {start_knowledge_date: "2026-08-11", end_knowledge_date: "2026-08-18", cadence_days: 7}
+        parameters: {start_knowledge_date: "2026-10-12", end_knowledge_date: "2026-10-19", cadence_days: 7}
         invocation_status: "ENDPOINT_MISSING"
         error_code: "ENDPOINT_MISSING"
         expected_cardinality: 0
@@ -1209,7 +1365,7 @@ questions:
           - {row_id: "Q06-R001", carrier_role: "marketing", airline_id: "SYN-MKT-ENTRY", route_id: "SEA->DEN", change_kind: "ENTRY", before_schedule_count: 0, after_schedule_count: 1, comparison_knowledge_date: "2026-08-24", latest_knowledge_date: "2026-08-31"}
           - {row_id: "Q06-R002", carrier_role: "marketing", airline_id: "SYN-MKT-EXIT", route_id: "BOS->MIA", change_kind: "EXIT", before_schedule_count: 1, after_schedule_count: 0, comparison_knowledge_date: "2026-08-24", latest_knowledge_date: "2026-08-31"}
       - result_set_id: "Q06-INCOMPLETE-ENDPOINT"
-        parameters: {latest_knowledge_date: "2026-08-27", comparison_knowledge_date: "2026-08-20", carrier_role: "marketing"}
+        parameters: {latest_knowledge_date: "2026-10-26", comparison_knowledge_date: "2026-10-19", carrier_role: "marketing"}
         invocation_status: "ENDPOINT_INCOMPLETE"
         error_code: "ENDPOINT_INCOMPLETE"
         expected_cardinality: 0
@@ -1455,20 +1611,22 @@ contract_truth_tables:
       - {row_id: "TT38-R04", raw_code: null, candidate_count: 0, resolution_status: "INVALID_INPUT", concept_link_created: false}
 
   - truth_table_id: "TT-SNAPSHOT-COMPLETENESS"
-    traceability: ["P0-05", "HT-12", "HT-13", "HT-15", "NF-S03", "NF-S04", "DV-16"]
+    traceability: ["P0-05", "HT-12", "HT-13", "HT-15", "NF-S03", "NF-S04", "DV-16", "D-0010", "D-0011"]
     output_schema:
       - {name: "row_id", type: "VARCHAR", nullable: false}
       - {name: "case_id", type: "VARCHAR", nullable: false}
+      - {name: "snapshot_date", type: "DATE", nullable: false}
+      - {name: "previous_eligible_complete_date", type: "DATE", nullable: true}
       - {name: "absence_derived_event_count", type: "NUMBER(38,0)", nullable: false}
       - {name: "crosses_snapshot_gap", type: "BOOLEAN", nullable: false}
       - {name: "change_observation_date", type: "DATE", nullable: true}
       - {name: "presence_outcome", type: "VARCHAR", nullable: false}
     expected_cardinality: 4
     rows:
-      - {row_id: "TT12-R01", case_id: "MISSING_SNAPSHOT", absence_derived_event_count: 0, crosses_snapshot_gap: false, change_observation_date: null, presence_outcome: "NO_INFERENCE"}
-      - {row_id: "TT12-R02", case_id: "INCOMPLETE_SNAPSHOT", absence_derived_event_count: 0, crosses_snapshot_gap: false, change_observation_date: null, presence_outcome: "NO_INFERENCE"}
-      - {row_id: "TT13-R01", case_id: "POST_GAP_EXACT_ABSENCE", absence_derived_event_count: 1, crosses_snapshot_gap: true, change_observation_date: "2026-08-27", presence_outcome: "EXACT_REMOVAL_OBSERVED_AT_ENDPOINT"}
-      - {row_id: "TT15-R01", case_id: "REAPPEARANCE", absence_derived_event_count: 1, crosses_snapshot_gap: false, change_observation_date: "2026-08-17", presence_outcome: "REAPPEARANCE_NEW_SEGMENT"}
+      - {row_id: "TT12-R01", case_id: "MISSING_SNAPSHOT", snapshot_date: "2026-10-12", previous_eligible_complete_date: "2026-10-05", absence_derived_event_count: 0, crosses_snapshot_gap: false, change_observation_date: null, presence_outcome: "NO_INFERENCE"}
+      - {row_id: "TT12-R02", case_id: "INCOMPLETE_SNAPSHOT", snapshot_date: "2026-10-19", previous_eligible_complete_date: "2026-10-05", absence_derived_event_count: 0, crosses_snapshot_gap: false, change_observation_date: null, presence_outcome: "NO_INFERENCE"}
+      - {row_id: "TT13-R01", case_id: "POST_GAP_EXACT_ABSENCE", snapshot_date: "2026-10-26", previous_eligible_complete_date: "2026-10-05", absence_derived_event_count: 1, crosses_snapshot_gap: true, change_observation_date: "2026-10-26", presence_outcome: "EXACT_REMOVAL_OBSERVED_AT_ENDPOINT"}
+      - {row_id: "TT15-R01", case_id: "REAPPEARANCE", snapshot_date: "2026-08-17", previous_eligible_complete_date: "2026-08-10", absence_derived_event_count: 1, crosses_snapshot_gap: false, change_observation_date: "2026-08-17", presence_outcome: "REAPPEARANCE_NEW_SEGMENT"}
 
   - truth_table_id: "TT-PASSENGER-UNION"
     traceability: ["P0-10", "HT-30", "NF-F01", "DV-20", "DV-21"]
@@ -1567,24 +1725,24 @@ hard_test_coverage:
   "HT-09": ["Q01-EOL-BOUNDARY", "TT-SENTINELS"]
   "HT-10": ["Q01-EOL-BOUNDARY"]
   "HT-11": ["SOURCE_CONTRACT.md", "ATTRIBUTE_AUTHORITY.md"]
-  "HT-12": ["Q05-INELIGIBLE-ENDPOINT", "TT-SNAPSHOT-COMPLETENESS"]
-  "HT-13": ["TT-SNAPSHOT-COMPLETENESS"]
+  "HT-12": ["Q05-INELIGIBLE-ENDPOINT", "TT-SNAPSHOT-COMPLETENESS", "CROSS-QUESTION-EVENT-CLOSURE-V1.1"]
+  "HT-13": ["TT-SNAPSHOT-COMPLETENESS", "D-0011"]
   "HT-14": ["Q06-INCOMPLETE-ENDPOINT"]
-  "HT-15": ["TT-SNAPSHOT-COMPLETENESS"]
+  "HT-15": ["TT-SNAPSHOT-COMPLETENESS", "Q05-R020", "Q05-R024"]
   "HT-16": ["NF-S01", "Q05-CANONICAL"]
   "HT-17": ["NF-S02"]
   "HT-18": ["Q07-MARKETING", "Q07-OPERATING"]
-  "HT-19": ["Q05-R001", "Q05-R007", "Q05-R015"]
+  "HT-19": ["Q05-R001", "Q05-R007", "Q05-R015", "Q05-R026", "Q05-R027", "Q05-R028", "Q05-R029", "Q05-R030", "Q05-R031"]
   "HT-20": ["Q05-R004", "Q05-R005", "Q05-R006"]
   "HT-21": ["Q05-R008", "Q05-R009", "Q05-R010", "Q05-R011", "Q05-R012", "Q05-R013", "Q05-R014"]
-  "HT-22": ["Q05-R016", "Q05-R017", "Q05-R018", "Q05-R019"]
+  "HT-22": ["Q05-R002", "Q05-R003", "Q05-R016", "Q05-R017", "Q05-R018", "Q05-R019", "Q05-R020", "Q05-R021", "Q05-R022", "Q05-R023", "Q05-R024", "Q05-R025", "Q05-R032", "Q05-R033", "Q05-R034", "Q05-R035", "CROSS-QUESTION-EVENT-CLOSURE-V1.1"]
   "HT-23": ["TT-BOTH-CLOCKS"]
   "HT-24": ["Q07-MISSING-KNOWLEDGE-DATE", "Q07-MISSING-OPERATING-DATE"]
   "HT-25": ["TT-UTC-OFFSETS", "TT-US-CLOCK-AUTHORITY"]
   "HT-26": ["Q06-MISSING-CARRIER-ROLE", "Q07-MISSING-CARRIER-ROLE", "Q07-MARKETING", "Q07-OPERATING"]
   "HT-27": ["Q07-OPERATING"]
   "HT-28": ["TT-CABIN-QUALITY"]
-  "HT-29": ["Q06-CANONICAL"]
+  "HT-29": ["Q06-CANONICAL", "CROSS-QUESTION-EVENT-CLOSURE-V1.1"]
   "HT-30": ["TT-PASSENGER-UNION"]
   "HT-31": ["TT-FULFILLMENT"]
   "HT-32": ["TT-FULFILLMENT"]
@@ -1597,11 +1755,11 @@ hard_test_coverage:
   "HT-39": ["Q01-UNKNOWN-GAP"]
   "HT-40": ["TT-MIXED-ENGINE-LIMIT"]
   "HT-41": ["MODEL-01 live gate"]
-  "HT-42": ["All Q01-Q08 result sets"]
+  "HT-42": ["All Q01-Q08 result sets", "CROSS-QUESTION-EVENT-CLOSURE-V1.1"]
   "HT-43": ["MODEL-02 inventory gate"]
   "HT-44": ["NF-E01 timing metadata"]
   "HT-45": ["Claim scan over release artifacts"]
   "HT-46": ["Q01", "Q02", "Q03", "Q04"]
   "HT-47": ["All catalog_id and typed parameters"]
   "HT-48": ["Q01-INVALID-AIRCRAFT-ID", "Q06-INVALID-DATE", "Q06-MISSING-CARRIER-ROLE", "Q07-MISSING-CARRIER-ROLE", "Q07-MISSING-KNOWLEDGE-DATE", "Q07-MISSING-OPERATING-DATE", "TT-MIXED-ENGINE-LIMIT"]
-  "HT-49": ["Q05 labels", "Q08 plan/actual fields"]
+  "HT-49": ["Q05 exact/candidate/ambiguous/unpaired labels", "CROSS-QUESTION-EVENT-CLOSURE-V1.1", "Q08 plan/actual fields"]

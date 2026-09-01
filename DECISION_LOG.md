@@ -221,3 +221,82 @@ entry with a new entry rather than editing its historical conclusion.
   through HT-38, HT-42, HT-45, HT-49, all eight complete-result gates, and confidentiality/claim
   scans. No SPEC-01/SPEC-02 semantic change is needed unless country classification is added.
 - **Status:** accepted for this release.
+
+## D-0010 — Shared schedule universe and Q05 manifest supersession
+
+- **Date:** 2026-09-01
+- **Trigger:** DATA-01 constructibility gate
+- **Question:** How should the frozen unfiltered Q05 schedule-change answer reconcile with schedule
+  facts required by NF-S04, Q06 market entry/exit, Q07 capacity, and the both-clock boundary fixture
+  in the same source dataset?
+- **Alternatives:** silently split fixtures into separate source universes; add an uncontracted Q05
+  cohort filter; preserve one shared source universe and supersede the internally inconsistent
+  expected manifest before generator implementation.
+- **Evidence:** Q05 compares every schedule key across complete snapshots on 2026-08-03, 08-10,
+  08-17, 08-24, and 08-31. NF-S04 requires a key to disappear and reappear on those endpoints. Q06
+  requires one marketing market to be absent/present and another present/absent on 08-24 versus
+  08-31. Four Q07 schedules must open target knowledge segments on 08-31 without creating Q06 market
+  entries, and `TT-BOTH-CLOCKS` requires a target segment `[2026-08-24, 2026-08-31)`. P0-07 also
+  requires every exact addition/removal without an eligible partner to retain explicit unpaired
+  evidence. The v1.0 Q05 19-row set omitted these forced facts and even omitted unpaired evidence for
+  its own ordinary addition/removal.
+- **Review:** DATA-01 produced a per-key contradiction witness. Independent reviewer
+  `/root/data01_preflight` classified it Sev1 and recomputed the minimal coherent repair: ten forced
+  exact events plus six forced unpaired events, taking Q05 from 19 to 35 rows. The reviewer rejected
+  a cohort filter because no such source field or typed query parameter exists and it would exclude
+  NF-S04 despite Q05 traceability.
+- **Decision:** Preserve one shared schedule source universe and the unfiltered Q05 workload.
+  Supersede `EXPECTED_ANSWERS.yaml` v1.0.0 with reviewed v1.1.0 before DATA-01 resumes. Add exactly:
+  unpaired evidence for the existing ordinary addition/removal; NF-S04 exact disappearance,
+  reappearance, and their unpaired evidence; Q06 exact market-entry addition, market-exit removal,
+  and their unpaired evidence; four key-preserving 08-31 content changes that open the Q07 target
+  capacity states while keeping their market identities present at both Q06 endpoints; and two
+  key-preserving changes that open and close the both-clock target segment. Q06 and Q07 complete
+  result sets remain unchanged. No result may be hidden through invalid resolution, a private
+  fixture universe, or an undeclared filter.
+- **Confidence:** high; required by the frozen source grains and P0-05 through P0-08.
+- **Affected artifacts/tests:** `DEMO_QUESTIONS.md`, `EXPECTED_ANSWERS.yaml`,
+  `NEO4J_PARITY_MATRIX.md`, `build/task_reports/SPEC-03.json`, DATA-01/02 schedule fixtures, Q05/Q06/Q07
+  SQL and RAI gates, HT-13/15/17/19 through HT-29/42/49. Add a static cross-question event-closure
+  test; assert Q05 exactly 35 rows, Q06 exactly two rows, Q07 marketing/operating sets unchanged,
+  and exactly one unpaired row for every exact addition/removal without a unique or ambiguous
+  candidate classification.
+- **Rollback:** Only a separately reviewed customer requirement may introduce a typed Q05 cohort
+  parameter and corresponding parity limitation. That change must supersede the catalog/manifest,
+  rerun the same event-closure and complete-result gates, and remain visible in every interface;
+  never restore v1.0 by silently filtering or splitting the source data.
+- **Status:** accepted pre-implementation correction; v1.0.0 remains in Git history and is
+  superseded by v1.1.0 after the renewed SPEC-03 adversarial gate passes.
+
+## D-0011 — Isolate the snapshot-gap fixture from Q05 cadence
+
+- **Date:** 2026-09-01
+- **Trigger:** D-0010 independent event-closure review
+- **Question:** Can the NF-S03 post-gap complete snapshot remain on 2026-08-27 while Q05 says the
+  prior eligible endpoint for its 2026-08-31 comparison is 2026-08-24?
+- **Alternatives:** redefine Q05 to ignore intervening eligible snapshots; make the post-gap snapshot
+  ineligible and lose HT-13 coverage; move the complete gap fixture outside the canonical Q05 window.
+- **Evidence:** P0-05 compares adjacent dates in the eligible complete-snapshot sequence. The v1.0
+  manifest declared 2026-08-27 present and complete, between Q05's 2026-08-24 and 2026-08-31
+  endpoints. Therefore a complete 08-31 comparison could not truthfully name 08-24 as its previous
+  eligible date. The `cadence_days` input does not authorize skipping a complete snapshot under the
+  frozen semantics.
+- **Review:** Independent reviewer `/root/data01_preflight` found the intervening snapshot while
+  recomputing D-0010 event closure and recommended moving the negative fixture rather than adding an
+  uncontracted cadence-selection rule.
+- **Decision:** Move the complete NF-S03 gap sequence outside the canonical August window. Use an
+  isolated weekly sequence with prior complete 2026-10-05, missing 2026-10-12, incomplete
+  2026-10-19, and post-gap complete 2026-10-26. Update the Q05 ineligible-endpoint scenario, Q06
+  incomplete-endpoint scenario, TT snapshot-completeness rows, source-control IDs, and traceability
+  dates consistently. The only eligible complete dates inside Q05's inclusive 2026-08-03 through
+  2026-08-31 window are exactly its five weekly endpoints.
+- **Confidence:** high; directly required by P0-05 adjacency.
+- **Affected artifacts/tests:** `EXPECTED_ANSWERS.yaml`, `DEMO_QUESTIONS.md`, SPEC-03 report,
+  DATA-01/02 snapshot calendar rows, Q05/Q06 SQL and RAI gates, NF-S03, HT-12 through HT-15/42.
+  Add an assertion enumerating the exact five eligible complete Q05 dates and proving no intervening
+  date; independently prove the October gap comparison has `crosses_snapshot_gap = true` and does
+  not alter any August result.
+- **Rollback:** Only an explicit reviewed change to P0-05 and the typed Q05 contract may introduce a
+  cadence-selected subsequence that skips complete snapshots. If adopted, supersede the manifest,
+  expose the selection rule in every interface, and rerun adjacency, gap, and complete-result tests.
+- **Status:** accepted as part of the pre-implementation v1.1.0 correction.

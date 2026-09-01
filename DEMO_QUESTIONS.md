@@ -14,7 +14,11 @@ reported honestly as `MODEL_GAP`: all required source fields and target concepts
 contracted, but `DATA-04` and `MODEL-01` must materialize/map them before execution can become
 `READY`. No question is blocked by a known data gap for its bounded fixture answer.
 
-All eight questions target the binding D-0009 synthetic U.S.-domestic core. The closed airport
+All eight questions target the binding D-0009 synthetic U.S.-domestic core. D-0010 and D-0011
+supersede only the v1.0 schedule-universe construction: manifest v1.1.0 uses one unfiltered source
+universe, repairs every Q05 event forced by Q06/Q07 fixtures, and moves the missing/incomplete
+snapshot control outside the August adjacency window. No Q06 canonical row or Q07 result set was
+changed. The closed airport
 whitelist is `SFO`, `LAX`, `LAS`, `SEA`, `DEN`, `ORD`, `PHX`, `BOS`, and `MIA`, with corresponding synthetic actual-source
 internal IDs `SYN-AP-*`. Public airport IATA/ICAO codes, names, and IANA time-zone names are
 geography labels only. Planned endpoints use whitelisted IATA labels; actual endpoints use the
@@ -26,6 +30,15 @@ The manifest machine-checks carrier/schedule/registration prefixes, reserved NUM
 planned-IATA versus actual-internal endpoint forms, both endpoints of every named route, U.S.
 Pacific/Mountain/Central/Eastern time-zone labels, spring-forward/fall-back offsets, a Phoenix
 non-DST control, local-to-UTC date crossings, and AP-09 non-authority.
+
+The v1.1 schedule closure is independently constructible. Its five and only five eligible complete
+Q05 dates are August 3, 10, 17, 24, and 31, 2026. Twenty-two explicitly anchored schedule keys have
+complete SS-04-through-SS-38 defaults, an explicit route-anchor-to-SS-06/10/11 field map, per-key
+overrides, presence maps, and ordered content transitions. The manifest therefore recomputes 22
+exact events and 13 separately labeled amendment
+evidence rows. Every exact presence event is machine-accounted for as unique-candidate, ambiguous,
+or exactly one unpaired row. A separate October 5/12/19/26 control freezes complete, missing,
+incomplete, and post-gap behavior without inserting an eligible date into the Q05 window.
 
 All comparisons use typed values, null-safe equality, the declared row order, and the complete result
 set. An empty result is an expected answer, not a failed query. Dates are ISO calendar dates and
@@ -168,23 +181,31 @@ installed-version live equality test adds demonstrable value.
   presence/content facts first, then separately classify conservative amendment evidence.
 - **Feasibility:** `MODEL_GAP`; SS-01 through SS-40 and SC-01 through SC-06 are contracted,
   with target exact-change and amendment-evidence concepts defined.
-- **Expected result sets:** `Q05-CANONICAL` (`Q05-R001` through `Q05-R019`) and
-  `Q05-INELIGIBLE-ENDPOINT` (zero rows with status `ENDPOINT_MISSING`).
+- **Expected result sets:** `Q05-CANONICAL` (all 35 named rows `Q05-R001` through `Q05-R035`;
+  22 exact rows plus 13 candidate/ambiguous/unpaired evidence rows) and
+  `Q05-INELIGIBLE-ENDPOINT` for `2026-10-12` through `2026-10-19` (zero rows with status
+  `ENDPOINT_MISSING`).
 - **SQL oracle shape:** one normalized event relation with comparison endpoints, class, exactness,
   confidence, schedule/member keys, optional changed field/old/new values, candidate/group ID, and
-  gap evidence. Exact add/remove rows remain even when candidate evidence exists.
+  gap evidence, computed over every schedule observation in `SYN-SCHEDULE-UNIVERSE-01`. Exact
+  add/remove rows remain even when candidate evidence exists; no question-private fixture filter is
+  permitted.
 - **RAI shape:** query `ScheduleExactChange` and `ScheduleAmendmentEvidence`, normalize to the same
-  result schema, and preserve typed labels.
+  result schema, preserve typed labels, and apply the same complete-snapshot adjacency relation to
+  the same unfiltered universe.
 - **Order:** `comparison_date`, the manifest's `Q05_event_class` rank, `event_id`, `member_side`,
   `member_schedule_key`, with null member fields last.
 - **Scoped parity claim:** matches key-preserving and key-presence workload semantics; key-changing
-  relationships are parity evidence only as explicitly labeled candidates/groups, never exact.
+  relationships are parity evidence only as explicitly labeled candidates/groups, never exact. The
+  bounded claim covers exactly the 35 independently recomputed v1.1 rows.
 - **Snowflake differentiation:** deterministic snapshot control, lineage, SQL reconciliation, and RAI
   rules execute over the same Snowflake-resident data.
 - **Limitation:** without a stable amendment ID, non-overlapping shifts may remain unpaired and
-  candidate ambiguity cannot be resolved.
+  candidate ambiguity cannot be resolved. Q05 is an unfiltered demonstration universe, not a
+  production completeness or performance claim.
 - **Traceability:** P0-05 through P0-08/P0-15; HT-12 through HT-22/42/49; DV-13 through DV-19,
-  DV-34 through DV-37/DV-43; NF-S01 through NF-S05.
+  DV-34 through DV-37/DV-43; NF-S01 through NF-S05; D-0010/D-0011;
+  `CROSS-QUESTION-EVENT-CLOSURE-V1.1`.
 
 ## Q06 — Compare market entries and exits seven days apart
 
@@ -197,20 +218,25 @@ installed-version live equality test adds demonstrable value.
 - **Feasibility:** `MODEL_GAP`; snapshot, route, airline-resolution, and route-state inputs are
   contracted. Exact carrier resolution is required.
 - **Expected result sets:** `Q06-CANONICAL` (`Q06-R001`, `Q06-R002`),
-  `Q06-INCOMPLETE-ENDPOINT` (zero rows with status `ENDPOINT_INCOMPLETE`), and
+  `Q06-INCOMPLETE-ENDPOINT` for latest `2026-10-26` versus incomplete `2026-10-19` (zero rows with
+  status `ENDPOINT_INCOMPLETE`), and
   `Q06-MISSING-CARRIER-ROLE` plus `Q06-INVALID-DATE` (typed validation errors, zero rows).
 - **SQL oracle shape:** endpoint eligibility status plus complete set difference grouped by exact
-  carrier-role airline and directional route; return before/after key counts and change kind.
+  carrier-role airline and directional route over the same unfiltered schedule universe; return
+  before/after key counts and change kind.
 - **RAI shape:** the same endpoint-filtered classification over RouteState and labeled carrier links.
 - **Order:** `change_kind` (`ENTRY` before `EXIT`), `airline_id`, `route_id`.
 - **Scoped parity claim:** proves the supplied exact seven-day market comparison at the contracted
-  market grain, with incomplete endpoints refused rather than substituted.
+  market grain, with incomplete endpoints refused rather than substituted. D-0010's market-entry
+  addition and market-exit removal are both also visible as Q05 exact/unpaired evidence, while
+  stable market shadows prevent unrelated zero-crossings.
 - **Snowflake differentiation:** completeness control and governance are visible beside semantic
   classifications and SQL evidence.
 - **Limitation:** unresolved or ambiguous airline codes cannot yield exact airline-level markets;
   the query says when knowledge changed, not which service operates on another date.
 - **Traceability:** P0-05/P0-08/P0-09/P0-12/P0-15; HT-12/14/26/29/38/48;
-  DV-10 through DV-16/DV-29/30; NF-S03/S04/S06/S07/X01.
+  DV-10 through DV-16/DV-29/30; NF-S03/S04/S06/S07/X01; D-0010/D-0011;
+  `CROSS-QUESTION-EVENT-CLOSURE-V1.1`.
 
 ## Q07 — Compute route frequency and cabin capacity with both clocks
 
@@ -239,12 +265,16 @@ installed-version live equality test adds demonstrable value.
 - **Order:** `result_status` (`COUNTED` before unresolved), `airline_id`, `route_id`.
 - **Scoped parity claim:** proves both-clock route-state filtering, carrier-role separation,
   multi-open schedules, and conservative physical-capacity de-duplication for the named fixtures.
+  The five canonical output rows are unchanged from v1.0: four single-field terminal changes open
+  their target states at August 31, while a null→`PHX`→null clock-route transition and an
+  operating-ineligible shadow preserve the separate both-clock truth table without adding Q07 rows.
 - **Snowflake differentiation:** governed raw capacity, data-quality flags, SQL validation, semantic
   rules, and agent-ready typed parameters remain in one platform.
 - **Limitation:** codeshare-only physical service without a stable service-group ID is visibly
   unresolved and excluded; synthetic scale does not support performance or cost claims.
 - **Traceability:** P0-05/P0-06/P0-08/P0-09/P0-12/P0-15; HT-18/23 through HT-29/38/48;
-  DV-10 through DV-15/DV-26 through DV-31/DV-47 through DV-51; NF-S06 through NF-S10/X01.
+  DV-10 through DV-15/DV-26 through DV-31/DV-47 through DV-51; NF-S06 through NF-S10/X01;
+  D-0010; `CROSS-QUESTION-EVENT-CLOSURE-V1.1`.
 
 ## Q08 — Reconstruct and enrich an actual aircraft rotation
 

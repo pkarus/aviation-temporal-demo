@@ -1,8 +1,8 @@
 {
   "task_id": "SPEC-03",
   "status": "passed",
-  "completed_at_utc": "2026-09-01T18:07:11Z",
-  "scope": "Freeze the eight demo questions, independent expected-result manifest, and bounded Neo4j-to-RAI parity claims before DATA-01, SQL-oracle, ontology, or query implementation.",
+  "completed_at_utc": "2026-09-01T18:38:08Z",
+  "scope": "Freeze the eight demo questions, independent expected-result manifest, and bounded Neo4j-to-RAI parity claims before DATA-01, SQL-oracle, ontology, or query implementation; under D-0010/D-0011, supersede the constructibility-defective v1.0 schedule universe with an independently recomputable v1.1 one-universe closure.",
   "dependencies": {
     "SPEC-01": "green",
     "SPEC-02": "green"
@@ -45,9 +45,9 @@
   ],
   "orchestrator_owned_change_observed": {
     "file": "DECISION_LOG.md",
-    "change": "The primary orchestrator appended accepted D-0009 after an independent U.S.-scope review; SPEC-03 reread and bound all artifacts to the final entry.",
+    "change": "The primary orchestrator appended accepted D-0009, D-0010, and D-0011 after independent reviews; SPEC-03 reread and bound all artifacts to those append-only entries. D-0010 requires the one-universe Q05 event closure; D-0011 moves the gap-control sequence to October so August adjacency remains exact.",
     "modified_by_spec_03_agent": false,
-    "final_sha256": "0e14dbe5319b2737c08d198931c03fcfc790ec7e02d3d59299eceb836a5c4df5"
+    "final_sha256": "79d3a6d82f9e72fc90793535bdf3ee59aa06616828b8c0f485b712934e4c887a"
   },
   "question_catalog": [
     {"question_id": "Q01", "catalog_id": "aircraft_as_of", "title": "Reconstruct an aircraft as of a date", "classification": "rules: derivation / validation", "feasibility": "MODEL_GAP"},
@@ -60,15 +60,15 @@
     {"question_id": "Q08", "catalog_id": "actual_rotation_enriched", "title": "Reconstruct and enrich an actual aircraft rotation", "classification": "rules: validation / derivation", "feasibility": "MODEL_GAP"}
   ],
   "manifest": {
-    "schema_version": "1.0.0",
-    "manifest_id": "aviation-temporal-spec03-us-synthetic-v1",
+    "schema_version": "1.1.0",
+    "manifest_id": "aviation-temporal-spec03-us-synthetic-v1.1",
     "freeze_status": "FROZEN_BEFORE_DATA_AND_QUERY_IMPLEMENTATION",
     "questions": 8,
     "question_result_sets": 24,
-    "question_rows": 182,
+    "question_rows": 198,
     "contract_truth_tables": 11,
     "truth_table_rows": 55,
-    "total_expected_rows": 237,
+    "total_expected_rows": 253,
     "fixture_anchors": 22,
     "hard_tests_mapped": 49,
     "airport_whitelist_entries": 9,
@@ -76,26 +76,37 @@
     "literal_scalar_types_and_nulls_frozen": true,
     "row_order_and_null_order_frozen": true,
     "empty_and_parameter_error_results_frozen": true,
-    "independent_of_later_generators_or_queries": true
+    "independent_of_later_generators_or_queries": true,
+    "shared_schedule_universe": "SYN-SCHEDULE-UNIVERSE-01",
+    "anchored_schedule_routes": 22,
+    "schedule_source_anchors": 22,
+    "q05_canonical_rows": 35,
+    "q05_exact_rows": 22,
+    "q05_evidence_rows": 13,
+    "q05_adjacent_pair_counts": [7, 5, 9, 14],
+    "q06_canonical_rows": 2,
+    "q07_canonical_rows": 5,
+    "cross_question_event_closure": true,
+    "explicit_route_anchor_ss06_ss10_ss11_mapping": true
   },
   "artifact_summary": {
     "DEMO_QUESTIONS.md": {
-      "lines": 291,
-      "bytes": 21796,
-      "sha256": "2588348309e112b33c5aff121980faacbdc0528bf13227b64056f7c7efbdf55d",
-      "evidence": "Eight questions with deterministic parameters, reasoner classification, feasibility, complete result-set references, SQL and RAI shapes, declared order, bounded parity claim, Snowflake differentiation, limitations, and P0/HT/DV/NF traceability."
+      "lines": 321,
+      "bytes": 24079,
+      "sha256": "84fdd60efb8626df7180579a453ccf2eea4f2114124847921edf0b69d343c469",
+      "evidence": "Eight questions with deterministic parameters, reasoner classification, feasibility, complete result-set references, SQL and RAI shapes, declared order, bounded parity claim, Snowflake differentiation, limitations, and P0/HT/DV/NF/D-0010/D-0011 traceability; Q05-Q07 explicitly share one unfiltered source universe."
     },
     "EXPECTED_ANSWERS.yaml": {
-      "lines": 1607,
-      "bytes": 113451,
-      "sha256": "31554d98a52c8713277f8462ff9a6dbda3fd389bed86d56a8f37855d5a6a235a",
-      "evidence": "Parseable typed manifest with complete rows/cardinalities, empty/error outcomes, ordering, truth tables, 22 fixture anchors, HT-01 through HT-49, and D-0008/D-0009 clock/geography controls."
+      "lines": 1765,
+      "bytes": 141893,
+      "sha256": "feaad78afa8346826b54dcf6e82b69bf72c5539bfec43632f70cb4342c0cdf19",
+      "evidence": "Parseable typed v1.1 manifest with 253 complete rows, 2,107 typed fields, empty/error outcomes, ordering, 22 fixture anchors, HT-01 through HT-49, a complete SS-04..SS-38 source construction with explicit SS-06/10/11 mapping, and a machine-checkable 35-row cross-question event closure."
     },
     "NEO4J_PARITY_MATRIX.md": {
-      "lines": 86,
-      "bytes": 12508,
-      "sha256": "ba9298978586fc3105729fb2817ef691a4dcffa8bb906e332241eef8ede9529f",
-      "evidence": "Eight bounded workload mappings, evidence-state machine, allowed Snowflake-native differentiation, required limitations, and prohibited universal/performance/cost/security claims."
+      "lines": 94,
+      "bytes": 13669,
+      "sha256": "6d5ea05116c7386bff96f1d634c339d5ab9a7b4184911c85190c201c2d6e9218",
+      "evidence": "Eight bounded workload mappings, an explicit EVENT_CLOSED evidence state, allowed Snowflake-native differentiation, required limitations, and prohibited universal/performance/cost/security claims."
     }
   },
   "semantic_and_scope_evidence": {
@@ -113,6 +124,21 @@
     "mixed_engine_set_not_fabricated": true,
     "rotation_baseline_is_ordinary_self_reference": true,
     "optimization_or_prediction_introduced": false,
+    "schedule_event_closure": {
+      "decisions": ["D-0010", "D-0011"],
+      "source_universe_id": "SYN-SCHEDULE-UNIVERSE-01",
+      "one_unfiltered_universe": true,
+      "eligible_august_dates": ["2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"],
+      "q05_exact_plus_evidence": "22 + 13 = 35",
+      "exact_presence_closure": "13 exact presence events = 8 unpaired + 2 unique-candidate members + 3 ambiguous-group members",
+      "q06_zero_crossings": ["ENTRY SYN-MKT-ENTRY SEA->DEN 0->1", "EXIT SYN-MKT-EXIT BOS->MIA 1->0"],
+      "q06_canonical_v1_0_and_v1_1_sha256": "8513a82b4b666032fb3c4136830d96cefa924e61aeb6c573b2a8f20f38a8e227",
+      "q06_full_v1_1_sha256": "5203cb15e9971b3df73ae1c3b0b57b1b77dc0a645e148cc5968bade0ea9ef232",
+      "q07_full_v1_0_and_v1_1_sha256": "252a18496a59cc871dbe019ad7b2ac79674310b44435602b215d7c46b8091f2f",
+      "clock_construction": "same-key SS-11 null->PHX->null plus same-market shadow operating-ineligible on 2026-09-07",
+      "october_gap_control": "2026-10-05 complete, 10-12 missing, 10-19 incomplete, 10-26 complete; prior eligible for 10-26 is 10-05",
+      "route_anchor_mapping": "schedule_key lookup maps flight_number/planned_origin_iata/planned_destination_iata to SS-06/SS-10/SS-11"
+    },
     "us_scope": {
       "policy": "D-0009 synthetic U.S.-domestic core; public airport labels only and no ontology-derived country/domestic classification.",
       "whitelist_iata": ["SFO", "LAX", "LAS", "SEA", "DEN", "ORD", "PHX", "BOS", "MIA"],
@@ -124,83 +150,86 @@
     }
   },
   "commands": [
-    "Read BRIEF.md, ADVERSARIAL_REVIEW.md, TASK_GRAPH.md, DECISION_LOG.md, the SPEC-03 task definition/report state, and ORCHESTRATOR_PROMPT.md completely in the AGENTS.md first-action order.",
+    "Read BRIEF.md, ADVERSARIAL_REVIEW.md, TASK_GRAPH.md, DECISION_LOG.md including D-0010/D-0011, the SPEC-03 definition/report, and ORCHESTRATOR_PROMPT.md completely in AGENTS.md first-action order.",
     "Read /Users/piotrkraus/.codex/plugins/cache/relationalai/rai/3.1.0/skills/rai-discovery/SKILL.md completely, followed only by references/rules.md and references/graph.md.",
-    "Read SEMANTIC_DECISIONS.md, SOURCE_CONTRACT.md, ATTRIBUTE_AUTHORITY.md, and NEO4J_RAI_MAPPING.md completely as frozen authority.",
-    "python3 - <<'PY' [PyYAML exact parameter/output schema, cardinality, row-key, unique-row-ID, Q03 month-end, HT/NF inventory, endpoint namespace, clock, fulfillment, Q07 parameter, and Q08 anomaly assertions] PY",
-    "python3 - <<'PY' [typed scalar/null validator for every one of 1843 expected row fields] PY",
-    "python3 - <<'PY' [declared result ordering and default truth-table row_id ordering validator] PY",
-    "! rg -n '/Users/|NDSOEBE|AJB85638|RAI_SALES_ENGINEERING|CONFIDENTIAL|Confidential|[0-9][[:space:]]+(million|billion)|[0-9]+[MmBb][+ ]|TODO|TBD|FIXME|PLACEHOLDER' DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md",
+    "Read SEMANTIC_DECISIONS.md, SOURCE_CONTRACT.md, ATTRIBUTE_AUTHORITY.md, and NEO4J_RAI_MAPPING.md as frozen authority.",
+    "python3 - <<'PY' [parse v1.1 YAML; validate all declared schemas/cardinalities, 2,107 literal scalar types, 253 unique row IDs, 8 questions, 24 result sets, 198 question rows, 11 truth tables/55 rows, HT-01..49, and 22 NF anchors] PY",
+    "python3 - <<'PY' [materialize all 22 source anchors from common SS-04..SS-38, anchored_route_field_mapping, fixed overrides, presence maps, and transitions; compare derived Q05 exact rows and presence-evidence closure; derive Q06 markets; validate Q06/Q07 hashes and D-0011 adjacency] PY",
+    "python3 - <<'PY' [derive Q07 operating-date-eligible keys at knowledge 2026-08-31; assert exactly PHY_BASE_700, PHY_BASE_701, MKT_COPY_702, CSH_ONLY_900 and no target/shadow extra row] PY",
+    "python3 - <<'PY' [validate anchored_route_field_mapping: SS-01 lookup plus SS-06/SS-10/SS-11 typed mapping and 22 one-to-one joins] PY",
+    "python3 - <<'PY' [validate nine-airport U.S. scenario whitelist, 22 named schedule routes, SYN operational identity patterns, and reserved flight-number range] PY",
+    "if rg -n '/Users/|NDSOEBE|AJB85638|RAI_SALES_ENGINEERING|CONFIDENTIAL|Confidential|TODO|TBD|FIXME|PLACEHOLDER' DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md; then exit 1; else echo PASS; fi",
+    "git show HEAD:EXPECTED_ANSWERS.yaml | python3 [canonical Q06 and full Q07 HEAD/current hash comparison]",
     "git diff --check -- DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md",
     "wc -l DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md",
     "wc -c DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md",
     "shasum -a 256 DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md DECISION_LOG.md",
-    "collaboration independent read-only adversarial review by /root/spec_03/spec03_redteam",
+    "collaboration independent read-only adversarial review by /root/spec_03/spec03_v11_adversarial",
     "jq empty build/task_reports/SPEC-03.json",
-    "python3 - <<'PY' [JSON report/YAML manifest count, schema-version, status, unresolved-issue, and green-gate reconciliation] PY",
+    "python3 - <<'PY' [JSON report/YAML manifest v1.1 count, hash, status, unresolved-issue, and green-gate reconciliation] PY",
     "git diff --check -- DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md build/task_reports/SPEC-03.json",
     "shasum -a 256 DEMO_QUESTIONS.md EXPECTED_ANSWERS.yaml NEO4J_PARITY_MATRIX.md DECISION_LOG.md build/task_reports/SPEC-03.json"
   ],
   "test_evidence": [
     {
-      "name": "YAML parse, schema, cardinality, and uniqueness",
+      "name": "v1.1 YAML schema, cardinality, literal type, and uniqueness",
       "exit_code": 0,
-      "output": "8 questions; 24 result sets; 182 question rows; 11 truth tables; 55 truth rows; 237 total rows; every row exactly matches its declared schema; all cardinalities match; all row IDs are unique."
+      "output": "8 questions; 24 result sets; 198 question rows; 11 truth tables; 55 truth rows; 253 total rows; 2,107 typed fields; exact schemas/cardinalities; 253 unique row IDs; HT-01..49 and 22 NF anchors."
     },
     {
-      "name": "literal scalar, null, and order validation",
+      "name": "D-0010 one-universe event closure",
       "exit_code": 0,
-      "output": "1843 typed row fields passed; all result sets follow declared order keys/ranks/null handling; all truth tables follow the default row_id order."
+      "output": "22 exact + 13 evidence = 35 Q05 rows; adjacent-pair counts 7/5/9/14; 13 exact presence events close exactly once as 8 unpaired + 2 unique-candidate members + 3 ambiguous members; declared physical ordering passed."
     },
     {
-      "name": "Q03 independent calendar shape",
+      "name": "explicit route-anchor source mapping",
       "exit_code": 0,
-      "output": "132 ordered nonzero rows over exactly 120 distinct month ends from 2015-01-31 through 2024-12-31."
+      "output": "SS-01 schedule_key lookup and flight_number/planned_origin_iata/planned_destination_iata -> SS-06/SS-10/SS-11 mapping passed for 22 one-to-one route/source-anchor joins."
     },
     {
-      "name": "trace and fixture inventory",
+      "name": "Q06 cross-question preservation",
       "exit_code": 0,
-      "output": "HT-01 through HT-49 mapped exactly; all 22 required NF anchors present; P0/HT/DV references are within frozen defined ranges."
+      "output": "Only ENTRY SYN-MKT-ENTRY SEA->DEN 0->1 and EXIT SYN-MKT-EXIT BOS->MIA 1->0 cross zero. Protected markets stay positive. Q06 canonical HEAD/current hash is 8513a82b...; D-0011 intentionally changes only the negative-scenario full hash to 5203cb15...."
     },
     {
-      "name": "D-0009 endpoint and identity scope",
+      "name": "Q07 unchanged result sets and constructibility",
       "exit_code": 0,
-      "output": "Nine-airport whitelist is exact; every named plan route uses whitelisted IATA endpoints; every named actual route uses corresponding SYN-AP-* endpoints; aircraft display/registration/base/storage/build anchors are synthetic and whitelisted; required U.S. zone/DST/no-DST/date-crossing controls are present."
+      "output": "Exactly four source keys are operating-eligible; terminal-only changes open [2026-08-31,2026-09-07) states; clock target null->PHX->null and operating-ineligible shadow add no row; full HEAD/current hash is 252a1849...."
     },
     {
-      "name": "fulfillment negative and identity evidence",
+      "name": "D-0011 snapshot adjacency",
       "exit_code": 0,
-      "output": "Direct exact, unique heuristic, one-to-many exact, ambiguous group/members, unmatched actual, invalid key, quarantined null-key+null-ID, valid-key+null-ID DV-46 hash fallback, and diversion plan/actual preservation are separately frozen."
+      "output": "Exactly five eligible complete August endpoints; October 5 complete, 12 missing, 19 incomplete, 26 complete; October 5 is the immediate prior eligible complete endpoint for October 26 and post-gap removal crosses_snapshot_gap=true."
     },
     {
-      "name": "Q07 and Q08 recomputation",
+      "name": "unchanged frozen workloads",
       "exit_code": 0,
-      "output": "Capacity/frequency/cabin results recompute from four anchors with physical de-duplication and unresolved-only service; missing knowledge date, operating date, and role are rejected. The clean rotation and all eleven typed anomalies reconstruct from explicit source/target rows and precedence."
+      "output": "Q01-Q04/Q08 and non-schedule truth rows remain frozen; Q03 remains 132 ordered nonzero rows over exactly 120 month ends; Q08 clean rotation and eleven anomaly classes remain explicit."
     },
     {
-      "name": "confidentiality and claim scan",
+      "name": "D-0009 U.S. scenario scope and identity",
       "exit_code": 0,
-      "output": "No external path, account/customer identifier, confidentiality label, confidential scale marker, unresolved authoring marker, or prohibited universal/performance/cost claim in the three reusable artifacts."
+      "output": "Nine-airport whitelist exact; 22 named schedule routes use whitelisted endpoint labels; actual routes use SYN-AP-*; schedule/carrier identities are fictional and flight numbers are in the reserved range."
     },
     {
-      "name": "Markdown/diff hygiene",
+      "name": "confidentiality, claims, and diff hygiene",
       "exit_code": 0,
-      "output": "git diff --check passed."
+      "output": "No external path, account/customer identifier, confidentiality label, authoring marker, or positive prohibited superiority claim in reusable artifacts; git diff --check passed."
     },
     {
-      "name": "independent adversarial review",
+      "name": "renewed independent adversarial review",
       "exit_code": 0,
-      "output": "PASS on final artifact hashes; no unresolved severity-1, severity-2, or severity-3 findings."
+      "output": "PASS on final current hashes with no Sev1, Sev2, or Sev3 findings; independently recomputed Q05/Q06/Q07 and validated mapping, ordering, types, scope, D-0011, and claims."
     },
     {
       "name": "task-report reconciliation",
       "exit_code": 0,
-      "output": "JSON parses; report schema version/counts/status/unresolved-issue list and green gate reconcile exactly to the YAML manifest."
+      "output": "JSON parses; report schema version/counts/hashes/status/unresolved issues and green gate reconcile exactly to the YAML manifest and final artifacts."
     }
   ],
   "independent_review": {
-    "reviewer": "/root/spec_03/spec03_redteam",
-    "mode": "read-only; no skill; no file, Git, Snowflake, or external-state mutation",
+    "reviewer": "/root/spec_03/spec03_redteam for v1.0 and /root/spec_03/spec03_v11_adversarial for D-0010/D-0011 v1.1 supersession",
+    "mode": "read-only; no file, Git, Snowflake, or external-state mutation",
     "rounds": [
       {
         "verdict": "fail",
@@ -241,18 +270,41 @@
         },
         "resolution": "Current-hash PASS with no Sev1, Sev2, or Sev3 findings."
       }
-    ]
+    ],
+    "reopened_v1_1_review": {
+      "reviewer": "/root/spec_03/spec03_v11_adversarial",
+      "verdict": "pass",
+      "severity_findings": {"Sev1": 0, "Sev2": 0, "Sev3": 0},
+      "scope": "Independent mapping-driven recomputation of D-0010 one-universe Q05/Q06/Q07 closure and D-0011 snapshot adjacency, plus schema/type/order/U.S.-scope/confidentiality/claim review.",
+      "evidence": [
+        "Q05=22 exact+13 evidence=35; pair totals 7/5/9/14; all 13 exact presence rows closed exactly once.",
+        "Q06 has exactly the two expected zero-crossings; protected markets stay positive; canonical HEAD/current hash unchanged.",
+        "Q07 source eligibility produces exactly the four intended capacity keys and 3 marketing + 2 operating rows; full HEAD/current result-set hash unchanged.",
+        "Clock target null->PHX->null, clock shadow, terminal-only state openings, half-open knowledge intervals, inclusive operating bound, and September 7 close are mutually coherent.",
+        "D-0011 October 5/12/19/26 statuses and immediate-prior adjacency passed.",
+        "Explicit route-anchor flight_number/origin/destination mapping to SS-06/10/11 passed one-to-one for all 22 source anchors.",
+        "Final structure: 8 questions, 24 result sets, 198 question rows, 11 truth tables/55 rows, 2,107 typed fields, 253 unique row IDs, HT-01..49, 81 constructed SS-04..38 observations."
+      ],
+      "observed_hashes": {
+        "DEMO_QUESTIONS.md": "84fdd60efb8626df7180579a453ccf2eea4f2114124847921edf0b69d343c469",
+        "EXPECTED_ANSWERS.yaml": "feaad78afa8346826b54dcf6e82b69bf72c5539bfec43632f70cb4342c0cdf19",
+        "NEO4J_PARITY_MATRIX.md": "6d5ea05116c7386bff96f1d634c339d5ab9a7b4184911c85190c201c2d6e9218",
+        "DECISION_LOG.md": "79d3a6d82f9e72fc90793535bdf3ee59aa06616828b8c0f485b712934e4c887a"
+      }
+    }
   },
   "timings": {
     "timing_basis": "UTC completion and first observable artifact birth plus tool-reported wall times; unrecorded reading/reasoning time is not fabricated.",
     "first_observed_artifact_birth_at_utc": "2026-09-01T17:49:40Z",
-    "task_completed_at_utc": "2026-09-01T18:07:11Z",
-    "observable_artifact_window_seconds": 1051,
-    "final_structural_content_audit_seconds": 0.22,
-    "final_literal_type_audit_seconds": 0.21,
-    "final_confidentiality_scan_seconds": 0.03,
-    "final_diff_hygiene_seconds": 0.01,
-    "independent_review_rounds": 4
+    "task_completed_at_utc": "2026-09-01T18:38:08Z",
+    "observable_artifact_window_seconds": 2878,
+    "final_structural_content_audit_seconds": 0.30,
+    "final_literal_type_audit_seconds": 0.30,
+    "final_event_closure_audit_seconds": 0.30,
+    "final_confidentiality_scan_seconds": 0.10,
+    "final_diff_hygiene_seconds": 0.10,
+    "independent_review_rounds": 5,
+    "reopened_v1_1_review_rounds": 1
   },
   "residual_nonblocking_risks": [
     "All parity rows remain DESIGNED_NOT_YET_EXECUTED until DATA-01 and later SQL/RAI live gates equal the frozen manifest.",
@@ -273,6 +325,10 @@
     "us_synthetic_scope_and_clock_authority": true,
     "no_optimization_or_prediction": true,
     "independent_adversarial_pass": true,
+    "d_0010_one_universe_event_closure": true,
+    "d_0011_snapshot_adjacency": true,
+    "q06_canonical_and_q07_full_result_preservation": true,
+    "explicit_ss06_ss10_ss11_anchor_mapping": true,
     "structural_content_confidentiality_validation": true,
     "spec_03_gate": "green"
   }
