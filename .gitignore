@@ -6,8 +6,11 @@ __pycache__/
 .venv/
 *.egg-info/
 
-# PyRel runtime caches (regenerated on demand)
-build/
+# PyRel runtime caches (regenerated on demand). Keep orchestrator evidence.
+build/*
+!build/task_reports/
+!build/task_reports/*.json
+!build/task_reports/.gitkeep
 rai_code/manual/build/
 
 # Editor / OS

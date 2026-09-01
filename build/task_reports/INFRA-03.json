@@ -1,0 +1,20 @@
+{
+  "task_id": "INFRA-03",
+  "status": "passed",
+  "completed_on": "2026-09-01",
+  "commands": [
+    "snow sql -c rai --format JSON -f data/bootstrap_verification.sql"
+  ],
+  "changed_files": [
+    "data/bootstrap_verification.sql"
+  ],
+  "evidence": [
+    "The verification script exited with code 0.",
+    "RAI_USER, RAI_DEVELOPER, and ACCOUNTADMIN can each see PK_AVIATION_TEMPORAL through inherited role access.",
+    "The final live context was NDSOEBE / RAI_SALES_ENGINEERING_AWS_US_WEST_2, role RAI_DEMO_AVIATION_TEMPORAL, database PK_AVIATION_TEMPORAL, warehouse RAI_XS.",
+    "The demo role owns all five demo schemas and has the required RelationalAI, Cortex, PyPI, observability, Snowflake Intelligence, warehouse, task, and egress privileges."
+  ],
+  "open_issues": [
+    "Agents must use fully qualified names or an explicit USE DATABASE because the shared connection profile points at a different default database."
+  ]
+}

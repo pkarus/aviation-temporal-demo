@@ -1,82 +1,48 @@
-# RelationalAI demo template
+# Aviation temporal intelligence demo
 
-Clone this repo, point Claude Code at it, and Claude will run an interactive
-intake (5 questions), then build a full end-to-end RelationalAI demo
-against the sales-engineering Snowflake account - synthetic data, ontology,
-queries, local notebook, Snowsight notebook, Cortex Agent, runbook, and a
-demo-day pre-flight gate - without further interruption.
+This repository implements a Snowflake-native RelationalAI demonstration of temporal aircraft,
+schedule, passenger-flight, and rotation analysis. It is designed for customer data engineers and
+data scientists evaluating the supplied workloads against their current Neo4j approach.
 
-## Use
+## Start the autonomous build
 
-```bash
-git clone <this-template> my-new-demo
-cd my-new-demo
-# open in Claude Code (VSCode extension or terminal)
-# tell Claude:  "Start a new RelationalAI demo."
+Open a Codex session with this repository as its working directory:
+
+```text
+/Users/piotrkraus/rai-repos/rai-demos/aviation_temporal_demo
 ```
 
-That's it. Claude reads [CLAUDE.md](CLAUDE.md), runs [INTAKE.md](INTAKE.md),
-writes a `BRIEF.md`, and then proceeds through the locked
-[PIPELINE.md](PIPELINE.md) phase by phase. The two existing reference demos
-([supply_chain_demo](../supply_chain_demo) and
-[airplanes_demo](../airplanes_demo)) are wired up by absolute path in
-[REFERENCES.md](REFERENCES.md) - Claude copies the patterns, not the content.
+Paste the prompt in [`ORCHESTRATOR_PROMPT.md`](ORCHESTRATOR_PROMPT.md). The orchestrator reads
+[`AGENTS.md`](AGENTS.md), executes [`TASK_GRAPH.md`](TASK_GRAPH.md), dispatches independent agents,
+records reviewed choices in [`DECISION_LOG.md`](DECISION_LOG.md), and continues until the cold and
+warm end-to-end gates pass or no authorized work remains.
 
-## What you get
+Do not start from the parent `rai-demos` directory: that adds unrelated demos to the working context
+and makes file ownership and Git status ambiguous.
 
-By the end of a full run, your repo will contain:
+## Live target
 
-- `rai_code/manual/<domain>.py` - the PyRel ontology (full concepts, properties, derived relationships)
-- `rai_code/manual/demo_queries.py` - the demo questions answered as PyRel queries (rules / graph / heuristic / prescriptive / persistent rule)
-- `rai_code/manual/<domain>_demo.ipynb` - local Jupyter notebook with Plotly visualisations
-- A Snowsight notebook of the same shape, uploaded to the SE account
-- `agent/deploy.py` + `agent/queries.py` - Snowflake Intelligence (Cortex) agent deployment with chart-hint wrappers
-- `data/` - synthetic data generator + Snowflake loader (idempotent)
-- `prep_demo.py` - the 10-minute pre-flight gate that verifies the whole stack before a live demo
-- `RUNNING.html` - speaker runbook with embedded result figures
-- `<DOMAIN>_TALK_TRACK.md` + `SNOWSIGHT_DEMO.md` - local notebook and SI talk tracks
-- `HANDOFF_BRIEFING.md` - context dump for the next human or agent
-- `DEMO_QUESTIONS.md` + `DATA_DICTIONARY.md`
+- Snowflake connection: `rai`
+- Account: `NDSOEBE.RAI_SALES_ENGINEERING_AWS_US_WEST_2`
+- Database: `PK_AVIATION_TEMPORAL`
+- Role: `RAI_DEMO_AVIATION_TEMPORAL`
+- Warehouse: `RAI_XS`
 
-## Why a template
+The one-time account bootstrap is complete. All later Snowflake mutations use the demo role.
 
-The two existing demos converged on the same shape after weeks of trial and
-error. This template captures the convergence so the next demo lands in a
-day, not a week.
+## Authoritative workflow
 
-## What's pre-tuned
+`TASK_GRAPH.md` supersedes the generic inherited `PIPELINE.md`. A task is green only after its live
+success criteria pass. Task evidence lives in `build/task_reports/`; expected answers freeze before
+implementation; Snowflake writes are serialized; and the independently runnable UC1 vertical slice
+is the reduced-demo fallback.
 
-- The RelationalAI skills plugin (`rai@RelationalAI`) is pre-registered in
-  [.claude/settings.json](.claude/settings.json), so on first session start
-  Claude has all 15 `/rai-*` skills available.
-- Bash command allowlists for `snow`, `uv`, `.venv/bin/python`, `.venv/bin/rai`,
-  and read-only git are pre-approved so Claude won't interrupt mid-run.
-- File edits in the project are auto-accepted (`defaultMode: acceptEdits`).
-- Destructive operations (database drop, agent teardown, `git push`,
-  `git reset --hard`, `rm -rf`) are denied - Claude has to ask.
+The release artifacts are the standalone Python ontology, verified queries, local and Snowsight
+notebooks, curated Snowflake Intelligence agent, ontology editing lab, `RUNNING.html`, performance
+evidence, and `HANDOFF_BRIEFING.md`.
 
-## Reference demos
+## Confidentiality and claims
 
-- [supply_chain_demo](../supply_chain_demo) - 10-question supply chain demo
-  with min-cost LP and 0/1 knapsack
-- [airplanes_demo](../airplanes_demo) - 5-act EHAM A-CDM demo with rules,
-  graph, heuristic, MIP, and persistent rule
-
-Both live as sibling directories. The template's [REFERENCES.md](REFERENCES.md)
-points at specific files in each.
-
-## Requirements
-
-- A connection profile `rai` in `~/.snowflake/connections.toml` pointing at
-  the sales-engineering account (account `ajb85638`, role `RAI_DEVELOPER` or
-  `ACCOUNTADMIN`, warehouse `RAI_XS`)
-- Python 3.13 (`.python-version` pinned)
-- `uv` (`pipx install uv` if missing)
-- `snow` CLI (`uv tool install snowflake-cli` if missing)
-- The RelationalAI Native App installed on the SE Snowflake account (it is)
-
-## Notes
-
-The template is reference-only - there are no Python stubs to delete. Claude
-re-derives every file from the references each demo, parameterised on
-`BRIEF.md`.
+The source customer documents remain outside this repository. The demo can establish parity only
+for the supplied, tested workloads. It does not claim universal Neo4j replacement or extrapolate
+production performance from synthetic data.

@@ -1,0 +1,29 @@
+{
+  "task_id": "INFRA-02",
+  "status": "passed",
+  "completed_on": "2026-09-01",
+  "commands": [
+    "snow sql -c rai -f data/00_bootstrap.sql"
+  ],
+  "changed_files": [
+    "data/00_bootstrap.sql"
+  ],
+  "evidence": {
+    "demo_role": "RAI_DEMO_AVIATION_TEMPORAL",
+    "database": "PK_AVIATION_TEMPORAL",
+    "database_owner": "RAI_DEMO_AVIATION_TEMPORAL",
+    "parent_account_roles": [
+      "RAI_USER",
+      "RAI_DEVELOPER",
+      "ACCOUNTADMIN"
+    ],
+    "schemas": [
+      "SOURCE",
+      "MODEL_INPUT",
+      "VALIDATION",
+      "NOTEBOOKS",
+      "RAI_AGENT"
+    ]
+  },
+  "open_issues": []
+}

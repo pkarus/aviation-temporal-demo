@@ -1,0 +1,22 @@
+{
+  "task_id": "INFRA-01",
+  "status": "passed",
+  "completed_on": "2026-09-01",
+  "commands": [
+    "snow connection list",
+    "snow sql -c rai --query <read-only identity and prerequisite checks>"
+  ],
+  "evidence": {
+    "organization": "NDSOEBE",
+    "account": "RAI_SALES_ENGINEERING_AWS_US_WEST_2",
+    "account_locator": "AJB85638",
+    "user": "piotr.kraus@relational.ai",
+    "bootstrap_role": "ACCOUNTADMIN",
+    "warehouse": "RAI_XS",
+    "relationalai_application": "RELATIONALAI",
+    "snowflake_intelligence_schema": "SNOWFLAKE_INTELLIGENCE.AGENTS"
+  },
+  "open_issues": [
+    "The long account-named Snowflake connection profile has an invalid PAT; agents must use the verified rai profile."
+  ]
+}
