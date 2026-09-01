@@ -1,0 +1,1607 @@
+schema_version: "1.0.0"
+manifest_id: "aviation-temporal-spec03-us-synthetic-v1"
+status: "FROZEN_BEFORE_DATA_AND_QUERY_IMPLEMENTATION"
+frozen_at: "2026-09-01"
+authority:
+  source: "Hand-specified from named synthetic fixture intent"
+  independence: "No generator, Snowflake oracle, ontology, or PyRel query existed when frozen"
+  mutation_rule: "Do not edit to reconcile an implementation mismatch; use reviewed semantic supersession"
+scope:
+  geography: "Explicitly synthetic U.S.-domestic flight scenarios"
+  airport_whitelist:
+    - {airport_internal_id: "SYN-AP-SFO", iata: "SFO", icao: "KSFO", public_name_label: "San Francisco International Airport", time_zone_name: "America/Los_Angeles"}
+    - {airport_internal_id: "SYN-AP-LAX", iata: "LAX", icao: "KLAX", public_name_label: "Los Angeles International Airport", time_zone_name: "America/Los_Angeles"}
+    - {airport_internal_id: "SYN-AP-LAS", iata: "LAS", icao: "KLAS", public_name_label: "Harry Reid International Airport", time_zone_name: "America/Los_Angeles"}
+    - {airport_internal_id: "SYN-AP-SEA", iata: "SEA", icao: "KSEA", public_name_label: "Seattle-Tacoma International Airport", time_zone_name: "America/Los_Angeles"}
+    - {airport_internal_id: "SYN-AP-DEN", iata: "DEN", icao: "KDEN", public_name_label: "Denver International Airport", time_zone_name: "America/Denver"}
+    - {airport_internal_id: "SYN-AP-ORD", iata: "ORD", icao: "KORD", public_name_label: "O'Hare International Airport", time_zone_name: "America/Chicago"}
+    - {airport_internal_id: "SYN-AP-PHX", iata: "PHX", icao: "KPHX", public_name_label: "Phoenix Sky Harbor International Airport", time_zone_name: "America/Phoenix"}
+    - {airport_internal_id: "SYN-AP-BOS", iata: "BOS", icao: "KBOS", public_name_label: "Boston Logan International Airport", time_zone_name: "America/New_York"}
+    - {airport_internal_id: "SYN-AP-MIA", iata: "MIA", icao: "KMIA", public_name_label: "Miami International Airport", time_zone_name: "America/New_York"}
+  endpoint_rules:
+    - "Every named schedule/passenger route uses two IATA values from airport_whitelist."
+    - "Every named actual-flight endpoint uses the matching SYN-AP-* internal ID, never an IATA value."
+    - "No country or domestic status is derived by the ontology; U.S.-domestic is the declared synthetic scenario scope."
+  identity_patterns:
+    carrier: "^SYN-(OP|MKT)-[A-Z0-9-]+$"
+    schedule: "^SYN-SK-[A-Z0-9_-]+$"
+    registration: "^SYN-REG-[0-9]+$"
+    passenger_display: "^SYN-PAX-[A-Z0-9-]+$"
+    airport_internal: "^SYN-AP-(SFO|LAX|LAS|SEA|DEN|ORD|PHX|BOS|MIA)$"
+    aircraft_numeric_reserved_range: "1000..1999"
+    aircraft_history_numeric_reserved_range: "101000..199999"
+    actual_flight_numeric_reserved_range: "5000..8999"
+    passenger_source_numeric_reserved_range: "5000..7999"
+    schedule_and_actual_flight_number_reserved_range: "700..799"
+    itinerary_variation_numeric_reserved_range: "9000..9999"
+  numeric_namespace_assertions:
+    - "Every NUMBER-typed aircraft identity is between 1000 and 1999 and is labeled synthetic in presentation metadata."
+    - "Every NUMBER-typed aircraft-history identity is between 101000 and 199999."
+    - "Every NUMBER-typed actual/passenger source identity is between 5000 and 8999; shared IDs remain in their contracted common domain."
+    - "Every canonical schedule and actual flight number used by a golden row is between 700 and 799."
+    - "Filler ranges are disjoint and may not reuse any anchored numeric ID."
+  anchored_aircraft_identities:
+    - {aircraft_id: 1001, synthetic_display_id: "SYN-AIRCRAFT-1001", registration_number_after_first_event: "SYN-REG-1001", build_airport_iata: "SEA", base_airport_iata: "SFO", storage_airport_iata: "LAX", participation: "Q01_Q02_Q03_Q04_Q08"}
+    - {aircraft_id: 1002, synthetic_display_id: "SYN-AIRCRAFT-1002", registration_number_after_first_event: "SYN-REG-1002", build_airport_iata: "ORD", base_airport_iata: "SEA", storage_airport_iata: "DEN", participation: "Q01_Q03"}
+    - {aircraft_id: 1003, synthetic_display_id: "SYN-AIRCRAFT-1003", registration_number_after_first_event: "SYN-REG-1003", build_airport_iata: "MIA", base_airport_iata: "BOS", storage_airport_iata: "ORD", participation: "RESERVED_NOT_LOADED"}
+    - {aircraft_id: 1004, synthetic_display_id: "SYN-AIRCRAFT-1004", registration_number_after_first_event: "SYN-REG-1004", build_airport_iata: "DEN", base_airport_iata: "PHX", storage_airport_iata: "LAS", participation: "Q01_BEFORE_FIRST_EVENT"}
+    - {aircraft_id: 1005, synthetic_display_id: "SYN-AIRCRAFT-1005", registration_number_after_first_event: "SYN-REG-1005", build_airport_iata: "SEA", base_airport_iata: "ORD", storage_airport_iata: "DEN", participation: "TT_MIXED_ENGINE_LIMIT"}
+    - {aircraft_id: 1098, synthetic_display_id: "SYN-AIRCRAFT-1098", registration_number_after_first_event: "SYN-REG-1098", build_airport_iata: "SEA", base_airport_iata: "LAX", storage_airport_iata: "PHX", participation: "Q08_DIFFERENT_AIRCRAFT_TARGET"}
+    - {aircraft_id: 1099, synthetic_display_id: "SYN-AIRCRAFT-1099", registration_number_after_first_event: "SYN-REG-1099", build_airport_iata: "LAX", base_airport_iata: "SFO", storage_airport_iata: "LAS", participation: "Q08_ANOMALIES"}
+  anchored_status_events:
+    - {aircraft_history_id: 101003, aircraft_id: 1001, start_event_date: "2018-03-01", row_sequence_number: 10, lifecycle_status: "Storage"}
+    - {aircraft_history_id: 101004, aircraft_id: 1001, start_event_date: "2018-04-15", row_sequence_number: 10, lifecycle_status: "In Service"}
+    - {aircraft_history_id: 101008, aircraft_id: 1001, start_event_date: "2020-06-01", row_sequence_number: 5, lifecycle_status: "Maintenance"}
+    - {aircraft_history_id: 101009, aircraft_id: 1001, start_event_date: "2020-06-01", row_sequence_number: 10, lifecycle_status: "In Service"}
+    - {aircraft_history_id: 101010, aircraft_id: 1001, start_event_date: "2020-06-01", row_sequence_number: 20, lifecycle_status: "Storage"}
+    - {aircraft_history_id: 101011, aircraft_id: 1001, start_event_date: "2020-06-01", row_sequence_number: 30, lifecycle_status: "In Service"}
+    - {assertion: "All four 2020-06-01 status observations are retained in audit order; the final In Service observation alone is date-visible."}
+  anchored_schedule_routes:
+    - {schedule_key: "SYN-SK-BASE_100", flight_number: 700, planned_origin_iata: "SFO", planned_destination_iata: "LAX"}
+    - {schedule_key: "SYN-SK-REMOVE_200", flight_number: 701, planned_origin_iata: "SEA", planned_destination_iata: "DEN"}
+    - {schedule_key: "SYN-SK-ADD_300", flight_number: 702, planned_origin_iata: "SEA", planned_destination_iata: "DEN"}
+    - {schedule_key: "SYN-SK-SHIFT_OLD", flight_number: 703, planned_origin_iata: "LAX", planned_destination_iata: "LAS"}
+    - {schedule_key: "SYN-SK-SHIFT_NEW", flight_number: 703, planned_origin_iata: "LAX", planned_destination_iata: "LAS"}
+    - {schedule_key: "SYN-SK-AMB_OLD", flight_number: 704, planned_origin_iata: "SFO", planned_destination_iata: "SEA"}
+    - {schedule_key: "SYN-SK-AMB_NEW_A", flight_number: 704, planned_origin_iata: "SFO", planned_destination_iata: "SEA"}
+    - {schedule_key: "SYN-SK-AMB_NEW_B", flight_number: 704, planned_origin_iata: "SFO", planned_destination_iata: "SEA"}
+    - {schedule_key: "SYN-SK-UNPAIR_OLD", flight_number: 705, planned_origin_iata: "BOS", planned_destination_iata: "MIA"}
+    - {schedule_key: "SYN-SK-UNPAIR_NEW", flight_number: 706, planned_origin_iata: "SEA", planned_destination_iata: "DEN"}
+    - {schedule_key: "SYN-SK-STABLE_010", flight_number: 707, planned_origin_iata: "SFO", planned_destination_iata: "LAX"}
+    - {schedule_key: "SYN-SK-REAPPEAR_400", flight_number: 708, planned_origin_iata: "DEN", planned_destination_iata: "ORD"}
+    - {schedule_key: "SYN-SK-PHY_BASE_700", flight_number: 710, planned_origin_iata: "SFO", planned_destination_iata: "LAX"}
+    - {schedule_key: "SYN-SK-PHY_BASE_701", flight_number: 711, planned_origin_iata: "SFO", planned_destination_iata: "LAX"}
+    - {schedule_key: "SYN-SK-MKT_COPY_702", flight_number: 710, planned_origin_iata: "SFO", planned_destination_iata: "LAX"}
+    - {schedule_key: "SYN-SK-CSH_ONLY_900", flight_number: 712, planned_origin_iata: "SFO", planned_destination_iata: "SEA"}
+    - {schedule_key: "SYN-SK-CLOCK_BOUNDARY_001", flight_number: 713, planned_origin_iata: "ORD", planned_destination_iata: "PHX"}
+    - {schedule_key: "SYN-SK-MKT_ENTRY_714", flight_number: 714, planned_origin_iata: "SEA", planned_destination_iata: "DEN"}
+    - {schedule_key: "SYN-SK-MKT_EXIT_715", flight_number: 715, planned_origin_iata: "BOS", planned_destination_iata: "MIA"}
+  anchored_capacity_states:
+    - {schedule_key: "SYN-SK-PHY_BASE_700", knowledge_valid_from: "2026-08-31", knowledge_valid_to: "2026-09-07", operating_effective_date: "2026-09-01", operating_discontinue_date: "2026-09-07", monday: true, marketing_airline_id: "SYN-OP-A", operating_airline_id: "SYN-OP-A", is_codeshare: false, weekly_frequency: 7, total_seats: 180.0, first_seats: 8.0, business_seats: 20.0, premium_economy_seats: 20.0, economy_including_premium_seats: 152.0}
+    - {schedule_key: "SYN-SK-PHY_BASE_701", knowledge_valid_from: "2026-08-31", knowledge_valid_to: "2026-09-07", operating_effective_date: "2026-09-01", operating_discontinue_date: "2026-09-07", monday: true, marketing_airline_id: "SYN-OP-A", operating_airline_id: "SYN-OP-A", is_codeshare: false, weekly_frequency: 3, total_seats: 100.0, first_seats: 0.0, business_seats: 12.0, premium_economy_seats: 8.0, economy_including_premium_seats: 88.0}
+    - {schedule_key: "SYN-SK-MKT_COPY_702", knowledge_valid_from: "2026-08-31", knowledge_valid_to: "2026-09-07", operating_effective_date: "2026-09-01", operating_discontinue_date: "2026-09-07", monday: true, marketing_airline_id: "SYN-MKT-B", operating_airline_id: "SYN-OP-A", is_codeshare: true, weekly_frequency: 7, total_seats: 180.0, first_seats: 8.0, business_seats: 20.0, premium_economy_seats: 20.0, economy_including_premium_seats: 152.0}
+    - {schedule_key: "SYN-SK-CSH_ONLY_900", knowledge_valid_from: "2026-08-31", knowledge_valid_to: "2026-09-07", operating_effective_date: "2026-09-01", operating_discontinue_date: "2026-09-07", monday: true, marketing_airline_id: "SYN-MKT-X", operating_airline_id: "SYN-OP-X", is_codeshare: true, weekly_frequency: 2, total_seats: 100.0, first_seats: 0.0, business_seats: 10.0, premium_economy_seats: 5.0, economy_including_premium_seats: 90.0}
+  anchored_change_signatures:
+    - {case_id: "UNIQUE_KEY_SHIFT", marketing_airline_id: "SYN-MKT-C", flight_number: 703, planned_origin_iata: "LAX", planned_destination_iata: "LAS", removed_schedule_key: "SYN-SK-SHIFT_OLD", added_schedule_keys: ["SYN-SK-SHIFT_NEW"], removed_range: ["2026-09-01", "2026-10-31"], added_ranges: [["2026-09-08", "2026-11-07"]], expected_class: "CANDIDATE_UNIQUE"}
+    - {case_id: "AMBIGUOUS_KEY_SHIFT", marketing_airline_id: "SYN-MKT-D", flight_number: 704, planned_origin_iata: "SFO", planned_destination_iata: "SEA", removed_schedule_key: "SYN-SK-AMB_OLD", added_schedule_keys: ["SYN-SK-AMB_NEW_A", "SYN-SK-AMB_NEW_B"], removed_range: ["2026-09-01", "2026-10-31"], added_ranges: [["2026-09-08", "2026-11-07"], ["2026-09-15", "2026-11-14"]], expected_class: "AMBIGUOUS_CANDIDATE_GROUP"}
+    - {case_id: "UNPAIRED", marketing_airline_id: "SYN-MKT-E", flight_number: 705, planned_origin_iata: "BOS", planned_destination_iata: "MIA", removed_schedule_key: "SYN-SK-UNPAIR_OLD", added_schedule_keys: ["SYN-SK-UNPAIR_NEW"], removed_range: ["2026-09-01", "2026-09-30"], added_ranges: [["2026-11-01", "2026-11-30"]], expected_class: "UNPAIRED"}
+  anchored_market_presence:
+    - {schedule_key: "SYN-SK-MKT_ENTRY_714", carrier_role: "marketing", airline_id: "SYN-MKT-ENTRY", route_id: "SEA->DEN", present_2026_08_24: false, present_2026_08_31: true}
+    - {schedule_key: "SYN-SK-MKT_EXIT_715", carrier_role: "marketing", airline_id: "SYN-MKT-EXIT", route_id: "BOS->MIA", present_2026_08_24: true, present_2026_08_31: false}
+  anchored_actual_route_chain:
+    - {flight_id: 8001, flight_departure_date_local: "2026-08-31", flight_departure_date_utc: "2026-09-01", actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAX"}
+    - {flight_id: 8002, flight_departure_date_local: "2026-08-31", flight_departure_date_utc: "2026-09-01", actual_origin_internal: "SYN-AP-LAX", actual_destination_internal: "SYN-AP-LAS"}
+    - {flight_id: 8003, flight_departure_date_local: "2026-08-31", flight_departure_date_utc: "2026-09-01", actual_origin_internal: "SYN-AP-LAS", actual_destination_internal: "SYN-AP-SFO"}
+  rotation_anomaly_support:
+    cycle_reporting_rule: "Emit one CYCLE anomaly per detected cycle component, anchored at its minimum flight_id; retain every member in evidence."
+    anomaly_precedence: ["SELF_LOOP", "CYCLE", "MISSING_TARGET", "DIFFERENT_AIRCRAFT", "OUTSIDE_SELECTED_DAY", "DIVERSION_ENDPOINT_CONFLICT", "BACKWARD_TIME", "BROKEN_CONTINUITY", "CANCELLED", "MISSING_TIME", "UNKNOWN_OR_INVALID_CANCELLATION_FLAG"]
+    deliberate_absent_target_ids: [8999]
+    target_rows:
+      - {flight_id: 8103, aircraft_id: 1099, flight_departure_date_local: "2026-08-31", actual_origin_internal: "SYN-AP-LAX", actual_destination_internal: "SYN-AP-SFO", actual_departure_utc: "2026-08-31T16:00:00", actual_arrival_utc: "2026-08-31T17:30:00", is_cancelled: 0, is_diverted: 0, next_flight_id: 8102, supports: "CYCLE_COMPONENT_WITH_8102"}
+      - {flight_id: 8205, aircraft_id: 1098, flight_departure_date_local: "2026-08-31", actual_origin_internal: "SYN-AP-LAX", actual_destination_internal: "SYN-AP-LAS", actual_departure_utc: "2026-08-31T18:00:00", actual_arrival_utc: "2026-08-31T19:00:00", is_cancelled: 0, is_diverted: 0, next_flight_id: null, supports: "DIFFERENT_AIRCRAFT"}
+      - {flight_id: 8206, aircraft_id: 1099, flight_departure_date_local: "2026-09-01", actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAX", actual_departure_utc: "2026-09-01T15:00:00", actual_arrival_utc: "2026-09-01T16:30:00", is_cancelled: 0, is_diverted: 0, next_flight_id: null, supports: "OUTSIDE_SELECTED_DAY"}
+    source_overrides:
+      - {flight_id: 8107, next_flight_id: 8101, assertion: "8101 departure precedes 8107 arrival, so BACKWARD_TIME; 8101 already owns SELF_LOOP evidence"}
+      - {flight_id: 8108, next_flight_id: 8107, assertion: "8107 departs after 8108 arrives, but 8108 actual destination SYN-AP-LAX differs from 8107 actual origin SYN-AP-SFO"}
+      - {flight_id: 8109, next_flight_id: 8106, is_diverted: 1, actual_destination_internal: "SYN-AP-LAS", diverted_airport_internal: "SYN-AP-LAX", assertion: "DIVERSION_ENDPOINT_CONFLICT wins before otherwise continuous target 8106"}
+      - {flight_id: 8110, is_cancelled: 1, assertion: "CANCELLED"}
+      - {flight_id: 8111, actual_departure_utc: null, actual_arrival_utc: null, assertion: "MISSING_TIME"}
+      - {flight_id: 8112, is_cancelled: 2, assertion: "UNKNOWN_OR_INVALID_CANCELLATION_FLAG"}
+  anchored_passenger_routes:
+    - {source_token: "SYN-PH-5001", flight_number: 700, operating_date: "2026-08-31", planned_origin_iata: "SFO", planned_destination_iata: "LAX"}
+    - {source_token: "SYN-PF-6001", flight_number: 700, operating_date: "2026-08-31", planned_origin_iata: "SFO", planned_destination_iata: "LAX"}
+    - {source_token: "SYN-PF-6002", flight_number: 701, operating_date: "2026-08-31", planned_origin_iata: "LAX", planned_destination_iata: "LAS"}
+    - {source_token: "SYN-PH-5101", flight_number: 720, operating_date: "2026-08-31", planned_origin_iata: "SFO", planned_destination_iata: "LAX", canonical_passenger_token: "SYN-PAX-DIRECT-01"}
+    - {source_token: "SYN-PH-5102", flight_number: 721, operating_date: "2026-08-31", planned_origin_iata: "SFO", planned_destination_iata: "LAS", intermediate_stop_iata: "LAX", canonical_passenger_token: "SYN-PAX-STOP-01"}
+    - {source_token: "SYN-PH-5103", flight_number: 721, operating_date: "2026-08-31", planned_origin_iata: "SFO", planned_destination_iata: "LAS", intermediate_stop_iata: "LAX", canonical_passenger_token: "SYN-PAX-STOP-01"}
+    - {source_token: "SYN-PF-6101", flight_number: 722, operating_date: "2026-08-31", planned_origin_iata: "SEA", planned_destination_iata: "DEN", canonical_passenger_token: "SYN-PAX-HEUR-01"}
+    - {source_token: "SYN-PF-6102", flight_number: 723, operating_date: "2026-08-31", planned_origin_iata: "BOS", planned_destination_iata: "MIA", canonical_passenger_token: "SYN-PAX-AMB-A"}
+    - {source_token: "SYN-PF-6103", flight_number: 723, operating_date: "2026-08-31", planned_origin_iata: "ORD", planned_destination_iata: "MIA", intermediate_stop_iata: "BOS", canonical_passenger_token: "SYN-PAX-AMB-B"}
+    - {source_token: "SYN-PH-7200", flight_number: 725, operating_date: "2026-08-31", planned_origin_iata: "SFO", planned_destination_iata: "LAX", canonical_passenger_token: "SYN-PAX-DIVERSION-01", exact_actual_flight_id: 7200}
+    - {source_token: "FORWARD|SYN-DV43-VALID-KEY-NULL-ID-01", source_system: "FORWARD", stable_source_row_id: null, source_row_token_basis: "DV43_HASH_FALLBACK", dv43_fixture_token: "SYN-DV43-VALID-KEY-NULL-ID-01", flight_number: 726, operating_date: "2026-08-31", marketing_airline_id: "SYN-MKT-FUL", operating_airline_id: "SYN-OP-FUL", planned_origin_iata: "MIA", planned_destination_iata: "BOS", canonical_passenger_token: "SYN-PAX-VALID-NULL-ID-01", passenger_key_status: "VALID", quarantine_status: "NOT_QUARANTINED", expected_fulfillment_status: "UNMATCHED"}
+  anchored_fulfillment_actual_routes:
+    - {flight_id: 5101, flight_number: 720, actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAX"}
+    - {flight_id: 5102, flight_number: 721, actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAX"}
+    - {flight_id: 5103, flight_number: 721, actual_origin_internal: "SYN-AP-LAX", actual_destination_internal: "SYN-AP-LAS"}
+    - {flight_id: 7101, flight_number: 722, actual_origin_internal: "SYN-AP-SEA", actual_destination_internal: "SYN-AP-DEN"}
+    - {flight_id: 7102, flight_number: 723, actual_origin_internal: "SYN-AP-BOS", actual_destination_internal: "SYN-AP-MIA"}
+    - {flight_id: 7199, flight_number: 724, actual_origin_internal: "SYN-AP-ORD", actual_destination_internal: "SYN-AP-PHX"}
+    - {flight_id: 7200, flight_number: 725, actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAS", diverted_airport_internal: "SYN-AP-LAS"}
+  fulfillment_resolution_context:
+    marketing_airline_id: "SYN-MKT-FUL"
+    operating_airline_id: "SYN-OP-FUL"
+    airline_resolution_status: "EXACT"
+    assertion: "All NF-F02 valid passenger and actual match candidates use these resolved fictional carrier roles and operating_date 2026-08-31 unless the fixture is explicitly invalid/quarantined."
+  clock_authority_rules:
+    - "AP-09 time_zone_name is geography/conversion lineage only."
+    - "A source-expanded passenger timestamp wins over AP-09-derived interpretation."
+    - "D-0008 explicit source offsets win over AP-09-derived interpretation."
+    - "Schedule UTC TIME without date-shift evidence remains UNRESOLVED_UTC_DATE despite AP-09."
+    - "Rotation selection uses AF-06 local departure date even when AF-07 is the next UTC date."
+  identity_policy: "Airport codes/names/time zones are public geography labels only; every operational identity and fact is synthetic under the patterns or reserved numeric ranges above."
+  real_carrier_claims: false
+canonicalization:
+  yaml: "1.2"
+  null_representation: "YAML null literal"
+  string_representation: "UTF-8 quoted scalar"
+  date_representation: "Quoted ISO YYYY-MM-DD, cast to DATE before comparison"
+  time_representation: "Quoted ISO HH:MM:SS, cast to TIME before comparison"
+  timestamp_representation: "Quoted ISO YYYY-MM-DDTHH:MM:SS, cast to TIMESTAMP_NTZ before comparison"
+  schedule_change_value_string_representation: "Use SOURCE_CONTRACT field_name to recover type; VARCHAR is source text, BOOLEAN is lowercase true|false, NUMBER is base-10, FLOAT is shortest finite round-trip decimal with insignificant trailing fractional zeros removed, DATE/TIME use ISO, source null is YAML null, and presence uses literal PRESENT|ABSENT."
+  integer_representation: "Base-10 YAML integer"
+  float_representation: "Finite YAML float with decimal point"
+  boolean_representation: "YAML true or false"
+  default_truth_table_order_by: ["row_id ASC"]
+  object_rules:
+    - "Every row contains exactly the declared columns."
+    - "Missing and extra columns fail comparison."
+    - "Rows compare as a complete ordered sequence after the declared order_by."
+    - "Duplicate row_id values fail comparison."
+    - "Nulls sort last in every nullable order key."
+    - "NaN and infinities are forbidden."
+    - "Zero expected rows is a passing complete result when invocation_status is not OK or the exact answer is empty."
+    - "PARAMETER_ERROR scenarios intentionally contain a null, out-of-domain ID, or uncastable raw date input that violates parameter_schema; validation returns error_code before query execution and rows remain empty."
+  enum_sort_ranks:
+    Q05_event_class:
+      EXACT_KEY_PRESERVING_MODIFICATION: 10
+      EXACT_ADDITION: 20
+      EXACT_REMOVAL: 30
+      CANDIDATE_UNIQUE: 40
+      AMBIGUOUS_CANDIDATE_GROUP: 50
+      AMBIGUOUS_GROUP_MEMBER: 60
+      UNPAIRED_ADDITION: 70
+      UNPAIRED_REMOVAL: 80
+fixture_anchors:
+  - fixture_id: "NF-A01"
+    source_ids: ["101020", "101021", "101022", "101023", "101024"]
+    aircraft_ids: [1001]
+    dates: ["2020-06-01", "2021-02-01", "2021-03-01"]
+    owned_expected: ["Q01-CANONICAL", "Q02-CANONICAL"]
+  - fixture_id: "NF-A02"
+    source_ids: ["101003", "101004", "101008", "101009", "101010", "101011"]
+    aircraft_ids: [1001]
+    dates: ["2018-03-01", "2018-04-15", "2020-06-01"]
+    owned_expected: ["Q02-CANONICAL", "Q03-CANONICAL"]
+  - fixture_id: "NF-A03"
+    source_ids: ["101001", "101005", "101007"]
+    aircraft_ids: [1001]
+    dates: ["2015-01-01", "2019-01-01", "2021-07-01"]
+    owned_expected: ["Q01-CANONICAL", "Q03-CANONICAL", "Q04-CANONICAL", "Q08-CANONICAL"]
+  - fixture_id: "NF-A04"
+    source_ids: ["102004", "102005"]
+    aircraft_ids: [1002]
+    dates: ["2022-05-01", "2022-06-01"]
+    owned_expected: ["Q01-UNKNOWN-GAP"]
+  - fixture_id: "NF-A05"
+    source_ids: ["AM-1002", "AM-1004", "102099"]
+    aircraft_ids: [1002, 1004]
+    dates: ["2019-01-01", "2024-07-01", "9999-12-31"]
+    owned_expected: ["Q01-BEFORE-FIRST", "Q01-EOL-BOUNDARY", "TT-SENTINELS"]
+  - fixture_id: "NF-S01"
+    source_ids: ["SYN-SK-BASE_100|2026-08-03|V01", "SYN-SK-BASE_100|2026-08-03|V02", "SYN-SK-BASE_100|2026-08-03|DUP"]
+    dates: ["2026-08-03"]
+    owned_expected: ["Q05-CANONICAL"]
+  - fixture_id: "NF-S02"
+    source_ids: ["SYN-SK-STABLE_010"]
+    dates: ["2026-08-03", "2026-08-10"]
+    owned_expected: ["Q05-CANONICAL"]
+  - fixture_id: "NF-S03"
+    source_ids: ["SC-20260818-MISSING", "SC-20260820-INCOMPLETE", "SC-20260827-COMPLETE"]
+    dates: ["2026-08-18", "2026-08-20", "2026-08-27"]
+    owned_expected: ["Q05-INELIGIBLE-ENDPOINT", "Q06-INCOMPLETE-ENDPOINT", "TT-SNAPSHOT-COMPLETENESS"]
+  - fixture_id: "NF-S04"
+    source_ids: ["SYN-SK-REAPPEAR_400"]
+    dates: ["2026-08-03", "2026-08-10", "2026-08-17"]
+    owned_expected: ["TT-SNAPSHOT-COMPLETENESS"]
+  - fixture_id: "NF-S05"
+    source_ids: ["SYN-SK-BASE_100", "SYN-SK-SHIFT_OLD", "SYN-SK-SHIFT_NEW", "SYN-SK-AMB_OLD", "SYN-SK-AMB_NEW_A", "SYN-SK-AMB_NEW_B", "SYN-SK-UNPAIR_OLD", "SYN-SK-UNPAIR_NEW"]
+    dates: ["2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"]
+    owned_expected: ["Q05-CANONICAL"]
+  - fixture_id: "NF-S06"
+    source_ids: ["SYN-SK-PHY_BASE_700", "SYN-SK-PHY_BASE_701", "SYN-SK-MKT_COPY_702"]
+    dates: ["2026-08-31", "2026-09-07"]
+    owned_expected: ["Q07-MARKETING", "Q07-OPERATING", "TT-BOTH-CLOCKS"]
+  - fixture_id: "NF-S07"
+    source_ids: ["SYN-OP-A", "SYN-MKT-B", "SYN-OP-X", "SYN-SK-CSH_ONLY_900"]
+    dates: ["2026-08-31", "2026-09-07"]
+    owned_expected: ["Q06-CANONICAL", "Q07-MARKETING", "Q07-OPERATING"]
+  - fixture_id: "NF-S08"
+    source_ids: ["CABIN-CONSISTENT", "CABIN-MISMATCH", "CABIN-NULL", "CABIN-NEGATIVE", "CABIN-PREMIUM-GT-ECONOMY"]
+    owned_expected: ["TT-CABIN-QUALITY"]
+  - fixture_id: "NF-S09"
+    source_ids: ["SYN-SK-CLOCK_BOUNDARY_001"]
+    dates: ["2026-08-23", "2026-08-24", "2026-08-31", "2026-09-01", "2026-09-07"]
+    owned_expected: ["TT-BOTH-CLOCKS", "Q07-KNOWLEDGE-END-EMPTY"]
+  - fixture_id: "NF-S10"
+    source_ids: ["UTC-POSITIVE", "UTC-NEGATIVE", "UTC-ZERO", "UTC-EXPANDED", "UTC-UNRESOLVED"]
+    dates: ["2026-09-07", "2026-09-08"]
+    owned_expected: ["TT-UTC-OFFSETS"]
+  - fixture_id: "NF-F01"
+    source_ids: ["SYN-PH-5001", "SYN-PF-6001", "SYN-PF-6002"]
+    dates: ["2026-08-31"]
+    owned_expected: ["TT-PASSENGER-UNION"]
+  - fixture_id: "NF-F02"
+    source_ids: ["SYN-PH-5101", "SYN-PH-5102", "SYN-PH-5103", "SYN-PH-7200", "SYN-AF-5101", "SYN-AF-5102", "SYN-AF-5103", "SYN-AF-7101", "SYN-AF-7102", "SYN-AF-7199", "SYN-AF-7200", "SYN-PF-6101", "SYN-PF-6102", "SYN-PF-6103", "FORWARD|SYN-DV43-VALID-KEY-NULL-ID-01", "SYN-INVALID-PF-6199", "SYN-QUARANTINE-PF-HASH-01"]
+    dates: ["2026-08-31"]
+    owned_expected: ["TT-FULFILLMENT", "TT-PLAN-ACTUAL-DIVERSION"]
+  - fixture_id: "NF-R01"
+    source_ids: ["8001", "8002", "8003", "8101", "8102", "8103", "8104", "8105", "8106", "8107", "8108", "8109", "8110", "8111", "8112", "8205", "8206"]
+    deliberately_absent_source_ids: ["8999"]
+    aircraft_ids: [1001, 1098, 1099]
+    dates: ["2026-08-31", "2026-09-01"]
+    owned_expected: ["Q08-CANONICAL", "Q08-ANOMALIES"]
+  - fixture_id: "NF-R02"
+    source_ids: ["8002"]
+    aircraft_ids: [1001]
+    dates: ["2026-08-31"]
+    owned_expected: ["Q08-CANONICAL"]
+  - fixture_id: "NF-X01"
+    source_ids: ["RES-EXACT-SFO", "RES-UNRESOLVED-ZZZ", "RES-AMBIGUOUS-DUP", "RES-INVALID-NULL"]
+    owned_expected: ["TT-CODE-RESOLUTION"]
+  - fixture_id: "NF-X02"
+    source_ids: ["SYN-ENGINE-MIXED-01"]
+    aircraft_ids: [1005]
+    owned_expected: ["TT-MIXED-ENGINE-LIMIT"]
+  - fixture_id: "NF-E01"
+    source_ids: ["RUN-COLD-01", "RUN-WARM-01", "RUN-CDC-01", "RUN-REORDER-01", "RUN-RERUN-01"]
+    owned_expected: ["All query result hashes and row counts"]
+
+questions:
+  - question_id: "Q01"
+    catalog_id: "aircraft_as_of"
+    parameter_schema:
+      - {name: "aircraft_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "as_of_date", type: "DATE", nullable: false}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "aircraft_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "as_of_date", type: "DATE", nullable: false}
+      - {name: "is_complete", type: "BOOLEAN", nullable: false}
+      - {name: "aircraft_state_status", type: "VARCHAR", nullable: false}
+      - {name: "aircraft_type_status", type: "VARCHAR", nullable: false}
+      - {name: "engine_type_status", type: "VARCHAR", nullable: false}
+      - {name: "aircraft_status_status", type: "VARCHAR", nullable: false}
+      - {name: "aircraft_type_id", type: "VARCHAR", nullable: true}
+      - {name: "aircraft_type", type: "VARCHAR", nullable: true}
+      - {name: "engine_type_id", type: "VARCHAR", nullable: true}
+      - {name: "engine_type", type: "VARCHAR", nullable: true}
+      - {name: "engine_count", type: "NUMBER(38,0)", nullable: true}
+      - {name: "mixed_engine_set_complete", type: "BOOLEAN", nullable: true}
+      - {name: "lifecycle_status", type: "VARCHAR", nullable: true}
+      - {name: "registration_number", type: "VARCHAR", nullable: true}
+      - {name: "base_airport_code_iata", type: "VARCHAR", nullable: true}
+    order_by: ["aircraft_id ASC", "as_of_date ASC"]
+    result_sets:
+      - result_set_id: "Q01-CANONICAL"
+        parameters: {aircraft_id: 1001, as_of_date: "2026-08-31"}
+        invocation_status: "OK"
+        expected_cardinality: 1
+        rows:
+          - row_id: "Q01-R001"
+            aircraft_id: 1001
+            as_of_date: "2026-08-31"
+            is_complete: true
+            aircraft_state_status: "OK"
+            aircraft_type_status: "OK"
+            engine_type_status: "OK"
+            aircraft_status_status: "OK"
+            aircraft_type_id: "SYN-TYPE-B"
+            aircraft_type: "Synthetic narrowbody B"
+            engine_type_id: "SYN-ENGINE-B"
+            engine_type: "Synthetic turbofan B"
+            engine_count: 2
+            mixed_engine_set_complete: true
+            lifecycle_status: "In Service"
+            registration_number: "SYN-REG-1001"
+            base_airport_code_iata: "SFO"
+      - result_set_id: "Q01-BEFORE-FIRST"
+        parameters: {aircraft_id: 1004, as_of_date: "2019-06-30"}
+        invocation_status: "OK"
+        expected_cardinality: 1
+        rows:
+          - row_id: "Q01-R002"
+            aircraft_id: 1004
+            as_of_date: "2019-06-30"
+            is_complete: false
+            aircraft_state_status: "NO_RECORDED_STATE"
+            aircraft_type_status: "NO_RECORDED_STATE"
+            engine_type_status: "NO_RECORDED_STATE"
+            aircraft_status_status: "NO_RECORDED_STATE"
+            aircraft_type_id: null
+            aircraft_type: null
+            engine_type_id: null
+            engine_type: null
+            engine_count: null
+            mixed_engine_set_complete: null
+            lifecycle_status: null
+            registration_number: null
+            base_airport_code_iata: null
+      - result_set_id: "Q01-UNKNOWN-GAP"
+        parameters: {aircraft_id: 1002, as_of_date: "2022-05-15"}
+        invocation_status: "OK"
+        expected_cardinality: 1
+        rows:
+          - row_id: "Q01-R003"
+            aircraft_id: 1002
+            as_of_date: "2022-05-15"
+            is_complete: false
+            aircraft_state_status: "OK"
+            aircraft_type_status: "UNKNOWN_STATE"
+            engine_type_status: "UNKNOWN_STATE"
+            aircraft_status_status: "OK"
+            aircraft_type_id: null
+            aircraft_type: null
+            engine_type_id: null
+            engine_type: null
+            engine_count: null
+            mixed_engine_set_complete: null
+            lifecycle_status: "Storage"
+            registration_number: "SYN-REG-1002"
+            base_airport_code_iata: "SEA"
+      - result_set_id: "Q01-EOL-BOUNDARY"
+        parameters: {aircraft_id: 1002, as_of_date: "2024-07-01"}
+        invocation_status: "OK"
+        expected_cardinality: 1
+        rows:
+          - row_id: "Q01-R004"
+            aircraft_id: 1002
+            as_of_date: "2024-07-01"
+            is_complete: false
+            aircraft_state_status: "OUTSIDE_EXISTENCE"
+            aircraft_type_status: "OUTSIDE_EXISTENCE"
+            engine_type_status: "OUTSIDE_EXISTENCE"
+            aircraft_status_status: "OUTSIDE_EXISTENCE"
+            aircraft_type_id: null
+            aircraft_type: null
+            engine_type_id: null
+            engine_type: null
+            engine_count: null
+            mixed_engine_set_complete: null
+            lifecycle_status: null
+            registration_number: null
+            base_airport_code_iata: null
+      - result_set_id: "Q01-INVALID-AIRCRAFT-ID"
+        parameters: {aircraft_id: -1, as_of_date: "2026-08-31"}
+        invocation_status: "PARAMETER_ERROR"
+        error_code: "INVALID_AIRCRAFT_ID"
+        expected_cardinality: 0
+        rows: []
+
+  - question_id: "Q02"
+    catalog_id: "status_reversion_spells"
+    parameter_schema:
+      - {name: "aircraft_id", type: "NUMBER(38,0)", nullable: false}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "aircraft_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "storage_event_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "storage_start_date", type: "DATE", nullable: false}
+      - {name: "storage_start_sequence", type: "NUMBER(38,0)", nullable: false}
+      - {name: "return_event_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "return_date", type: "DATE", nullable: false}
+      - {name: "return_sequence", type: "NUMBER(38,0)", nullable: false}
+      - {name: "storage_days", type: "NUMBER(38,0)", nullable: false}
+      - {name: "same_day", type: "BOOLEAN", nullable: false}
+    order_by: ["storage_start_date ASC", "storage_start_sequence ASC", "storage_event_id ASC", "return_event_id ASC"]
+    result_sets:
+      - result_set_id: "Q02-CANONICAL"
+        parameters: {aircraft_id: 1001}
+        invocation_status: "OK"
+        expected_cardinality: 2
+        rows:
+          - {row_id: "Q02-R001", aircraft_id: 1001, storage_event_id: 101003, storage_start_date: "2018-03-01", storage_start_sequence: 10, return_event_id: 101004, return_date: "2018-04-15", return_sequence: 10, storage_days: 45, same_day: false}
+          - {row_id: "Q02-R002", aircraft_id: 1001, storage_event_id: 101010, storage_start_date: "2020-06-01", storage_start_sequence: 20, return_event_id: 101011, return_date: "2020-06-01", return_sequence: 30, storage_days: 0, same_day: true}
+      - result_set_id: "Q02-NO-SPELLS"
+        parameters: {aircraft_id: 1004}
+        invocation_status: "OK"
+        expected_cardinality: 0
+        rows: []
+
+  - question_id: "Q03"
+    catalog_id: "month_end_fleet_composition"
+    parameter_schema:
+      - {name: "start_month_end", type: "DATE", nullable: false}
+      - {name: "end_month_end", type: "DATE", nullable: false}
+      - {name: "status", type: "VARCHAR", nullable: false, enum: ["In Service"]}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "month_end", type: "DATE", nullable: false}
+      - {name: "aircraft_type_id", type: "VARCHAR", nullable: false}
+      - {name: "aircraft_type", type: "VARCHAR", nullable: false}
+      - {name: "in_service_aircraft_count", type: "NUMBER(38,0)", nullable: false}
+    order_by: ["month_end ASC", "aircraft_type_id ASC"]
+    result_sets:
+      - result_set_id: "Q03-CANONICAL"
+        parameters: {start_month_end: "2015-01-31", end_month_end: "2024-12-31", status: "In Service"}
+        invocation_status: "OK"
+        expected_cardinality: 132
+        expected_distinct_month_ends: 120
+        rows:
+        - row_id: "Q03-R001"
+          month_end: "2015-01-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R002"
+          month_end: "2015-02-28"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R003"
+          month_end: "2015-03-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R004"
+          month_end: "2015-04-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R005"
+          month_end: "2015-05-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R006"
+          month_end: "2015-06-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R007"
+          month_end: "2015-07-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R008"
+          month_end: "2015-08-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R009"
+          month_end: "2015-09-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R010"
+          month_end: "2015-10-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R011"
+          month_end: "2015-11-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R012"
+          month_end: "2015-12-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R013"
+          month_end: "2016-01-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R014"
+          month_end: "2016-02-29"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R015"
+          month_end: "2016-03-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R016"
+          month_end: "2016-04-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R017"
+          month_end: "2016-05-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R018"
+          month_end: "2016-06-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R019"
+          month_end: "2016-07-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R020"
+          month_end: "2016-08-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R021"
+          month_end: "2016-09-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R022"
+          month_end: "2016-10-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R023"
+          month_end: "2016-11-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R024"
+          month_end: "2016-12-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R025"
+          month_end: "2017-01-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R026"
+          month_end: "2017-02-28"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R027"
+          month_end: "2017-03-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R028"
+          month_end: "2017-04-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R029"
+          month_end: "2017-05-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R030"
+          month_end: "2017-06-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R031"
+          month_end: "2017-07-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R032"
+          month_end: "2017-08-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R033"
+          month_end: "2017-09-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R034"
+          month_end: "2017-10-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R035"
+          month_end: "2017-11-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R036"
+          month_end: "2017-12-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R037"
+          month_end: "2018-01-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R038"
+          month_end: "2018-02-28"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R039"
+          month_end: "2018-03-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R040"
+          month_end: "2018-04-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R041"
+          month_end: "2018-05-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R042"
+          month_end: "2018-06-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R043"
+          month_end: "2018-07-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R044"
+          month_end: "2018-08-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R045"
+          month_end: "2018-09-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R046"
+          month_end: "2018-10-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R047"
+          month_end: "2018-11-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R048"
+          month_end: "2018-12-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 2
+        - row_id: "Q03-R049"
+          month_end: "2019-01-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R050"
+          month_end: "2019-01-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R051"
+          month_end: "2019-02-28"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R052"
+          month_end: "2019-02-28"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R053"
+          month_end: "2019-03-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R054"
+          month_end: "2019-03-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R055"
+          month_end: "2019-04-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R056"
+          month_end: "2019-04-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R057"
+          month_end: "2019-05-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R058"
+          month_end: "2019-05-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R059"
+          month_end: "2019-06-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R060"
+          month_end: "2019-06-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R061"
+          month_end: "2019-07-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R062"
+          month_end: "2019-07-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R063"
+          month_end: "2019-08-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R064"
+          month_end: "2019-08-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R065"
+          month_end: "2019-09-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R066"
+          month_end: "2019-09-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R067"
+          month_end: "2019-10-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R068"
+          month_end: "2019-10-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R069"
+          month_end: "2019-11-30"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R070"
+          month_end: "2019-11-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R071"
+          month_end: "2019-12-31"
+          aircraft_type_id: "SYN-TYPE-A"
+          aircraft_type: "Synthetic narrowbody A"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R072"
+          month_end: "2019-12-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R073"
+          month_end: "2020-01-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R074"
+          month_end: "2020-02-29"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R075"
+          month_end: "2020-03-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R076"
+          month_end: "2020-04-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R077"
+          month_end: "2020-05-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R078"
+          month_end: "2020-06-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R079"
+          month_end: "2020-07-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R080"
+          month_end: "2020-08-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R081"
+          month_end: "2020-09-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R082"
+          month_end: "2020-10-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R083"
+          month_end: "2020-11-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R084"
+          month_end: "2020-12-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R085"
+          month_end: "2021-01-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R086"
+          month_end: "2021-02-28"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R087"
+          month_end: "2021-03-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R088"
+          month_end: "2021-04-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R089"
+          month_end: "2021-05-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R090"
+          month_end: "2021-06-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R091"
+          month_end: "2021-07-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R092"
+          month_end: "2021-08-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R093"
+          month_end: "2021-09-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R094"
+          month_end: "2021-10-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R095"
+          month_end: "2021-11-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R096"
+          month_end: "2021-12-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R097"
+          month_end: "2022-01-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R098"
+          month_end: "2022-02-28"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R099"
+          month_end: "2022-03-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R100"
+          month_end: "2022-04-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R101"
+          month_end: "2022-05-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R102"
+          month_end: "2022-06-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R103"
+          month_end: "2022-07-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R104"
+          month_end: "2022-08-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R105"
+          month_end: "2022-09-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R106"
+          month_end: "2022-10-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R107"
+          month_end: "2022-11-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R108"
+          month_end: "2022-12-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R109"
+          month_end: "2023-01-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R110"
+          month_end: "2023-02-28"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R111"
+          month_end: "2023-03-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R112"
+          month_end: "2023-04-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R113"
+          month_end: "2023-05-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R114"
+          month_end: "2023-06-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R115"
+          month_end: "2023-07-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R116"
+          month_end: "2023-08-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R117"
+          month_end: "2023-09-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R118"
+          month_end: "2023-10-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R119"
+          month_end: "2023-11-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R120"
+          month_end: "2023-12-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R121"
+          month_end: "2024-01-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R122"
+          month_end: "2024-02-29"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R123"
+          month_end: "2024-03-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R124"
+          month_end: "2024-04-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R125"
+          month_end: "2024-05-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R126"
+          month_end: "2024-06-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R127"
+          month_end: "2024-07-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R128"
+          month_end: "2024-08-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R129"
+          month_end: "2024-09-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R130"
+          month_end: "2024-10-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R131"
+          month_end: "2024-11-30"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+        - row_id: "Q03-R132"
+          month_end: "2024-12-31"
+          aircraft_type_id: "SYN-TYPE-B"
+          aircraft_type: "Synthetic narrowbody B"
+          in_service_aircraft_count: 1
+
+  - question_id: "Q04"
+    catalog_id: "type_engine_histories"
+    parameter_schema:
+      - {name: "aircraft_id", type: "NUMBER(38,0)", nullable: false}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "aircraft_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "dimension", type: "VARCHAR", nullable: false}
+      - {name: "assignment_id", type: "VARCHAR", nullable: false}
+      - {name: "valid_from", type: "DATE", nullable: false}
+      - {name: "valid_to", type: "DATE", nullable: false}
+      - {name: "definition_id", type: "VARCHAR", nullable: false}
+      - {name: "definition_label", type: "VARCHAR", nullable: false}
+      - {name: "engine_count", type: "NUMBER(38,0)", nullable: true}
+      - {name: "mixed_engine_set_complete", type: "BOOLEAN", nullable: true}
+      - {name: "previous_definition_id", type: "VARCHAR", nullable: true}
+      - {name: "is_type_change", type: "BOOLEAN", nullable: true}
+    order_by: ["dimension ASC", "valid_from ASC", "assignment_id ASC"]
+    result_sets:
+      - result_set_id: "Q04-CANONICAL"
+        parameters: {aircraft_id: 1001}
+        invocation_status: "OK"
+        expected_cardinality: 4
+        rows:
+          - {row_id: "Q04-R001", aircraft_id: 1001, dimension: "aircraft_type", assignment_id: "aircraft_type|1001|2015-01-01|101001", valid_from: "2015-01-01", valid_to: "2019-01-01", definition_id: "SYN-TYPE-A", definition_label: "Synthetic narrowbody A", engine_count: null, mixed_engine_set_complete: null, previous_definition_id: null, is_type_change: false}
+          - {row_id: "Q04-R002", aircraft_id: 1001, dimension: "aircraft_type", assignment_id: "aircraft_type|1001|2019-01-01|101005", valid_from: "2019-01-01", valid_to: "9999-01-01", definition_id: "SYN-TYPE-B", definition_label: "Synthetic narrowbody B", engine_count: null, mixed_engine_set_complete: null, previous_definition_id: "SYN-TYPE-A", is_type_change: true}
+          - {row_id: "Q04-R003", aircraft_id: 1001, dimension: "engine_type", assignment_id: "engine_type|1001|2015-01-01|101001", valid_from: "2015-01-01", valid_to: "2021-07-01", definition_id: "SYN-ENGINE-A", definition_label: "Synthetic turbofan A", engine_count: 2, mixed_engine_set_complete: true, previous_definition_id: null, is_type_change: null}
+          - {row_id: "Q04-R004", aircraft_id: 1001, dimension: "engine_type", assignment_id: "engine_type|1001|2021-07-01|101007", valid_from: "2021-07-01", valid_to: "9999-01-01", definition_id: "SYN-ENGINE-B", definition_label: "Synthetic turbofan B", engine_count: 2, mixed_engine_set_complete: true, previous_definition_id: "SYN-ENGINE-A", is_type_change: null}
+
+  - question_id: "Q05"
+    catalog_id: "schedule_four_week_changes"
+    parameter_schema:
+      - {name: "start_knowledge_date", type: "DATE", nullable: false}
+      - {name: "end_knowledge_date", type: "DATE", nullable: false}
+      - {name: "cadence_days", type: "NUMBER(38,0)", nullable: false, minimum: 1}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "comparison_date", type: "DATE", nullable: false}
+      - {name: "previous_knowledge_date", type: "DATE", nullable: false}
+      - {name: "event_id", type: "VARCHAR", nullable: false}
+      - {name: "event_class", type: "VARCHAR", nullable: false}
+      - {name: "exactness", type: "VARCHAR", nullable: false}
+      - {name: "confidence", type: "VARCHAR", nullable: false}
+      - {name: "schedule_key", type: "VARCHAR", nullable: true}
+      - {name: "related_schedule_key", type: "VARCHAR", nullable: true}
+      - {name: "field_name", type: "VARCHAR", nullable: true}
+      - {name: "old_value", type: "VARCHAR", nullable: true}
+      - {name: "new_value", type: "VARCHAR", nullable: true}
+      - {name: "group_id", type: "VARCHAR", nullable: true}
+      - {name: "member_side", type: "VARCHAR", nullable: true}
+      - {name: "member_schedule_key", type: "VARCHAR", nullable: true}
+      - {name: "crosses_snapshot_gap", type: "BOOLEAN", nullable: false}
+    order_by: ["comparison_date ASC", "Q05_event_class rank ASC", "event_id ASC", "member_side ASC NULLS LAST", "member_schedule_key ASC NULLS LAST"]
+    result_sets:
+      - result_set_id: "Q05-CANONICAL"
+        parameters: {start_knowledge_date: "2026-08-03", end_knowledge_date: "2026-08-31", cadence_days: 7}
+        invocation_status: "OK"
+        expected_cardinality: 19
+        rows:
+          - {row_id: "Q05-R001", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-CHG-20260810-BASE-SEATS", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-BASE_100", related_schedule_key: null, field_name: "total_seats", old_value: "180", new_value: "186", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R002", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-ADD-20260810-300", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-ADD_300", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R003", comparison_date: "2026-08-10", previous_knowledge_date: "2026-08-03", event_id: "SYN-REM-20260810-200", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-REMOVE_200", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R004", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-ADD-20260817-SHIFT-NEW", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-SHIFT_NEW", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R005", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-REM-20260817-SHIFT-OLD", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-SHIFT_OLD", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R006", comparison_date: "2026-08-17", previous_knowledge_date: "2026-08-10", event_id: "SYN-CAND-20260817-01", event_class: "CANDIDATE_UNIQUE", exactness: "CANDIDATE", confidence: "MEDIUM", schedule_key: "SYN-SK-SHIFT_OLD", related_schedule_key: "SYN-SK-SHIFT_NEW", field_name: null, old_value: null, new_value: null, group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R007", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-CHG-20260824-ADD300-FREQ", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-ADD_300", related_schedule_key: null, field_name: "weekly_frequency", old_value: "3", new_value: "4", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R008", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-ADD-20260824-AMB-A", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-AMB_NEW_A", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R009", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-ADD-20260824-AMB-B", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-AMB_NEW_B", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R010", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-REM-20260824-AMB-OLD", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-AMB_OLD", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R011", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-AMB-20260824-01", event_class: "AMBIGUOUS_CANDIDATE_GROUP", exactness: "AMBIGUOUS", confidence: "LOW", schedule_key: null, related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: "SYN-AMB-20260824-01", member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R012", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-AMB-20260824-01-M1", event_class: "AMBIGUOUS_GROUP_MEMBER", exactness: "AMBIGUOUS", confidence: "LOW", schedule_key: null, related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: "SYN-AMB-20260824-01", member_side: "REMOVED", member_schedule_key: "SYN-SK-AMB_OLD", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R013", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-AMB-20260824-01-M2", event_class: "AMBIGUOUS_GROUP_MEMBER", exactness: "AMBIGUOUS", confidence: "LOW", schedule_key: null, related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: "SYN-AMB-20260824-01", member_side: "ADDED", member_schedule_key: "SYN-SK-AMB_NEW_A", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R014", comparison_date: "2026-08-24", previous_knowledge_date: "2026-08-17", event_id: "SYN-AMB-20260824-01-M3", event_class: "AMBIGUOUS_GROUP_MEMBER", exactness: "AMBIGUOUS", confidence: "LOW", schedule_key: null, related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: "SYN-AMB-20260824-01", member_side: "ADDED", member_schedule_key: "SYN-SK-AMB_NEW_B", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R015", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-CHG-20260831-BASE-TERMINAL", event_class: "EXACT_KEY_PRESERVING_MODIFICATION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-BASE_100", related_schedule_key: null, field_name: "departure_terminal", old_value: "T1", new_value: "T2", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R016", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-ADD-20260831-UNPAIR-NEW", event_class: "EXACT_ADDITION", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-UNPAIR_NEW", related_schedule_key: null, field_name: "__presence__", old_value: "ABSENT", new_value: "PRESENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R017", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-REM-20260831-UNPAIR-OLD", event_class: "EXACT_REMOVAL", exactness: "EXACT", confidence: "EXACT", schedule_key: "SYN-SK-UNPAIR_OLD", related_schedule_key: null, field_name: "__presence__", old_value: "PRESENT", new_value: "ABSENT", group_id: null, member_side: null, member_schedule_key: null, crosses_snapshot_gap: false}
+          - {row_id: "Q05-R018", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-UNPAIR-ADD-20260831", event_class: "UNPAIRED_ADDITION", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-UNPAIR_NEW", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "ADDED", member_schedule_key: "SYN-SK-UNPAIR_NEW", crosses_snapshot_gap: false}
+          - {row_id: "Q05-R019", comparison_date: "2026-08-31", previous_knowledge_date: "2026-08-24", event_id: "SYN-UNPAIR-REM-20260831", event_class: "UNPAIRED_REMOVAL", exactness: "UNPAIRED", confidence: "NONE", schedule_key: "SYN-SK-UNPAIR_OLD", related_schedule_key: null, field_name: null, old_value: null, new_value: null, group_id: null, member_side: "REMOVED", member_schedule_key: "SYN-SK-UNPAIR_OLD", crosses_snapshot_gap: false}
+      - result_set_id: "Q05-INELIGIBLE-ENDPOINT"
+        parameters: {start_knowledge_date: "2026-08-11", end_knowledge_date: "2026-08-18", cadence_days: 7}
+        invocation_status: "ENDPOINT_MISSING"
+        error_code: "ENDPOINT_MISSING"
+        expected_cardinality: 0
+        rows: []
+
+  - question_id: "Q06"
+    catalog_id: "market_latest_vs_seven_days"
+    parameter_schema:
+      - {name: "latest_knowledge_date", type: "DATE", nullable: false}
+      - {name: "comparison_knowledge_date", type: "DATE", nullable: false}
+      - {name: "carrier_role", type: "VARCHAR", nullable: false, enum: ["marketing", "operating"]}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "carrier_role", type: "VARCHAR", nullable: false}
+      - {name: "airline_id", type: "VARCHAR", nullable: false}
+      - {name: "route_id", type: "VARCHAR", nullable: false}
+      - {name: "change_kind", type: "VARCHAR", nullable: false}
+      - {name: "before_schedule_count", type: "NUMBER(38,0)", nullable: false}
+      - {name: "after_schedule_count", type: "NUMBER(38,0)", nullable: false}
+      - {name: "comparison_knowledge_date", type: "DATE", nullable: false}
+      - {name: "latest_knowledge_date", type: "DATE", nullable: false}
+    order_by: ["change_kind ASC", "airline_id ASC", "route_id ASC"]
+    result_sets:
+      - result_set_id: "Q06-CANONICAL"
+        parameters: {latest_knowledge_date: "2026-08-31", comparison_knowledge_date: "2026-08-24", carrier_role: "marketing"}
+        invocation_status: "OK"
+        expected_cardinality: 2
+        rows:
+          - {row_id: "Q06-R001", carrier_role: "marketing", airline_id: "SYN-MKT-ENTRY", route_id: "SEA->DEN", change_kind: "ENTRY", before_schedule_count: 0, after_schedule_count: 1, comparison_knowledge_date: "2026-08-24", latest_knowledge_date: "2026-08-31"}
+          - {row_id: "Q06-R002", carrier_role: "marketing", airline_id: "SYN-MKT-EXIT", route_id: "BOS->MIA", change_kind: "EXIT", before_schedule_count: 1, after_schedule_count: 0, comparison_knowledge_date: "2026-08-24", latest_knowledge_date: "2026-08-31"}
+      - result_set_id: "Q06-INCOMPLETE-ENDPOINT"
+        parameters: {latest_knowledge_date: "2026-08-27", comparison_knowledge_date: "2026-08-20", carrier_role: "marketing"}
+        invocation_status: "ENDPOINT_INCOMPLETE"
+        error_code: "ENDPOINT_INCOMPLETE"
+        expected_cardinality: 0
+        rows: []
+      - result_set_id: "Q06-MISSING-CARRIER-ROLE"
+        parameters: {latest_knowledge_date: "2026-08-31", comparison_knowledge_date: "2026-08-24", carrier_role: null}
+        invocation_status: "PARAMETER_ERROR"
+        error_code: "MISSING_CARRIER_ROLE"
+        expected_cardinality: 0
+        rows: []
+      - result_set_id: "Q06-INVALID-DATE"
+        parameters: {latest_knowledge_date: "2026-02-30", comparison_knowledge_date: "2026-02-23", carrier_role: "marketing"}
+        invocation_status: "PARAMETER_ERROR"
+        error_code: "INVALID_DATE"
+        expected_cardinality: 0
+        rows: []
+
+  - question_id: "Q07"
+    catalog_id: "route_capacity_two_clocks"
+    parameter_schema:
+      - {name: "knowledge_date", type: "DATE", nullable: false}
+      - {name: "operating_date", type: "DATE", nullable: false}
+      - {name: "carrier_role", type: "VARCHAR", nullable: false, enum: ["marketing", "operating"]}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "result_status", type: "VARCHAR", nullable: false}
+      - {name: "carrier_role", type: "VARCHAR", nullable: false}
+      - {name: "airline_id", type: "VARCHAR", nullable: false}
+      - {name: "route_id", type: "VARCHAR", nullable: false}
+      - {name: "knowledge_date", type: "DATE", nullable: false}
+      - {name: "operating_date", type: "DATE", nullable: false}
+      - {name: "active_schedule_count", type: "NUMBER(38,0)", nullable: true}
+      - {name: "weekly_frequency", type: "NUMBER(38,0)", nullable: true}
+      - {name: "weekly_total_seats", type: "FLOAT", nullable: true}
+      - {name: "weekly_first_seats", type: "FLOAT", nullable: true}
+      - {name: "weekly_business_seats", type: "FLOAT", nullable: true}
+      - {name: "weekly_premium_economy_seats", type: "FLOAT", nullable: true}
+      - {name: "weekly_economy_excluding_premium_seats", type: "FLOAT", nullable: true}
+      - {name: "cabin_quality", type: "VARCHAR", nullable: false}
+      - {name: "unresolved_service_key", type: "VARCHAR", nullable: true}
+    order_by: ["result_status ASC", "airline_id ASC", "route_id ASC"]
+    result_sets:
+      - result_set_id: "Q07-MARKETING"
+        parameters: {knowledge_date: "2026-08-31", operating_date: "2026-09-07", carrier_role: "marketing"}
+        invocation_status: "OK"
+        expected_cardinality: 3
+        rows:
+          - {row_id: "Q07-R002", result_status: "COUNTED", carrier_role: "marketing", airline_id: "SYN-MKT-B", route_id: "SFO->LAX", knowledge_date: "2026-08-31", operating_date: "2026-09-07", active_schedule_count: 1, weekly_frequency: 7, weekly_total_seats: 1260.0, weekly_first_seats: 56.0, weekly_business_seats: 140.0, weekly_premium_economy_seats: 140.0, weekly_economy_excluding_premium_seats: 924.0, cabin_quality: "RECONCILED", unresolved_service_key: null}
+          - {row_id: "Q07-R005", result_status: "COUNTED", carrier_role: "marketing", airline_id: "SYN-MKT-X", route_id: "SFO->SEA", knowledge_date: "2026-08-31", operating_date: "2026-09-07", active_schedule_count: 1, weekly_frequency: 2, weekly_total_seats: 200.0, weekly_first_seats: 0.0, weekly_business_seats: 20.0, weekly_premium_economy_seats: 10.0, weekly_economy_excluding_premium_seats: 170.0, cabin_quality: "RECONCILED", unresolved_service_key: null}
+          - {row_id: "Q07-R001", result_status: "COUNTED", carrier_role: "marketing", airline_id: "SYN-OP-A", route_id: "SFO->LAX", knowledge_date: "2026-08-31", operating_date: "2026-09-07", active_schedule_count: 2, weekly_frequency: 10, weekly_total_seats: 1560.0, weekly_first_seats: 56.0, weekly_business_seats: 176.0, weekly_premium_economy_seats: 164.0, weekly_economy_excluding_premium_seats: 1164.0, cabin_quality: "RECONCILED", unresolved_service_key: null}
+      - result_set_id: "Q07-OPERATING"
+        parameters: {knowledge_date: "2026-08-31", operating_date: "2026-09-07", carrier_role: "operating"}
+        invocation_status: "OK"
+        expected_cardinality: 2
+        rows:
+          - {row_id: "Q07-R003", result_status: "COUNTED", carrier_role: "operating", airline_id: "SYN-OP-A", route_id: "SFO->LAX", knowledge_date: "2026-08-31", operating_date: "2026-09-07", active_schedule_count: 2, weekly_frequency: 10, weekly_total_seats: 1560.0, weekly_first_seats: 56.0, weekly_business_seats: 176.0, weekly_premium_economy_seats: 164.0, weekly_economy_excluding_premium_seats: 1164.0, cabin_quality: "RECONCILED", unresolved_service_key: null}
+          - {row_id: "Q07-R004", result_status: "UNRESOLVED_PHYSICAL_SERVICE", carrier_role: "operating", airline_id: "SYN-OP-X", route_id: "SFO->SEA", knowledge_date: "2026-08-31", operating_date: "2026-09-07", active_schedule_count: null, weekly_frequency: null, weekly_total_seats: null, weekly_first_seats: null, weekly_business_seats: null, weekly_premium_economy_seats: null, weekly_economy_excluding_premium_seats: null, cabin_quality: "NOT_COUNTED", unresolved_service_key: "SYN-SK-CSH_ONLY_900"}
+      - result_set_id: "Q07-KNOWLEDGE-END-EMPTY"
+        parameters: {knowledge_date: "2026-09-07", operating_date: "2026-09-07", carrier_role: "operating"}
+        invocation_status: "OK"
+        expected_cardinality: 0
+        rows: []
+      - result_set_id: "Q07-MISSING-KNOWLEDGE-DATE"
+        parameters: {knowledge_date: null, operating_date: "2026-09-07", carrier_role: "operating"}
+        invocation_status: "PARAMETER_ERROR"
+        error_code: "MISSING_KNOWLEDGE_DATE"
+        expected_cardinality: 0
+        rows: []
+      - result_set_id: "Q07-MISSING-OPERATING-DATE"
+        parameters: {knowledge_date: "2026-08-31", operating_date: null, carrier_role: "operating"}
+        invocation_status: "PARAMETER_ERROR"
+        error_code: "MISSING_OPERATING_DATE"
+        expected_cardinality: 0
+        rows: []
+      - result_set_id: "Q07-MISSING-CARRIER-ROLE"
+        parameters: {knowledge_date: "2026-08-31", operating_date: "2026-09-07", carrier_role: null}
+        invocation_status: "PARAMETER_ERROR"
+        error_code: "MISSING_CARRIER_ROLE"
+        expected_cardinality: 0
+        rows: []
+
+  - question_id: "Q08"
+    catalog_id: "actual_rotation_enriched"
+    parameter_schema:
+      - {name: "aircraft_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "flight_departure_date", type: "DATE", nullable: false}
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "row_kind", type: "VARCHAR", nullable: false}
+      - {name: "segment_id", type: "VARCHAR", nullable: false}
+      - {name: "leg_order", type: "NUMBER(38,0)", nullable: true}
+      - {name: "flight_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "actual_origin", type: "VARCHAR", nullable: true}
+      - {name: "actual_destination", type: "VARCHAR", nullable: true}
+      - {name: "actual_departure_utc", type: "TIMESTAMP_NTZ", nullable: true}
+      - {name: "actual_arrival_utc", type: "TIMESTAMP_NTZ", nullable: true}
+      - {name: "next_flight_id", type: "NUMBER(38,0)", nullable: true}
+      - {name: "link_outcome", type: "VARCHAR", nullable: false}
+      - {name: "anomaly_code", type: "VARCHAR", nullable: true}
+      - {name: "as_of_aircraft_type_id", type: "VARCHAR", nullable: true}
+      - {name: "as_of_engine_type_id", type: "VARCHAR", nullable: true}
+      - {name: "actual_source_aircraft_type", type: "VARCHAR", nullable: true}
+      - {name: "type_discrepancy", type: "BOOLEAN", nullable: true}
+    order_by: ["segment_id ASC", "row_kind DESC", "leg_order ASC NULLS LAST", "flight_id ASC", "anomaly_code ASC NULLS LAST"]
+    result_sets:
+      - result_set_id: "Q08-CANONICAL"
+        parameters: {aircraft_id: 1001, flight_departure_date: "2026-08-31"}
+        invocation_status: "OK"
+        expected_cardinality: 3
+        rows:
+          - {row_id: "Q08-R001", row_kind: "LEG", segment_id: "SYN-ROT-1001-20260831-01", leg_order: 1, flight_id: 8001, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: "2026-09-01T00:30:00", actual_arrival_utc: "2026-09-01T02:00:00", next_flight_id: 8002, link_outcome: "ACCEPTED", anomaly_code: null, as_of_aircraft_type_id: "SYN-TYPE-B", as_of_engine_type_id: "SYN-ENGINE-B", actual_source_aircraft_type: "Synthetic narrowbody B", type_discrepancy: false}
+          - {row_id: "Q08-R002", row_kind: "LEG", segment_id: "SYN-ROT-1001-20260831-01", leg_order: 2, flight_id: 8002, actual_origin: "SYN-AP-LAX", actual_destination: "SYN-AP-LAS", actual_departure_utc: "2026-09-01T02:45:00", actual_arrival_utc: "2026-09-01T04:00:00", next_flight_id: 8003, link_outcome: "ACCEPTED", anomaly_code: null, as_of_aircraft_type_id: "SYN-TYPE-B", as_of_engine_type_id: "SYN-ENGINE-B", actual_source_aircraft_type: "Synthetic narrowbody A", type_discrepancy: true}
+          - {row_id: "Q08-R003", row_kind: "LEG", segment_id: "SYN-ROT-1001-20260831-01", leg_order: 3, flight_id: 8003, actual_origin: "SYN-AP-LAS", actual_destination: "SYN-AP-SFO", actual_departure_utc: "2026-09-01T04:45:00", actual_arrival_utc: "2026-09-01T06:15:00", next_flight_id: null, link_outcome: "TERMINAL_NO_TARGET", anomaly_code: null, as_of_aircraft_type_id: "SYN-TYPE-B", as_of_engine_type_id: "SYN-ENGINE-B", actual_source_aircraft_type: "Synthetic narrowbody B", type_discrepancy: false}
+      - result_set_id: "Q08-ANOMALIES"
+        parameters: {aircraft_id: 1099, flight_departure_date: "2026-08-31"}
+        invocation_status: "OK"
+        expected_cardinality: 11
+        rows:
+          - {row_id: "Q08-R004", row_kind: "ANOMALY", segment_id: "SYN-ANOM-01", leg_order: null, flight_id: 8101, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: "2026-08-31T14:00:00", actual_arrival_utc: "2026-08-31T15:00:00", next_flight_id: 8101, link_outcome: "REJECTED", anomaly_code: "SELF_LOOP", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R005", row_kind: "ANOMALY", segment_id: "SYN-ANOM-02", leg_order: null, flight_id: 8102, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: "2026-08-31T14:00:00", actual_arrival_utc: "2026-08-31T15:00:00", next_flight_id: 8103, link_outcome: "REJECTED", anomaly_code: "CYCLE", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R006", row_kind: "ANOMALY", segment_id: "SYN-ANOM-03", leg_order: null, flight_id: 8104, actual_origin: "SYN-AP-SEA", actual_destination: "SYN-AP-DEN", actual_departure_utc: "2026-08-31T15:00:00", actual_arrival_utc: "2026-08-31T18:00:00", next_flight_id: 8999, link_outcome: "REJECTED", anomaly_code: "MISSING_TARGET", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R007", row_kind: "ANOMALY", segment_id: "SYN-ANOM-04", leg_order: null, flight_id: 8105, actual_origin: "SYN-AP-LAX", actual_destination: "SYN-AP-LAS", actual_departure_utc: "2026-08-31T16:00:00", actual_arrival_utc: "2026-08-31T17:00:00", next_flight_id: 8205, link_outcome: "REJECTED", anomaly_code: "DIFFERENT_AIRCRAFT", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R008", row_kind: "ANOMALY", segment_id: "SYN-ANOM-05", leg_order: null, flight_id: 8106, actual_origin: "SYN-AP-LAS", actual_destination: "SYN-AP-SFO", actual_departure_utc: "2026-08-31T18:00:00", actual_arrival_utc: "2026-08-31T19:30:00", next_flight_id: 8206, link_outcome: "REJECTED", anomaly_code: "OUTSIDE_SELECTED_DAY", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R009", row_kind: "ANOMALY", segment_id: "SYN-ANOM-06", leg_order: null, flight_id: 8107, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: "2026-08-31T20:00:00", actual_arrival_utc: "2026-08-31T21:30:00", next_flight_id: 8101, link_outcome: "REJECTED", anomaly_code: "BACKWARD_TIME", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R010", row_kind: "ANOMALY", segment_id: "SYN-ANOM-07", leg_order: null, flight_id: 8108, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: "2026-08-31T14:00:00", actual_arrival_utc: "2026-08-31T15:30:00", next_flight_id: 8107, link_outcome: "REJECTED", anomaly_code: "BROKEN_CONTINUITY", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R011", row_kind: "ANOMALY", segment_id: "SYN-ANOM-08", leg_order: null, flight_id: 8109, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAS", actual_departure_utc: "2026-08-31T14:00:00", actual_arrival_utc: "2026-08-31T16:00:00", next_flight_id: 8106, link_outcome: "REJECTED", anomaly_code: "DIVERSION_ENDPOINT_CONFLICT", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R012", row_kind: "ANOMALY", segment_id: "SYN-ANOM-09", leg_order: null, flight_id: 8110, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: "2026-08-31T14:00:00", actual_arrival_utc: "2026-08-31T15:30:00", next_flight_id: null, link_outcome: "EXCLUDED", anomaly_code: "CANCELLED", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R013", row_kind: "ANOMALY", segment_id: "SYN-ANOM-10", leg_order: null, flight_id: 8111, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: null, actual_arrival_utc: null, next_flight_id: null, link_outcome: "EXCLUDED", anomaly_code: "MISSING_TIME", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+          - {row_id: "Q08-R014", row_kind: "ANOMALY", segment_id: "SYN-ANOM-11", leg_order: null, flight_id: 8112, actual_origin: "SYN-AP-SFO", actual_destination: "SYN-AP-LAX", actual_departure_utc: "2026-08-31T22:00:00", actual_arrival_utc: "2026-08-31T23:30:00", next_flight_id: null, link_outcome: "EXCLUDED", anomaly_code: "UNKNOWN_OR_INVALID_CANCELLATION_FLAG", as_of_aircraft_type_id: null, as_of_engine_type_id: null, actual_source_aircraft_type: null, type_discrepancy: null}
+      - result_set_id: "Q08-NOT-FOUND"
+        parameters: {aircraft_id: 1999, flight_departure_date: "2026-08-31"}
+        invocation_status: "NOT_FOUND"
+        error_code: "NO_ACTUAL_FLIGHTS"
+        expected_cardinality: 0
+        rows: []
+
+contract_truth_tables:
+  - truth_table_id: "TT-BOTH-CLOCKS"
+    traceability: ["P0-08", "HT-23", "NF-S09", "DV-14", "DV-15", "DV-30", "DV-31"]
+    state_fixture:
+      schedule_key: "SYN-SK-CLOCK_BOUNDARY_001"
+      knowledge_valid_from: "2026-08-24"
+      knowledge_valid_to: "2026-08-31"
+      operating_effective_date: "2026-09-01"
+      operating_discontinue_date: "2026-09-07"
+      weekday_flags: "ALL_TRUE"
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "knowledge_position", type: "VARCHAR", nullable: false}
+      - {name: "knowledge_date", type: "DATE", nullable: false}
+      - {name: "operating_position", type: "VARCHAR", nullable: false}
+      - {name: "operating_date", type: "DATE", nullable: false}
+      - {name: "eligible", type: "BOOLEAN", nullable: false}
+    expected_cardinality: 9
+    rows:
+      - {row_id: "TT23-R01", knowledge_position: "BEFORE", knowledge_date: "2026-08-23", operating_position: "BEFORE", operating_date: "2026-08-31", eligible: false}
+      - {row_id: "TT23-R02", knowledge_position: "BEFORE", knowledge_date: "2026-08-23", operating_position: "INSIDE", operating_date: "2026-09-01", eligible: false}
+      - {row_id: "TT23-R03", knowledge_position: "BEFORE", knowledge_date: "2026-08-23", operating_position: "AT_END", operating_date: "2026-09-07", eligible: false}
+      - {row_id: "TT23-R04", knowledge_position: "INSIDE", knowledge_date: "2026-08-24", operating_position: "BEFORE", operating_date: "2026-08-31", eligible: false}
+      - {row_id: "TT23-R05", knowledge_position: "INSIDE", knowledge_date: "2026-08-24", operating_position: "INSIDE", operating_date: "2026-09-01", eligible: true}
+      - {row_id: "TT23-R06", knowledge_position: "INSIDE", knowledge_date: "2026-08-24", operating_position: "AT_END", operating_date: "2026-09-07", eligible: true}
+      - {row_id: "TT23-R07", knowledge_position: "AT_END", knowledge_date: "2026-08-31", operating_position: "BEFORE", operating_date: "2026-08-31", eligible: false}
+      - {row_id: "TT23-R08", knowledge_position: "AT_END", knowledge_date: "2026-08-31", operating_position: "INSIDE", operating_date: "2026-09-01", eligible: false}
+      - {row_id: "TT23-R09", knowledge_position: "AT_END", knowledge_date: "2026-08-31", operating_position: "AT_END", operating_date: "2026-09-07", eligible: false}
+
+  - truth_table_id: "TT-UTC-OFFSETS"
+    traceability: ["D-0008", "P0-08", "HT-25", "NF-S10", "DV-47", "DV-48", "DV-49", "DV-50", "DV-51"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "case_scope", type: "VARCHAR", nullable: false}
+      - {name: "source_case", type: "VARCHAR", nullable: false}
+      - {name: "local_departure", type: "TIMESTAMP_NTZ", nullable: false}
+      - {name: "local_arrival", type: "TIMESTAMP_NTZ", nullable: false}
+      - {name: "departure_offset_minutes", type: "FLOAT", nullable: true}
+      - {name: "arrival_offset_minutes", type: "FLOAT", nullable: true}
+      - {name: "utc_departure", type: "TIMESTAMP_NTZ", nullable: true}
+      - {name: "utc_arrival", type: "TIMESTAMP_NTZ", nullable: true}
+      - {name: "resolution_status", type: "VARCHAR", nullable: false}
+    expected_cardinality: 10
+    rows:
+      - {row_id: "TT25-R01", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "SFO_SPRING_FORWARD_PRE_OFFSET", local_departure: "2026-03-08T01:30:00", local_arrival: "2026-03-08T01:55:00", departure_offset_minutes: -480.0, arrival_offset_minutes: -480.0, utc_departure: "2026-03-08T09:30:00", utc_arrival: "2026-03-08T09:55:00", resolution_status: "OFFSET_DERIVED"}
+      - {row_id: "TT25-R02", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "SFO_SPRING_FORWARD_POST_OFFSET", local_departure: "2026-03-08T03:30:00", local_arrival: "2026-03-08T03:55:00", departure_offset_minutes: -420.0, arrival_offset_minutes: -420.0, utc_departure: "2026-03-08T10:30:00", utc_arrival: "2026-03-08T10:55:00", resolution_status: "OFFSET_DERIVED"}
+      - {row_id: "TT25-R03", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "BOS_FALL_BACK_FIRST_OFFSET", local_departure: "2026-11-01T01:30:00", local_arrival: "2026-11-01T01:50:00", departure_offset_minutes: -240.0, arrival_offset_minutes: -240.0, utc_departure: "2026-11-01T05:30:00", utc_arrival: "2026-11-01T05:50:00", resolution_status: "OFFSET_DERIVED"}
+      - {row_id: "TT25-R04", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "BOS_FALL_BACK_SECOND_OFFSET", local_departure: "2026-11-01T01:30:00", local_arrival: "2026-11-01T01:50:00", departure_offset_minutes: -300.0, arrival_offset_minutes: -300.0, utc_departure: "2026-11-01T06:30:00", utc_arrival: "2026-11-01T06:50:00", resolution_status: "OFFSET_DERIVED"}
+      - {row_id: "TT25-R05", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "PHX_NO_DST_CONTROL", local_departure: "2026-07-15T12:00:00", local_arrival: "2026-07-15T13:00:00", departure_offset_minutes: -420.0, arrival_offset_minutes: -420.0, utc_departure: "2026-07-15T19:00:00", utc_arrival: "2026-07-15T20:00:00", resolution_status: "OFFSET_DERIVED"}
+      - {row_id: "TT25-R06", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "SFO_LAX_LOCAL_TO_UTC_NEXT_DAY", local_departure: "2026-09-07T23:30:00", local_arrival: "2026-09-08T01:15:00", departure_offset_minutes: -420.0, arrival_offset_minutes: -420.0, utc_departure: "2026-09-08T06:30:00", utc_arrival: "2026-09-08T08:15:00", resolution_status: "OFFSET_DERIVED"}
+      - {row_id: "TT25-R07", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "EXPLICIT_EXPANDED_PRECEDENCE", local_departure: "2026-09-07T08:00:00", local_arrival: "2026-09-07T10:00:00", departure_offset_minutes: null, arrival_offset_minutes: null, utc_departure: "2026-09-07T15:00:00", utc_arrival: "2026-09-07T17:00:00", resolution_status: "EXPLICIT_EXPANDED"}
+      - {row_id: "TT25-R08", case_scope: "SYNTHETIC_US_FLIGHT", source_case: "SCHEDULE_TIME_WITHOUT_DATE_EVIDENCE", local_departure: "2026-09-07T23:00:00", local_arrival: "2026-09-08T01:00:00", departure_offset_minutes: null, arrival_offset_minutes: null, utc_departure: null, utc_arrival: null, resolution_status: "UNRESOLVED_UTC_DATE"}
+      - {row_id: "TT25-R09", case_scope: "NON_OPERATIONAL_NORMALIZER_UNIT_CASE", source_case: "ZERO_OFFSET", local_departure: "2026-09-07T12:00:00", local_arrival: "2026-09-07T14:00:00", departure_offset_minutes: 0.0, arrival_offset_minutes: 0.0, utc_departure: "2026-09-07T12:00:00", utc_arrival: "2026-09-07T14:00:00", resolution_status: "OFFSET_DERIVED"}
+      - {row_id: "TT25-R10", case_scope: "NON_OPERATIONAL_NORMALIZER_UNIT_CASE", source_case: "POSITIVE_OFFSET", local_departure: "2026-09-07T23:30:00", local_arrival: "2026-09-08T01:15:00", departure_offset_minutes: 120.0, arrival_offset_minutes: 120.0, utc_departure: "2026-09-07T21:30:00", utc_arrival: "2026-09-07T23:15:00", resolution_status: "OFFSET_DERIVED"}
+
+  - truth_table_id: "TT-US-CLOCK-AUTHORITY"
+    traceability: ["D-0009", "P0-08", "P0-11", "HT-25", "HT-34", "NF-S10", "NF-R01", "AP-09", "AF-06", "AF-07"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "case_id", type: "VARCHAR", nullable: false}
+      - {name: "airport_internal_id", type: "VARCHAR", nullable: false}
+      - {name: "time_zone_name", type: "VARCHAR", nullable: false}
+      - {name: "authoritative_evidence", type: "VARCHAR", nullable: false}
+      - {name: "expected_outcome", type: "VARCHAR", nullable: false}
+    expected_cardinality: 5
+    rows:
+      - {row_id: "TTUS-R01", case_id: "EXPANDED_PASSENGER_TIMESTAMP", airport_internal_id: "SYN-AP-SFO", time_zone_name: "America/Los_Angeles", authoritative_evidence: "PF_EXPANDED_TIMESTAMP", expected_outcome: "KEEP_EXPANDED_TIMESTAMP_AP09_NOT_OVERRIDE"}
+      - {row_id: "TTUS-R02", case_id: "D0008_OFFSET_AT_DST_EDGE", airport_internal_id: "SYN-AP-BOS", time_zone_name: "America/New_York", authoritative_evidence: "PH_EXPLICIT_OFFSET", expected_outcome: "SUBTRACT_EXPLICIT_OFFSET_AP09_NOT_OVERRIDE"}
+      - {row_id: "TTUS-R03", case_id: "SCHEDULE_TIME_ONLY", airport_internal_id: "SYN-AP-ORD", time_zone_name: "America/Chicago", authoritative_evidence: "SS_UTC_TIME_WITHOUT_DATE_SHIFT", expected_outcome: "UNRESOLVED_UTC_DATE_AP09_NOT_REPAIR"}
+      - {row_id: "TTUS-R04", case_id: "ARIZONA_NO_DST", airport_internal_id: "SYN-AP-PHX", time_zone_name: "America/Phoenix", authoritative_evidence: "PH_EXPLICIT_OFFSET_-420", expected_outcome: "OFFSET_DERIVED_NO_DST_ASSUMPTION_NEEDED"}
+      - {row_id: "TTUS-R05", case_id: "ROTATION_LOCAL_DAY_DIFFERS_FROM_UTC_DAY", airport_internal_id: "SYN-AP-SFO", time_zone_name: "America/Los_Angeles", authoritative_evidence: "AF06_2026-08-31_AF07_2026-09-01", expected_outcome: "SELECTED_DAY_IS_2026-08-31"}
+
+  - truth_table_id: "TT-CABIN-QUALITY"
+    traceability: ["P0-09", "HT-28", "NF-S08", "DV-26", "DV-27"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "fixture_case", type: "VARCHAR", nullable: false}
+      - {name: "total_seats", type: "FLOAT", nullable: true}
+      - {name: "first_seats", type: "FLOAT", nullable: true}
+      - {name: "business_seats", type: "FLOAT", nullable: true}
+      - {name: "premium_economy_seats", type: "FLOAT", nullable: true}
+      - {name: "economy_including_premium_seats", type: "FLOAT", nullable: true}
+      - {name: "economy_excluding_premium_seats", type: "FLOAT", nullable: true}
+      - {name: "exclusive_sum", type: "FLOAT", nullable: true}
+      - {name: "quality_status", type: "VARCHAR", nullable: false}
+    expected_cardinality: 5
+    rows:
+      - {row_id: "TT28-R01", fixture_case: "CONSISTENT", total_seats: 180.0, first_seats: 8.0, business_seats: 20.0, premium_economy_seats: 20.0, economy_including_premium_seats: 152.0, economy_excluding_premium_seats: 132.0, exclusive_sum: 180.0, quality_status: "RECONCILED"}
+      - {row_id: "TT28-R02", fixture_case: "TOTAL_MISMATCH", total_seats: 181.0, first_seats: 8.0, business_seats: 20.0, premium_economy_seats: 20.0, economy_including_premium_seats: 152.0, economy_excluding_premium_seats: 132.0, exclusive_sum: 180.0, quality_status: "TOTAL_MISMATCH"}
+      - {row_id: "TT28-R03", fixture_case: "NULL_CABIN", total_seats: 180.0, first_seats: null, business_seats: 20.0, premium_economy_seats: 20.0, economy_including_premium_seats: 152.0, economy_excluding_premium_seats: 132.0, exclusive_sum: null, quality_status: "NULL_CABIN_VALUE"}
+      - {row_id: "TT28-R04", fixture_case: "NEGATIVE_SOURCE", total_seats: 180.0, first_seats: -1.0, business_seats: 20.0, premium_economy_seats: 20.0, economy_including_premium_seats: 152.0, economy_excluding_premium_seats: 132.0, exclusive_sum: null, quality_status: "NEGATIVE_CABIN_VALUE"}
+      - {row_id: "TT28-R05", fixture_case: "PREMIUM_GREATER_THAN_ECONOMY", total_seats: 180.0, first_seats: 8.0, business_seats: 20.0, premium_economy_seats: 40.0, economy_including_premium_seats: 30.0, economy_excluding_premium_seats: -10.0, exclusive_sum: null, quality_status: "PREMIUM_EXCEEDS_ECONOMY"}
+
+  - truth_table_id: "TT-CODE-RESOLUTION"
+    traceability: ["P0-12", "HT-38", "NF-X01", "DV-10", "DV-11"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "raw_code", type: "VARCHAR", nullable: true}
+      - {name: "candidate_count", type: "NUMBER(38,0)", nullable: false}
+      - {name: "resolution_status", type: "VARCHAR", nullable: false}
+      - {name: "concept_link_created", type: "BOOLEAN", nullable: false}
+    expected_cardinality: 4
+    rows:
+      - {row_id: "TT38-R01", raw_code: "SFO", candidate_count: 1, resolution_status: "EXACT", concept_link_created: true}
+      - {row_id: "TT38-R02", raw_code: "SYN-ZZZ", candidate_count: 0, resolution_status: "UNRESOLVED", concept_link_created: false}
+      - {row_id: "TT38-R03", raw_code: "SYN-DUP", candidate_count: 2, resolution_status: "AMBIGUOUS", concept_link_created: false}
+      - {row_id: "TT38-R04", raw_code: null, candidate_count: 0, resolution_status: "INVALID_INPUT", concept_link_created: false}
+
+  - truth_table_id: "TT-SNAPSHOT-COMPLETENESS"
+    traceability: ["P0-05", "HT-12", "HT-13", "HT-15", "NF-S03", "NF-S04", "DV-16"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "case_id", type: "VARCHAR", nullable: false}
+      - {name: "absence_derived_event_count", type: "NUMBER(38,0)", nullable: false}
+      - {name: "crosses_snapshot_gap", type: "BOOLEAN", nullable: false}
+      - {name: "change_observation_date", type: "DATE", nullable: true}
+      - {name: "presence_outcome", type: "VARCHAR", nullable: false}
+    expected_cardinality: 4
+    rows:
+      - {row_id: "TT12-R01", case_id: "MISSING_SNAPSHOT", absence_derived_event_count: 0, crosses_snapshot_gap: false, change_observation_date: null, presence_outcome: "NO_INFERENCE"}
+      - {row_id: "TT12-R02", case_id: "INCOMPLETE_SNAPSHOT", absence_derived_event_count: 0, crosses_snapshot_gap: false, change_observation_date: null, presence_outcome: "NO_INFERENCE"}
+      - {row_id: "TT13-R01", case_id: "POST_GAP_EXACT_ABSENCE", absence_derived_event_count: 1, crosses_snapshot_gap: true, change_observation_date: "2026-08-27", presence_outcome: "EXACT_REMOVAL_OBSERVED_AT_ENDPOINT"}
+      - {row_id: "TT15-R01", case_id: "REAPPEARANCE", absence_derived_event_count: 1, crosses_snapshot_gap: false, change_observation_date: "2026-08-17", presence_outcome: "REAPPEARANCE_NEW_SEGMENT"}
+
+  - truth_table_id: "TT-PASSENGER-UNION"
+    traceability: ["P0-10", "HT-30", "NF-F01", "DV-20", "DV-21"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "passenger_key", type: "VARCHAR", nullable: false}
+      - {name: "selected_source", type: "VARCHAR", nullable: false}
+      - {name: "historical_lineage_retained", type: "BOOLEAN", nullable: false}
+      - {name: "forward_lineage_retained", type: "BOOLEAN", nullable: false}
+      - {name: "historical_only_field", type: "VARCHAR", nullable: true}
+    expected_cardinality: 2
+    rows:
+      - {row_id: "TT30-R01", passenger_key: "SYN-MKT-A|700|SFO|LAX|2026-08-31", selected_source: "HISTORICAL", historical_lineage_retained: true, forward_lineage_retained: true, historical_only_field: "SYN-SK-HIST_700"}
+      - {row_id: "TT30-R02", passenger_key: "SYN-MKT-A|701|LAX|LAS|2026-08-31", selected_source: "FORWARD", historical_lineage_retained: false, forward_lineage_retained: true, historical_only_field: null}
+
+  - truth_table_id: "TT-FULFILLMENT"
+    traceability: ["P0-10", "HT-31", "HT-32", "NF-F02", "DV-22", "DV-23", "DV-39", "DV-40", "DV-41", "DV-42"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "fixture_case", type: "VARCHAR", nullable: false}
+      - {name: "match_status", type: "VARCHAR", nullable: false}
+      - {name: "passenger_token", type: "VARCHAR", nullable: true}
+      - {name: "passenger_key_status", type: "VARCHAR", nullable: false}
+      - {name: "passenger_source_row_token", type: "VARCHAR", nullable: true}
+      - {name: "actual_flight_id", type: "NUMBER(38,0)", nullable: true}
+      - {name: "group_id", type: "VARCHAR", nullable: true}
+      - {name: "confirmed_link", type: "BOOLEAN", nullable: false}
+    expected_cardinality: 11
+    rows:
+      - {row_id: "TT32-R01", fixture_case: "DIRECT_SHARED_ID", match_status: "EXACT_FULFILLMENT", passenger_token: "SYN-PAX-DIRECT-01", passenger_key_status: "VALID", passenger_source_row_token: "HISTORICAL|5101", actual_flight_id: 5101, group_id: null, confirmed_link: true}
+      - {row_id: "TT32-R02", fixture_case: "UNIQUE_COMPOSITE", match_status: "HEURISTIC_CANDIDATE", passenger_token: "SYN-PAX-HEUR-01", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|6101", actual_flight_id: 7101, group_id: null, confirmed_link: false}
+      - {row_id: "TT32-R03", fixture_case: "ONE_PLAN_FIRST_LEG", match_status: "EXACT_FULFILLMENT", passenger_token: "SYN-PAX-STOP-01", passenger_key_status: "VALID", passenger_source_row_token: "HISTORICAL|5102", actual_flight_id: 5102, group_id: null, confirmed_link: true}
+      - {row_id: "TT32-R04", fixture_case: "ONE_PLAN_SECOND_LEG", match_status: "EXACT_FULFILLMENT", passenger_token: "SYN-PAX-STOP-01", passenger_key_status: "VALID", passenger_source_row_token: "HISTORICAL|5103", actual_flight_id: 5103, group_id: null, confirmed_link: true}
+      - {row_id: "TT32-R05", fixture_case: "AMBIGUOUS_COMPOSITE", match_status: "AMBIGUOUS_CANDIDATE_GROUP", passenger_token: null, passenger_key_status: "VALID_GROUP", passenger_source_row_token: null, actual_flight_id: 7102, group_id: "SYN-FUL-AMB-01", confirmed_link: false}
+      - {row_id: "TT32-R06", fixture_case: "UNMATCHED_ACTUAL", match_status: "UNMATCHED", passenger_token: null, passenger_key_status: "NOT_APPLICABLE", passenger_source_row_token: null, actual_flight_id: 7199, group_id: null, confirmed_link: false}
+      - {row_id: "TT32-R07", fixture_case: "INVALID_PASSENGER_KEY", match_status: "INVALID_PASSENGER_KEY", passenger_token: "SYN-INVALID-PF-6199", passenger_key_status: "INVALID", passenger_source_row_token: "FORWARD|6199", actual_flight_id: null, group_id: null, confirmed_link: false}
+      - {row_id: "TT32-R08", fixture_case: "NULL_KEY_AND_SOURCE_ID", match_status: "QUARANTINED", passenger_token: "SYN-QUARANTINE-PF-HASH-01", passenger_key_status: "QUARANTINED", passenger_source_row_token: null, actual_flight_id: null, group_id: null, confirmed_link: false}
+      - {row_id: "TT32-R09", fixture_case: "AMBIGUOUS_MEMBER_A", match_status: "AMBIGUOUS_GROUP_MEMBER", passenger_token: "SYN-PAX-AMB-A", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|6102", actual_flight_id: 7102, group_id: "SYN-FUL-AMB-01", confirmed_link: false}
+      - {row_id: "TT32-R10", fixture_case: "AMBIGUOUS_MEMBER_B", match_status: "AMBIGUOUS_GROUP_MEMBER", passenger_token: "SYN-PAX-AMB-B", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|6103", actual_flight_id: 7102, group_id: "SYN-FUL-AMB-01", confirmed_link: false}
+      - {row_id: "TT32-R11", fixture_case: "VALID_KEY_MISSING_SOURCE_ID", match_status: "UNMATCHED", passenger_token: "SYN-PAX-VALID-NULL-ID-01", passenger_key_status: "VALID", passenger_source_row_token: "FORWARD|SYN-DV43-VALID-KEY-NULL-ID-01", actual_flight_id: null, group_id: null, confirmed_link: false}
+
+  - truth_table_id: "TT-PLAN-ACTUAL-DIVERSION"
+    traceability: ["P0-10", "HT-33", "NF-F02", "PF-08", "PF-09", "AF-08", "AF-09", "AF-10", "AF-12", "DV-45"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "passenger_token", type: "VARCHAR", nullable: false}
+      - {name: "actual_flight_id", type: "NUMBER(38,0)", nullable: false}
+      - {name: "planned_origin_iata", type: "VARCHAR", nullable: false}
+      - {name: "planned_destination_iata", type: "VARCHAR", nullable: false}
+      - {name: "actual_origin_internal", type: "VARCHAR", nullable: false}
+      - {name: "actual_destination_internal", type: "VARCHAR", nullable: false}
+      - {name: "diverted_airport_internal", type: "VARCHAR", nullable: false}
+      - {name: "reconciliation_status", type: "VARCHAR", nullable: false}
+      - {name: "planned_values_preserved", type: "BOOLEAN", nullable: false}
+      - {name: "actual_values_preserved", type: "BOOLEAN", nullable: false}
+    expected_cardinality: 1
+    rows:
+      - {row_id: "TT33-R01", passenger_token: "SYN-PAX-DIVERSION-01", actual_flight_id: 7200, planned_origin_iata: "SFO", planned_destination_iata: "LAX", actual_origin_internal: "SYN-AP-SFO", actual_destination_internal: "SYN-AP-LAS", diverted_airport_internal: "SYN-AP-LAS", reconciliation_status: "VALID_DIVERSION_PLAN_ACTUAL_DIFFER", planned_values_preserved: true, actual_values_preserved: true}
+
+  - truth_table_id: "TT-SENTINELS"
+    traceability: ["P0-02", "P0-03", "HT-06", "HT-07", "HT-09", "NF-A05"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "case_id", type: "VARCHAR", nullable: false}
+      - {name: "source_date", type: "DATE", nullable: true}
+      - {name: "model_valid_to", type: "DATE", nullable: true}
+      - {name: "assertion", type: "VARCHAR", nullable: false}
+    expected_cardinality: 3
+    rows:
+      - {row_id: "TT06-R01", case_id: "SOURCE_UNKNOWN_FUTURE", source_date: "9999-12-31", model_valid_to: null, assertion: "UNKNOWN_FUTURE_NOT_FINITE_BOUND"}
+      - {row_id: "TT06-R02", case_id: "MODEL_OPEN_INTERVAL", source_date: null, model_valid_to: "9999-01-01", assertion: "DERIVED_OPEN_SENTINEL"}
+      - {row_id: "TT09-R01", case_id: "FINITE_EOL_EXCLUSIVE", source_date: "2024-07-01", model_valid_to: "2024-07-01", assertion: "PREVIOUS_DAY_ELIGIBLE_BOUNDARY_DAY_EXCLUDED"}
+
+  - truth_table_id: "TT-MIXED-ENGINE-LIMIT"
+    traceability: ["P0-12", "HT-40", "NF-X02", "DV-09"]
+    output_schema:
+      - {name: "row_id", type: "VARCHAR", nullable: false}
+      - {name: "reported_engine_type_id", type: "VARCHAR", nullable: false}
+      - {name: "reported_engine_count", type: "NUMBER(38,0)", nullable: false}
+      - {name: "has_multiple_engine_types", type: "BOOLEAN", nullable: false}
+      - {name: "mixed_engine_set_complete", type: "BOOLEAN", nullable: false}
+      - {name: "second_engine_type_id", type: "VARCHAR", nullable: true}
+    expected_cardinality: 1
+    rows:
+      - {row_id: "TT40-R01", reported_engine_type_id: "SYN-ENGINE-MIXED-REPORTED", reported_engine_count: 4, has_multiple_engine_types: true, mixed_engine_set_complete: false, second_engine_type_id: null}
+
+hard_test_coverage:
+  "HT-01": ["NF-A01", "NF-A02", "Q02-CANONICAL"]
+  "HT-02": ["Q01-CANONICAL"]
+  "HT-03": ["Q02-CANONICAL"]
+  "HT-04": ["NF-A01", "Q01-UNKNOWN-GAP"]
+  "HT-05": ["Q01-CANONICAL", "Q04-CANONICAL", "TT-BOTH-CLOCKS"]
+  "HT-06": ["TT-SENTINELS"]
+  "HT-07": ["TT-SENTINELS", "NF-A05"]
+  "HT-08": ["Q01-BEFORE-FIRST", "Q01-UNKNOWN-GAP", "Q01-EOL-BOUNDARY", "Q01-CANONICAL"]
+  "HT-09": ["Q01-EOL-BOUNDARY", "TT-SENTINELS"]
+  "HT-10": ["Q01-EOL-BOUNDARY"]
+  "HT-11": ["SOURCE_CONTRACT.md", "ATTRIBUTE_AUTHORITY.md"]
+  "HT-12": ["Q05-INELIGIBLE-ENDPOINT", "TT-SNAPSHOT-COMPLETENESS"]
+  "HT-13": ["TT-SNAPSHOT-COMPLETENESS"]
+  "HT-14": ["Q06-INCOMPLETE-ENDPOINT"]
+  "HT-15": ["TT-SNAPSHOT-COMPLETENESS"]
+  "HT-16": ["NF-S01", "Q05-CANONICAL"]
+  "HT-17": ["NF-S02"]
+  "HT-18": ["Q07-MARKETING", "Q07-OPERATING"]
+  "HT-19": ["Q05-R001", "Q05-R007", "Q05-R015"]
+  "HT-20": ["Q05-R004", "Q05-R005", "Q05-R006"]
+  "HT-21": ["Q05-R008", "Q05-R009", "Q05-R010", "Q05-R011", "Q05-R012", "Q05-R013", "Q05-R014"]
+  "HT-22": ["Q05-R016", "Q05-R017", "Q05-R018", "Q05-R019"]
+  "HT-23": ["TT-BOTH-CLOCKS"]
+  "HT-24": ["Q07-MISSING-KNOWLEDGE-DATE", "Q07-MISSING-OPERATING-DATE"]
+  "HT-25": ["TT-UTC-OFFSETS", "TT-US-CLOCK-AUTHORITY"]
+  "HT-26": ["Q06-MISSING-CARRIER-ROLE", "Q07-MISSING-CARRIER-ROLE", "Q07-MARKETING", "Q07-OPERATING"]
+  "HT-27": ["Q07-OPERATING"]
+  "HT-28": ["TT-CABIN-QUALITY"]
+  "HT-29": ["Q06-CANONICAL"]
+  "HT-30": ["TT-PASSENGER-UNION"]
+  "HT-31": ["TT-FULFILLMENT"]
+  "HT-32": ["TT-FULFILLMENT"]
+  "HT-33": ["TT-PLAN-ACTUAL-DIVERSION", "Q08-ANOMALIES"]
+  "HT-34": ["Q08-CANONICAL", "TT-US-CLOCK-AUTHORITY"]
+  "HT-35": ["Q08-ANOMALIES"]
+  "HT-36": ["Q08-R012", "Q08-R013", "Q08-R014"]
+  "HT-37": ["Q08-CANONICAL"]
+  "HT-38": ["TT-CODE-RESOLUTION"]
+  "HT-39": ["Q01-UNKNOWN-GAP"]
+  "HT-40": ["TT-MIXED-ENGINE-LIMIT"]
+  "HT-41": ["MODEL-01 live gate"]
+  "HT-42": ["All Q01-Q08 result sets"]
+  "HT-43": ["MODEL-02 inventory gate"]
+  "HT-44": ["NF-E01 timing metadata"]
+  "HT-45": ["Claim scan over release artifacts"]
+  "HT-46": ["Q01", "Q02", "Q03", "Q04"]
+  "HT-47": ["All catalog_id and typed parameters"]
+  "HT-48": ["Q01-INVALID-AIRCRAFT-ID", "Q06-INVALID-DATE", "Q06-MISSING-CARRIER-ROLE", "Q07-MISSING-CARRIER-ROLE", "Q07-MISSING-KNOWLEDGE-DATE", "Q07-MISSING-OPERATING-DATE", "TT-MIXED-ENGINE-LIMIT"]
+  "HT-49": ["Q05 labels", "Q08 plan/actual fields"]

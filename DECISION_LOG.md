@@ -182,3 +182,42 @@ entry with a new entry rather than editing its historical conclusion.
   from subtraction to addition, regenerate the affected fixtures/expected manifest, compare complete
   old/new results, and rerun HT-25 plus every UTC-instance and both-clock query/interface test.
 - **Status:** accepted provisionally pending authoritative confirmation.
+
+## D-0009 — U.S.-centered synthetic geography and public-identifier policy
+
+- **Date:** 2026-09-01
+- **Trigger:** SPEC-03 user scope update
+- **Question:** How should all eight golden questions target U.S. flights when the reduced airport
+  contract has no country-classification field?
+- **Alternatives:** geography-neutral synthetic codes; explicitly synthetic U.S.-domestic operations
+  using public airport geography labels; fixtures or claims tied to real-carrier operations.
+- **Evidence:** The user explicitly selected U.S. flights. Public U.S. airport codes, names, and IANA
+  time-zone names provide useful geography and clock-boundary labels, while the supplied schema and
+  confidential inputs do not authorize fabricated operational facts about real carriers. Because
+  `AIRPORT_REFERENCE` has no country field, U.S. scope cannot honestly be presented as an
+  ontology-derived domestic/international classification.
+- **Review:** Independent reviewer `/root/us_scope_review` found no SPEC-01/SPEC-02 contradiction and
+  required an enumerated U.S. airport whitelist, synthetic non-airport identities, closed-map-aware
+  planned-versus-actual airport codes, explicit offset/DST evidence, and a claim scan. The reviewer
+  also required AP-09 time-zone lineage not to override expanded passenger timestamps, D-0008
+  offsets, or unresolved schedule `TIME` values.
+- **Decision:** Use an explicitly synthetic U.S.-domestic core for all eight golden questions. Every
+  named schedule, passenger, and actual-flight route has both endpoints in an enumerated public U.S.
+  airport whitelist. Public IATA/ICAO codes, airport names, and IANA time-zone names are geography
+  labels only. Airport internal IDs and every carrier, aircraft, registration, schedule, passenger,
+  capacity, time, and actual-flight fact use a visibly synthetic namespace. Planned schedule and
+  passenger endpoints use public IATA labels; actual-flight endpoints use the synthetic internal
+  airport IDs required by the closed resolution map. The ontology does not claim to derive country
+  or domestic status.
+- **Confidence:** high; directly user-authorized and independently reviewed.
+- **Affected artifacts/tests:** `DEMO_QUESTIONS.md`, `EXPECTED_ANSWERS.yaml`,
+  `NEO4J_PARITY_MATRIX.md`, DATA-01/02 fixture geography, all SQL/RAI golden outputs, notebooks,
+  agent, HTML, and confidentiality/claim scans. Tests whitelist every golden endpoint; enforce
+  synthetic patterns for non-airport identities; distinguish planned IATA from actual internal
+  airport resolution; keep ambiguity fixtures synthetic; cover explicit U.S. offsets, DST edges,
+  local/UTC date crossings, and AF-06 versus AF-07 day differences; and reject real-operator claims.
+- **Rollback:** Replace the airport whitelist/geography labels, regenerate the deterministic fixtures
+  and expected artifacts together before implementation, and rerun HT-23, HT-25, HT-29, HT-33
+  through HT-38, HT-42, HT-45, HT-49, all eight complete-result gates, and confidentiality/claim
+  scans. No SPEC-01/SPEC-02 semantic change is needed unless country classification is added.
+- **Status:** accepted for this release.
