@@ -28,12 +28,16 @@ from typing import Any
 DB = "PK_AVIATION_TEMPORAL"
 ROLE = "RAI_DEMO_AVIATION_TEMPORAL"
 
-# The 34 objects MODEL-01 binds, in load order.
+# The 37 objects MODEL-01 binds, in load order.
 #
-# D-0019: the row-scoped ``CODE_RESOLUTION`` (546,494 rows), ``CODE_RESOLUTION_CANDIDATE``
-# (424,605) and ``CODE_RESOLUTION_INPUT`` (546,494) are absent by decision, not by oversight.
-# Link semantics need only the distinct-code projection, and the measurement that settled it is
-# in ``build/task_reports/MODEL-01.json``.
+# D-0027 supersedes D-0019's provisional exclusion. D-0019 excluded the row-scoped
+# ``CODE_RESOLUTION``, ``CODE_RESOLUTION_CANDIDATE`` and ``CODE_RESOLUTION_INPUT`` on a suspicion
+# about sync and cold-start cost, and made the exclusion gated on one measurement rather than on
+# intuition. The measurement in ``build/task_reports/MODEL-01.json`` came back at 0.18 seconds,
+# inside the warm-query noise band, so by D-0019's own terms the exclusion does not stand and the
+# three objects are bound. The distinct-code projection ``CODE_RESOLUTION_CODE`` stays: link
+# semantics still read the code grain, and the row grain is now additionally available for
+# provenance questions ("which source rows mentioned this ambiguous code").
 BOUND_OBJECTS: list[tuple[str, str]] = [
     ("SOURCE", "SCHEDULE_SNAPSHOT_CALENDAR"),
     ("SOURCE", "AIRCRAFT_CONFIGURATION"),
@@ -48,6 +52,9 @@ BOUND_OBJECTS: list[tuple[str, str]] = [
     ("MODEL_INPUT", "AIRLINE_CURRENT"),
     ("MODEL_INPUT", "CODE_RESOLUTION_CODE"),
     ("MODEL_INPUT", "CODE_RESOLUTION_CODE_CANDIDATE"),
+    ("MODEL_INPUT", "CODE_RESOLUTION_INPUT"),
+    ("MODEL_INPUT", "CODE_RESOLUTION"),
+    ("MODEL_INPUT", "CODE_RESOLUTION_CANDIDATE"),
     ("MODEL_INPUT", "MONTH_END_CALENDAR"),
     ("MODEL_INPUT", "ROUTE"),
     ("MODEL_INPUT", "ROUTE_STATE"),

@@ -1144,3 +1144,67 @@ disclosure without weakening the check.
   concern. Had the exclusion been accepted on plausibility, the demo would have permanently omitted a
   contract object for no measured benefit.
 - **Status:** accepted; supersedes D-0019's provisional exclusion. Implementation pending.
+
+---
+
+## D-0028 — Two preservation digests are container-scoped and are superseded, not edited
+
+- **Date:** 2026-09-02
+- **Trigger:** After the D-0023 additive enrichment, two declared digests in `EXPECTED_ANSWERS.yaml`
+  fail: `q06_preservation.current_v1_1_result_sets_sha256` and
+  `q07_preservation.prior_v1_0_result_sets_sha256`. ENRICH-02 left them failing, did not touch the
+  oracle, and escalated. That was correct: a failing preservation claim is exactly the thing this
+  project refuses to reconcile quietly.
+- **Diagnosis:** both digests are declared over the **whole `result_sets` list** for their question,
+  not over the frozen members of it. D-0023 appends new result sets to those same lists, so the digests
+  move **mechanically**, for a reason that has nothing to do with whether the frozen content survived.
+  Recomputing each digest over its frozen subset reproduces the declared value **byte for byte** —
+  Q06 `5203cb15…`, Q07 `252a1849…` — and `Q06-CANONICAL`'s own object-scoped digest `8513a82b…` still
+  passes untouched. The frozen content is therefore fully intact; only the container changed, and it
+  changed by an authorised addition.
+- **Alternatives:** edit the two declared digest values to their new whole-list values; re-scope the
+  two declarations in place; forbid appending to a list carrying a list-scoped digest, which would
+  block D-0023 entirely; or add explicitly scoped companion declarations and record the originals as
+  superseded.
+- **Decision:** **do not edit either declared digest value, and do not silently re-scope them.** Add
+  explicitly scoped companion declarations at manifest 1.2.0 that state the subset they cover, carry
+  the recomputed-over-frozen-subset proof, and name the two originals as superseded by the D-0023
+  addition. The originals stay in the file with their original values so the audit trail is intact and
+  anyone can recompute the claim themselves.
+- **Why not simply edit them:** editing a frozen digest to match a new reality is indistinguishable, to
+  a later reader, from editing an expectation to make an implementation pass. The distinction that
+  matters here is that the *content* the digest was written to protect is provably unchanged, and the
+  only honest way to show that is to leave the original in place next to a correctly scoped successor.
+- **Consequence:** a complete oracle run reports `all_green=False` until the companion declarations
+  land. That is the correct state in the meantime, and it must not be suppressed.
+- **Confidence:** high. The byte-for-byte reproduction over the frozen subset is decisive: it proves
+  the digests failed for a scoping reason and not a content reason.
+- **Rollback:** remove the companion declarations; the originals were never altered.
+- **Status:** accepted; companion declarations pending implementation.
+
+---
+
+## D-0029 — Three disclosed deviations in the enriched data
+
+- **Date:** 2026-09-02
+- **Context:** ENRICH-02 disclosed three deviations rather than absorbing them. Each is recorded here
+  so REDTEAM or a later session finds them without re-deriving.
+- **Q07 operating clock and base metal.** The contract counts operating capacity only on a physical
+  base representative, where marketing and operating resolve to the same airline. Under the literal
+  specification the operating clock counted **zero** on the enriched block. ENRICH-02 made the CAP
+  block base metal so the operating clock counts something; CLK 04..07 and 10..11 could not be made
+  base metal without creating Q06 market events and breaking the `Q06-ENRICHED` preservation at 7 and
+  5 rows. Result: `Q07-ENRICHED-ROLE` is 8 counted and 10 `UNRESOLVED_PHYSICAL_SERVICE`, against a
+  predicted 4 unresolved. The alternative was a two-clock beat with an empty operating side.
+- **Registration pattern.** Enriched re-registrations use `SYN-REG-<id>-R2`, which does not match the
+  frozen `identity_patterns.registration`. Nothing enforces that pattern. Recorded as an additive
+  extension note rather than by editing the frozen string.
+- **Five specification defects corrected in flight**, in `SYNTHETIC_DATA_SPEC_V2.md` section 14.1
+  rather than absorbed silently: the 2027 key count (2,459 actual against 2,527 predicted, an addition
+  error in the spec), the MOD two-field change, SHIFT non-overlapping ranges versus `CANDIDATE_UNIQUE`,
+  ADD/REM colliding signatures, and CAP never being base metal.
+- **Operational note:** `data/test_model_input.py::test_live_apply_is_idempotent` mutates the live
+  database, and running it concurrently with a rebuild produced spurious MD-01, MD-02 and TG-09
+  failures. Run alone it passes. It needs a lock or a serialisation guard before any automated gate
+  runs it alongside other work.
+- **Status:** recorded.

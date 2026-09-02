@@ -1,0 +1,1754 @@
+{
+  "task_id": "ENRICH-02",
+  "task_kind": "implementation",
+  "status": "COMPLETE_WITH_TWO_REPORTED_DEVIATIONS",
+  "written_at": "2026-09-02",
+  "deliverable": "Specification 2.0.0 enrichment generated, loaded, oracled and bound",
+  "specification_version": "2.0.0",
+  "expected_manifest_version": "1.2.0",
+  "decisions_implemented": [
+    "D-0023",
+    "D-0024",
+    "D-0025",
+    "D-0026",
+    "D-0027"
+  ],
+  "preservation_claims": {
+    "Q03-CANONICAL": {
+      "claim": "132 rows over 120 month ends; the only whole-population dependency in the manifest",
+      "verdict": "HELD",
+      "evidence": {
+        "generator_recomputation": "validate_q03 reproduces the 132 frozen rows exactly before any file is written",
+        "sql_oracle": {
+          "expected_rows": 132,
+          "actual_rows": 132,
+          "verdict": "PASS"
+        },
+        "structural_floor": "min filler AM-07 and min filler AH-05 are both 2025-01-01, so no filler aircraft can be visible at any month end at or before 2024-12-31"
+      }
+    },
+    "Q05-CANONICAL": {
+      "claim": "35 rows with adjacent-pair counts 7/5/9/14 and the 13/13 presence closure",
+      "verdict": "HELD",
+      "evidence": {
+        "generator_recomputation": {
+          "rows": 35,
+          "adjacent_counts": [
+            7,
+            5,
+            9,
+            14
+          ]
+        },
+        "sql_oracle": {
+          "expected_rows": 35,
+          "actual_rows": 35,
+          "verdict": "PASS"
+        },
+        "cross_question_closure": "PASS"
+      }
+    },
+    "Q06_Q07_declared_digests": {
+      "claim": "Q06 and Q07 retain their declared result-set SHA-256 digests",
+      "verdict": "HELD_ON_CONTENT_MOVED_ON_CONTAINER",
+      "content_unchanged": {
+        "Q06-CANONICAL_result_set_object_sha256": {
+          "declared": "8513a82b4b666032fb3c4136830d96cefa924e61aeb6c573b2a8f20f38a8e227",
+          "actual": "8513a82b4b666032fb3c4136830d96cefa924e61aeb6c573b2a8f20f38a8e227",
+          "verdict": "PASS"
+        },
+        "Q06_frozen_result_sets_sha256": {
+          "declared": "5203cb15e9971b3df73ae1c3b0b57b1b77dc0a645e148cc5968bade0ea9ef232",
+          "recomputed_over_the_four_frozen_sets": "5203cb15e9971b3df73ae1c3b0b57b1b77dc0a645e148cc5968bade0ea9ef232",
+          "verdict": "PASS"
+        },
+        "Q07_frozen_result_sets_sha256": {
+          "declared": "252a18496a59cc871dbe019ad7b2ac79674310b44435602b215d7c46b8091f2f",
+          "recomputed_over_the_six_frozen_sets": "252a18496a59cc871dbe019ad7b2ac79674310b44435602b215d7c46b8091f2f",
+          "verdict": "PASS"
+        }
+      },
+      "container_digests_that_moved": {
+        "q06_preservation.current_v1_1_result_sets_sha256": {
+          "checker_scope": "the whole Q06 result_sets list",
+          "declared": "5203cb15e9971b3df73ae1c3b0b57b1b77dc0a645e148cc5968bade0ea9ef232",
+          "actual_over_all_six": "f7cf3e5932a5135a2d471224f59c8d87dbaf3fd83945c2a18e1cca48eb735d2a",
+          "cause": "D-0023 appends Q06-ENRICHED-MARKETING and Q06-ENRICHED-OPERATING to the list"
+        },
+        "q07_preservation.prior_v1_0_result_sets_sha256": {
+          "checker_scope": "the whole Q07 result_sets list",
+          "declared": "252a18496a59cc871dbe019ad7b2ac79674310b44435602b215d7c46b8091f2f",
+          "actual_over_all_ten": "16b1885d8b6a042c5d4ebde569e584782e8c2fcf37fbe7895469e9fc8e2db76d",
+          "cause": "D-0023 appends the four Q07-ENRICHED-* result sets to the list"
+        }
+      },
+      "assessment": "No frozen expected value moved. Both digests are declared over the result_sets CONTAINER, so any additive supersession moves them mechanically. Left failing and not reconciled: re-scoping the checker to the frozen subset is a manifest-instrumentation decision, not an implementation one.",
+      "not_fixed_deliberately": true
+    },
+    "Q08-NOT-FOUND": {
+      "claim": "empty",
+      "verdict": "HELD",
+      "evidence": {
+        "sql_oracle": {
+          "expected_rows": 0,
+          "actual_rows": 0,
+          "verdict": "PASS"
+        },
+        "non_anchored_2026_actual_flight_rows": 0
+      }
+    }
+  },
+  "frozen_manifest_regression": {
+    "frozen_result_sets": 24,
+    "frozen_expected_rows": 198,
+    "result_sets_passed": 49,
+    "result_sets_failed": 0,
+    "contract_truth_tables": [
+      {
+        "id": "TT-BOTH-CLOCKS",
+        "verdict": "PASS"
+      },
+      {
+        "id": "TT-UTC-OFFSETS",
+        "verdict": "PASS"
+      },
+      {
+        "id": "TT-CABIN-QUALITY",
+        "verdict": "PASS"
+      },
+      {
+        "id": "TT-CODE-RESOLUTION",
+        "verdict": "PASS"
+      },
+      {
+        "id": "TT-SENTINELS",
+        "verdict": "PASS"
+      },
+      {
+        "id": "TT-MIXED-ENGINE-LIMIT",
+        "verdict": "PASS"
+      },
+      {
+        "id": "TT-PLAN-ACTUAL-DIVERSION",
+        "verdict": "PASS"
+      }
+    ],
+    "adversarial_probes": [
+      {
+        "probe": "concurrent_route_states_preserved",
+        "verdict": "PASS"
+      },
+      {
+        "probe": "incomplete_snapshots_create_no_removals",
+        "verdict": "PASS"
+      },
+      {
+        "probe": "temporal_integrity_and_sentinels",
+        "verdict": "PASS"
+      },
+      {
+        "probe": "schedule_canonicalisation_and_no_change",
+        "verdict": "PASS"
+      },
+      {
+        "probe": "enriched_fleet_lifecycle",
+        "verdict": "PASS"
+      },
+      {
+        "probe": "enriched_schedule_2027",
+        "verdict": "PASS"
+      }
+    ],
+    "anchored_fixture_byte_identity": {
+      "aircraft_master": {
+        "anchored_rows_compared": 6,
+        "byte_identical": true,
+        "differences": {}
+      },
+      "aircraft_history": {
+        "anchored_rows_compared": 24,
+        "byte_identical": true,
+        "differences": {}
+      },
+      "aircraft_configuration": {
+        "anchored_rows_compared": 4,
+        "byte_identical": true,
+        "differences": {}
+      },
+      "aircraft_flight": {
+        "anchored_rows_compared": 24,
+        "byte_identical": true,
+        "differences": {}
+      },
+      "passenger_historical": {
+        "anchored_rows_compared": 13,
+        "byte_identical": true,
+        "differences": {}
+      },
+      "passenger_forward": {
+        "anchored_rows_compared": 7,
+        "byte_identical": true,
+        "differences": {}
+      },
+      "anchored_AH_34_to_42_constant": {
+        "events": 24,
+        "distinct_values_per_column": {
+          "base_state": [
+            "SYN-ST-CA"
+          ],
+          "base_region": [
+            "SYN-RGN-WEST"
+          ],
+          "storage_location_type": [
+            ""
+          ],
+          "noise_certification": [
+            "SYN-NOISE-CH3"
+          ],
+          "has_winglets": [
+            "false"
+          ],
+          "aircraft_registration_country": [
+            "Synthetic United States"
+          ],
+          "transponder_miscode": [
+            "false"
+          ],
+          "maximum_landing_weight_lb": [
+            "142000"
+          ],
+          "operating_empty_weight_lb": [
+            "92000"
+          ]
+        },
+        "all_constant": true
+      },
+      "schedule_snapshot_calendar": {
+        "v1_rows": 10,
+        "v2_rows": 36,
+        "ten_v1_rows_identical_including_SC_05": true
+      },
+      "schedule_snapshot": {
+        "v1_rows": 70000,
+        "all_v1_rows_present_unchanged_in_v2": true
+      },
+      "airport_reference": {
+        "rows": 45,
+        "identical": true
+      }
+    }
+  },
+  "predicted_versus_actual": [
+    {
+      "measure": "AIRCRAFT_HISTORY rows",
+      "predicted": 30233,
+      "actual": 30233,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "AIRCRAFT_HISTORY per-cohort split C1..C8",
+      "predicted": "11722/3083/4445/3884/739/2000/3943/393",
+      "actual": "11722/3083/4445/3884/739/2000/3943/393",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "row budget total",
+      "predicted": 182029,
+      "actual": 182039,
+      "match": false,
+      "verdict": "SPECIFICATION_DEFECT",
+      "note": "AIRLINE_REFERENCE lands at 190 rather than the budgeted 180. The section 4 estimate of +80 carriers did not count the eight CAP base-metal carriers, eight codeshare marketing identities and four codeshare-only operating identities that section 9.2 requires, and holding the table at 180 would push the demo padding block below smoke's 25 and break the declared 'demo is a strict semantic superset of smoke' property. Ten more rows on a 182,000-row budget inside a 100k-350k band."
+    },
+    {
+      "measure": "SCHEDULE_SNAPSHOT rows",
+      "predicted": 124636,
+      "actual": 124636,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "SCHEDULE_SNAPSHOT_CALENDAR rows",
+      "predicted": 36,
+      "actual": 36,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "2027 schedule rows",
+      "predicted": 54636,
+      "actual": 54636,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "2027 distinct schedule keys",
+      "predicted": 2527,
+      "actual": 2459,
+      "match": false,
+      "verdict": "SPECIFICATION_DEFECT",
+      "note": "The section 9.2 per-cohort key counts sum to 2,459 and the row counts derived from them sum to exactly the declared 54,636. 2,527 was an addition error; the row budget is unaffected. Corrected in spec section 14.1 defect 1."
+    },
+    {
+      "measure": "rows at the incomplete date 2027-03-15",
+      "predicted": 2301,
+      "actual": 2301,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "rows at the missing date 2027-04-19",
+      "predicted": 0,
+      "actual": 0,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "gap-crossing comparisons added by 2027",
+      "predicted": 2,
+      "actual": 2,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "contracted column count",
+      "predicted": 204,
+      "actual": 204,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "AIRLINE_REFERENCE rows",
+      "predicted": 180,
+      "actual": 190,
+      "match": false,
+      "verdict": "SPECIFICATION_DEFECT",
+      "note": "163 exact-required carriers plus 2 controlled-ambiguity rows plus 25 padding, where 25 is the floor set by the smoke scale."
+    },
+    {
+      "measure": "aircraft_state versions per filler aircraft",
+      "predicted": 8.57,
+      "actual": 8.83,
+      "match": false,
+      "verdict": "PREDICTION_LOW",
+      "note": "8.83 against a predicted 8.57, 3 percent high. The prediction under-counted state versions minted by the storage and return events, which flip AH-22, AH-23 and AH-36 together. Richer than predicted; the direction is favourable."
+    },
+    {
+      "measure": "aircraft with more than one state version",
+      "predicted": "999 of 999",
+      "actual": "995 of 999 (993 of 993 filler)",
+      "match": false,
+      "verdict": "PREDICTION_WRONG_BY_CONSTRUCTION",
+      "note": "993 of 993 filler aircraft is the claim that matters and it holds. 999 of 999 was never reachable: 1004, 1005, 1098 and 1099 each carry a single anchored event and cannot have a second version."
+    },
+    {
+      "measure": "aircraft_status versions per filler aircraft",
+      "predicted": 2.32,
+      "actual": 2.36,
+      "match": false,
+      "verdict": "PREDICTION_LOW",
+      "note": "2.36 against a predicted 2.32; follows from the 468 rather than 465 aircraft below."
+    },
+    {
+      "measure": "aircraft with more than one status version",
+      "predicted": "467 of 999",
+      "actual": "470 of 999 (468 filler)",
+      "match": false,
+      "verdict": "PREDICTION_LOW",
+      "note": "468 filler aircraft, not 465. Recount of the section 7.3 rules gives C1 60, C2 150, C3 100, C4 50, C7 92, C8 16 = 468. The specification arithmetic was three low."
+    },
+    {
+      "measure": "aircraft_type versions per filler aircraft",
+      "predicted": 1.2,
+      "actual": 1.201,
+      "match": false,
+      "verdict": "MATCH",
+      "note": "1.201 rounds to the predicted 1.20; 200 aircraft convert, exactly as predicted."
+    },
+    {
+      "measure": "engine_type versions per filler aircraft",
+      "predicted": 1.31,
+      "actual": 1.307,
+      "match": false,
+      "verdict": "MATCH",
+      "note": "1.307 rounds to the predicted 1.31; 305 aircraft re-engine, exactly as predicted."
+    },
+    {
+      "measure": "aircraft that change type",
+      "predicted": 200,
+      "actual": 200,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "aircraft that re-engine",
+      "predicted": 305,
+      "actual": 305,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "status observation vocabulary over filler events",
+      "predicted": "In Service 28272 / Storage 1654 / Maintenance 283",
+      "actual": "In Service 28272 / Storage 1654 / Maintenance 283",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "closed storage spells over the 993 filler aircraft",
+      "predicted": "437 across 256 aircraft",
+      "actual": "437 across 256 aircraft",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "filler aircraft by spell count 0/1/2/3",
+      "predicted": "737/102/127/27",
+      "actual": "737/102/127/27",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "spell duration buckets 0 / 1-7 / 8-30 / 31-90 / 91-365 / 366-730 / >730 (filler)",
+      "predicted": "18/38/31/88/163/58/41",
+      "actual": "18/38/31/88/163/58/41",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "spell duration minimum / median / maximum days",
+      "predicted": "0 / 157 / 1091",
+      "actual": "0 / 157 / 1091",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q03-ENRICHED rows",
+      "predicted": 985,
+      "actual": 985,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q03-ENRICHED distinct month ends",
+      "predicted": 120,
+      "actual": 120,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q03-ENRICHED distinct aircraft types",
+      "predicted": 10,
+      "actual": 10,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q05-ENRICHED rows",
+      "predicted": 392,
+      "actual": 392,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q05-ENRICHED class histogram",
+      "predicted": "69/88/82/23/6/18/53/53",
+      "actual": "69/88/82/23/6/18/53/53",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q05-ENRICHED per-pair distribution",
+      "predicted": "17,16,23,16,23,16,23,14,21,16,23,16,16,16,16,14,14,12,10,10,10,10,40",
+      "actual": "17,16,23,16,23,16,23,14,21,16,23,16,16,16,16,14,14,12,10,10,10,10,40",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q05 event classes at a minimum of 6 rows",
+      "predicted": "all 8",
+      "actual": "all 8 (minimum 6, AMBIGUOUS_CANDIDATE_GROUP)",
+      "match": false,
+      "verdict": "MATCH",
+      "note": "All eight classes populated, smallest is AMBIGUOUS_CANDIDATE_GROUP at 6."
+    },
+    {
+      "measure": "Q06-ENRICHED-MARKETING",
+      "predicted": "7 rows, 4 entries 3 exits",
+      "actual": "7 rows, 4 entries 3 exits",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q06-ENRICHED-OPERATING",
+      "predicted": "5 rows, 2 entries 3 exits",
+      "actual": "5 rows, 2 entries 3 exits",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q07-ENRICHED cardinalities late/early/shift/role",
+      "predicted": "30/30/30/18",
+      "actual": "30/30/30/18",
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "Q07 late versus early difference",
+      "predicted": "exactly 4 rows",
+      "actual": "4 only in late plus 4 only in early, symmetric difference 8",
+      "match": false,
+      "verdict": "SPECIFICATION_AMBIGUITY",
+      "note": "Four services withdrawn and four added, exactly as the narrative says, which is a symmetric difference of 8 rather than 4. Spec section 9.5 states both readings; they are inconsistent. Recorded as defect 6."
+    },
+    {
+      "measure": "Q07 late versus operating-shift difference",
+      "predicted": "exactly 4 rows",
+      "actual": "2 plus 2, symmetric difference 4",
+      "match": false,
+      "verdict": "MATCH",
+      "note": "Symmetric difference is exactly 4: two services stop operating on 07-04 and two operate only on Mondays."
+    },
+    {
+      "measure": "Q07-ENRICHED-ROLE UNRESOLVED_PHYSICAL_SERVICE rows",
+      "predicted": 4,
+      "actual": 10,
+      "match": false,
+      "verdict": "DIFFERS",
+      "note": "10, not 4. SOURCE_CONTRACT.md counts operating capacity only on a physical base representative, which requires the marketing and operating carriers to resolve to the SAME airline. The four CAP codeshare-only keys are unresolved as designed; the six additional rows are CLK 04..07 and CLK 10..11, whose marketing carrier is deliberately a pool carrier different from their operating carrier so that Q06 can show the two roles diverging. Making them base metal would create Q06 market entries and exits at pair 23 and break Q06-ENRICHED at 7 and 5. The two invariants are not simultaneously satisfiable under the spec's CLK construction; capacity counting was preferred, so the operating clock now counts 8 markets where the literal specification counted none."
+    },
+    {
+      "measure": "Q07 cabin_quality distinct values across the four sets",
+      "predicted": "at least 3",
+      "actual": "3 (RECONCILED, UNRECONCILED, NOT_COUNTED)",
+      "match": false,
+      "verdict": "MATCH",
+      "note": "Three distinct values, meeting the at-least-three requirement."
+    },
+    {
+      "measure": "FULFILLMENT_EXACT rows",
+      "predicted": 700,
+      "actual": 704,
+      "match": false,
+      "verdict": "MATCH_PLUS_ANCHORS",
+      "note": "700 enriched fulfilments plus the 4 anchored ones."
+    },
+    {
+      "measure": "canonical passenger flights exactly fulfilled",
+      "predicted": 650,
+      "actual": 653,
+      "match": false,
+      "verdict": "MATCH_PLUS_ANCHORS",
+      "note": "650 enriched (600 direct plus 50 stopover plans) plus 3 anchored."
+    },
+    {
+      "measure": "actual legs carrying candidate evidence only",
+      "predicted": 400,
+      "actual": 341,
+      "match": false,
+      "verdict": "SPECIFICATION_DEFECT",
+      "note": "341, not 400. Section 10.2 allocates 400 HEUR-PF rows as 340 unique plus 30 pairs, which can only reach 370 legs, and only the 340 unique ones become HEURISTIC_CANDIDATE; the 30 ambiguous legs become an ambiguous group instead. 340 enriched plus 1 anchored. 400 and the 340+60 split cannot both be true."
+    },
+    {
+      "measure": "ambiguous fulfilment groups",
+      "predicted": 30,
+      "actual": 31,
+      "match": false,
+      "verdict": "MATCH_PLUS_ANCHORS",
+      "note": "30 enriched groups of two members plus the 1 anchored group."
+    },
+    {
+      "measure": "PASSENGER_HISTORICAL rows with a non-null schedule_key",
+      "predicted": 8000,
+      "actual": 8001,
+      "match": false,
+      "verdict": "MATCH_PLUS_ANCHORS",
+      "note": "8,000 enriched plus the anchored SYN-SK-HIST_700 row."
+    },
+    {
+      "measure": "canonical passenger flights with a schedule key",
+      "predicted": "8000 of about 19499",
+      "actual": "7951 of 19446",
+      "match": false,
+      "verdict": "MATCH_WITH_EXPLANATION",
+      "note": "7,951 of 19,446, which is 40.9 percent against a predicted 41 percent. The 50-row shortfall against 8,001 is exactly the 50 two-leg stopover plans, where two schedule-keyed PH rows coalesce into one canonical flight."
+    },
+    {
+      "measure": "canonical keys present on both passenger sides",
+      "predicted": 500,
+      "actual": 501,
+      "match": false,
+      "verdict": "MATCH_PLUS_ANCHORS",
+      "note": "500 enriched overlaps plus the anchored TT-PASSENGER-UNION fixture."
+    },
+    {
+      "measure": "rotations over 2027-06-01..2027-06-30",
+      "predicted": 609,
+      "actual": 609,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "rotations carrying exactly one anomaly",
+      "predicted": 30,
+      "actual": 30,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "rotations whose final leg has AF-07 = AF-06 + 1",
+      "predicted": "at least 120",
+      "actual": 170,
+      "match": false,
+      "verdict": "BOUND_SATISFIED",
+      "note": "170 against a floor of 120."
+    },
+    {
+      "measure": "anomaly codes reproduced on a filler aircraft",
+      "predicted": 11,
+      "actual": 11,
+      "match": true,
+      "verdict": "MATCH"
+    },
+    {
+      "measure": "non-anchored AIRCRAFT_FLIGHT rows dated 2026",
+      "predicted": 0,
+      "actual": 0,
+      "match": true,
+      "verdict": "MATCH"
+    }
+  ],
+  "row_budget": {
+    "predicted_total": 182029,
+    "actual_total": 182039,
+    "delta_reason": "AIRLINE_REFERENCE is 190 not 180; see risk 4 and specification section 14.1 defect 8",
+    "per_table": {
+      "AIRCRAFT_CONFIGURATION": 2000,
+      "AIRCRAFT_FLIGHT": 3900,
+      "AIRCRAFT_HISTORY": 30233,
+      "AIRCRAFT_MASTER": 999,
+      "AIRLINE_REFERENCE": 190,
+      "AIRPORT_REFERENCE": 45,
+      "PASSENGER_FORWARD": 10000,
+      "PASSENGER_HISTORICAL": 10000,
+      "SCHEDULE_SNAPSHOT": 124636,
+      "SCHEDULE_SNAPSHOT_CALENDAR": 36
+    }
+  },
+  "new_result_sets": {
+    "count": 25,
+    "total_expected_rows": 1636,
+    "authority": "computed by data/run_oracles.py SQL against the live SOURCE and MODEL_INPUT layers, never hand-authored",
+    "sets": [
+      {
+        "result_set_id": "Q01-ENRICHED-MID-STORAGE",
+        "parameters": {
+          "aircraft_id": 1556,
+          "as_of_date": "2031-06-30"
+        },
+        "expected_cardinality": 1,
+        "result_set_sha256": "85b957191926e2c873f4beda91a8813023eee850e2e1185f8b2ac4b08a4396fb",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q01-ENRICHED-RETURN-DAY",
+        "parameters": {
+          "aircraft_id": 1860,
+          "as_of_date": "2027-08-03"
+        },
+        "expected_cardinality": 1,
+        "result_set_sha256": "46ef9d6f46e1d9740884970d419a6312b63e4d073f964a826aab660df69d2834",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q01-ENRICHED-CONVERSION-DAY",
+        "parameters": {
+          "aircraft_id": 1107,
+          "as_of_date": "2032-06-01"
+        },
+        "expected_cardinality": 1,
+        "result_set_sha256": "d32043c654b3100c3fca3d48b60690cbd6346ecbb3d34c669c7aceb7deed92c8",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q01-ENRICHED-POST-EOL",
+        "parameters": {
+          "aircraft_id": 1000,
+          "as_of_date": "2032-06-30"
+        },
+        "expected_cardinality": 1,
+        "result_set_sha256": "e3263e7ebb266ef59509e2a6c8bbbbeaed0e054b94550ba55dd1ecbe22f76463",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q02-ENRICHED-MULTI-SPELL",
+        "parameters": {
+          "aircraft_id": 1860
+        },
+        "expected_cardinality": 3,
+        "result_set_sha256": "f8d202936d1bfd94de59c23f56d264ea6681d6a06949e344856360e6b149a137",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q02-ENRICHED-LONG-SPELL",
+        "parameters": {
+          "aircraft_id": 1556
+        },
+        "expected_cardinality": 2,
+        "result_set_sha256": "86e1c8a84ecffd13a6cde14b4ee257ca8c9093f3f5f7e87c738a21ed77f917bd",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q02-ENRICHED-SAME-DAY",
+        "parameters": {
+          "aircraft_id": 1859
+        },
+        "expected_cardinality": 2,
+        "result_set_sha256": "27d72a908d3161853ca93654a06a1beee0ef83866edb634b65c88b58f5216f63",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q02-ENRICHED-STATUS-BUT-NO-STORAGE",
+        "parameters": {
+          "aircraft_id": 1307
+        },
+        "expected_cardinality": 0,
+        "result_set_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q02F-FLEET-DISTRIBUTION",
+        "parameters": {
+          "aircraft_scope": "FLEET"
+        },
+        "expected_cardinality": 7,
+        "result_set_sha256": "d333d5e96d96b748c9c393956053a5fad4270090918657c996c56557fd501505",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q03-ENRICHED",
+        "parameters": {
+          "start_month_end": "2025-01-31",
+          "end_month_end": "2034-12-31",
+          "status": "In Service"
+        },
+        "expected_cardinality": 985,
+        "result_set_sha256": "b413b4b80a845631a519c6bc3c72f097c5afb9c2096599abd0eab4d41c672df5",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q04-ENRICHED-ENGINE-ONLY",
+        "parameters": {
+          "aircraft_id": 1000
+        },
+        "expected_cardinality": 3,
+        "result_set_sha256": "76a2383c09292011306d6a80924bc49d91a74984cbb98dffe194e4b5f5c6d020",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q04-ENRICHED-TYPE-ONLY",
+        "parameters": {
+          "aircraft_id": 1207
+        },
+        "expected_cardinality": 3,
+        "result_set_sha256": "171a6a24c959c0758b0a844ab86f1f47d54146ba6964c2773dd39c95975d8349",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q04-ENRICHED-INDEPENDENT",
+        "parameters": {
+          "aircraft_id": 1107
+        },
+        "expected_cardinality": 4,
+        "result_set_sha256": "420c1c7360c59c4b57a7485c44fc08be7aa1e2152770b8180f702757404928f0",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q04-ENRICHED-COUPLED",
+        "parameters": {
+          "aircraft_id": 1307
+        },
+        "expected_cardinality": 4,
+        "result_set_sha256": "ce6c36ed511f837c3476ca74c1d491bcfc97ce05ac55631c80e991d844645ab7",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q05-ENRICHED",
+        "parameters": {
+          "start_knowledge_date": "2027-01-04",
+          "end_knowledge_date": "2027-06-28",
+          "cadence_days": 7
+        },
+        "expected_cardinality": 392,
+        "result_set_sha256": "856dd18e222835b2d0c128f683bdff2f7cc00e2915ce3e3f40a608ac95f9f59d",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q05-ENRICHED-GAP-PAIRS",
+        "parameters": {
+          "start_knowledge_date": "2027-03-08",
+          "end_knowledge_date": "2027-04-26",
+          "cadence_days": 7
+        },
+        "expected_cardinality": 87,
+        "result_set_sha256": "185e41bf64dbe662fb066015972aa9644019555fbe7053e50709be92bcf28f39",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q06-ENRICHED-MARKETING",
+        "parameters": {
+          "latest_knowledge_date": "2027-06-28",
+          "comparison_knowledge_date": "2027-06-21",
+          "carrier_role": "marketing"
+        },
+        "expected_cardinality": 7,
+        "result_set_sha256": "e1e383c2dd8666ec3c65cb115d088fad35b828facdecd4d97245ebeadf41f1dd",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q06-ENRICHED-OPERATING",
+        "parameters": {
+          "latest_knowledge_date": "2027-06-28",
+          "comparison_knowledge_date": "2027-06-21",
+          "carrier_role": "operating"
+        },
+        "expected_cardinality": 5,
+        "result_set_sha256": "b966c6ce3a21045346df0e60c0bcd08ade4d82d8093ba8d824df09e7eedbdf0e",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q07-ENRICHED-KNOWLEDGE-LATE",
+        "parameters": {
+          "knowledge_date": "2027-06-28",
+          "operating_date": "2027-07-05",
+          "carrier_role": "marketing"
+        },
+        "expected_cardinality": 30,
+        "result_set_sha256": "7f14a91e914c5fc652cb06aab5b2d475439a5405b8cd0d7ccc138195c2a143b1",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q07-ENRICHED-KNOWLEDGE-EARLY",
+        "parameters": {
+          "knowledge_date": "2027-06-21",
+          "operating_date": "2027-07-05",
+          "carrier_role": "marketing"
+        },
+        "expected_cardinality": 30,
+        "result_set_sha256": "68e927cc40d2dd61c9cf87e7dee0dcea6e3cc011b83f1334185f5a75fba90634",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q07-ENRICHED-OPERATING-SHIFT",
+        "parameters": {
+          "knowledge_date": "2027-06-28",
+          "operating_date": "2027-07-03",
+          "carrier_role": "marketing"
+        },
+        "expected_cardinality": 30,
+        "result_set_sha256": "0d84efdac4980e919f4d3d93c44fdb031d3d926514d57e1acee803775965f7c3",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q07-ENRICHED-ROLE",
+        "parameters": {
+          "knowledge_date": "2027-06-28",
+          "operating_date": "2027-07-05",
+          "carrier_role": "operating"
+        },
+        "expected_cardinality": 18,
+        "result_set_sha256": "7bb77c9f63df25557fb8d529c62ab4637da64d7645e81c9e5c0ab8475174818b",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q08-ENRICHED-ROTATION",
+        "parameters": {
+          "aircraft_id": 1072,
+          "flight_departure_date": "2027-06-08"
+        },
+        "expected_cardinality": 5,
+        "result_set_sha256": "de983be0d7ad70f8265810f24b0b8a86afc3fe1b0aefb56a65a63fc2257d4d93",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q08-ENRICHED-ANOMALIES",
+        "parameters": {
+          "aircraft_id": 1035,
+          "flight_departure_date": "2027-07-06"
+        },
+        "expected_cardinality": 11,
+        "result_set_sha256": "f45d2419121f08c43539c82e04a4eea32be80182f0efb77d77b9f631dd258de5",
+        "oracle_verdict": "PASS"
+      },
+      {
+        "result_set_id": "Q08-ENRICHED-CLEAN",
+        "parameters": {
+          "aircraft_id": 1330,
+          "flight_departure_date": "2027-06-09"
+        },
+        "expected_cardinality": 4,
+        "result_set_sha256": "a0a831a65cd1c3fadaeca7dd8d8aadbc3612c3a40e7934c4a6ffb5f82ffb64ea",
+        "oracle_verdict": "PASS"
+      }
+    ]
+  },
+  "determinism": {
+    "two_clean_runs_byte_identical": true,
+    "reordered_input_run_identical_canonical_rows": true,
+    "manifest_version": "1.2.0",
+    "specification_version": "2.0.0",
+    "expected_manifest_version": "1.2.0",
+    "known_answers": {
+      "pf_valid_null_id_dv43": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "pf_valid_null_id_dv46": "FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+      "pf_valid_null_id_payload_bytes": 610,
+      "schedule_prf_2027_sha256": "462b1a2f2ab0a15afb0464736986f1bbde121ce5b4310b8933c193943f48fd16",
+      "schedule_prf_2027_ss39": 9963,
+      "schedule_prf_sha256": "491861981a7e9e11dd9d7f5650a019f5cd99b2eff006d88f74b9b18081ded65d",
+      "schedule_prf_ss39": 9712
+    },
+    "authority_sha256": {
+      "ATTRIBUTE_AUTHORITY.md": "5795d8fb93b1fe7912c6c0394f2101afa7fef3051e1a30ee9718df0dc0c446a1",
+      "EXPECTED_ANSWERS.yaml": "7d2a0b9ef8c4f6f5241aed65a1c4711d7e6534942cbcde78173c9b36a7b2399d",
+      "SOURCE_CONTRACT.md": "a5847a0e7fa4694ccc225e399ea529c13538966e3ccd46825350a96ed35ed056",
+      "build/task_reports/DATA-01.json": "eb0fb2b270f845bfc21e97ce7b6520ea46d725d8cdbb9a28b56eb2909b22c7e6",
+      "data/SYNTHETIC_DATA_SPEC.md": "b2d520a3fa1fcf6490b9e534cc0c799ef47b8877a490ad3d5469e90efabeaf32",
+      "data/SYNTHETIC_DATA_SPEC_V2.md": "e799192ea34e387eb51d10aefcf819ceaf2334f29550b5534483b0f563236e97"
+    },
+    "file_sha256": {
+      "AIRCRAFT_CONFIGURATION": "db057e5e42e0165d68cd04af2182e05205ff7a312ee5d9afc9dd941c8360c373",
+      "AIRCRAFT_FLIGHT": "6ae20a1fb6602342d09c115b92a94ee442cda82c53a2db21dd9f361a58ce6683",
+      "AIRCRAFT_HISTORY": "c6c7c7a9da147d1ce483beb8a8a1c956d6201b56ddad0bf2fb877fa495c3ac16",
+      "AIRCRAFT_MASTER": "f6160ee47bbc0686dc3cbb24b0ba2fd8ced98b7f48f82c3f20265956105d7293",
+      "AIRLINE_REFERENCE": "17874e7aa2c80d90d624165776b564334dc3b290db5cdd48bb3230393dc863eb",
+      "AIRPORT_REFERENCE": "e8c7f42ec7b32bbb20cfd27940202e2d6c760f13e3e8b0244fab8d0cb7908efb",
+      "PASSENGER_FORWARD": "0d2f29a2eaf619f45c14e3e3dcccdda735a3d1191ce0e20952efa3cd9c6582dd",
+      "PASSENGER_HISTORICAL": "9fa26337ad62ef5d4497c98db5c2eb9a30444be32dafb1fc742f1e9b5fbe8622",
+      "SCHEDULE_SNAPSHOT": "d94029707e16a040f1fdd7ff40436ce6cf4d437d03e172ae8611f3d58b90fc95",
+      "SCHEDULE_SNAPSHOT_CALENDAR": "7a76b46a216f968b6a440794224af81084b2f8dc37d27984b9d8e82ecd924b26"
+    },
+    "ordered_typed_rows_sha256": {
+      "AIRCRAFT_CONFIGURATION": "2dd5f731962a5dca55c707630cc7c9378a13eb2254b5b09829922421fe1e333b",
+      "AIRCRAFT_FLIGHT": "01a30d74d082856a96f9dc1b385f47900b42059ef6012aaa3f370ad4c99d091a",
+      "AIRCRAFT_HISTORY": "b41a8806c54fc716916c92ea15b44ba12ecba16a059594d35d14a711ebd6f6e8",
+      "AIRCRAFT_MASTER": "9a325abd87c5ab9dc5f9645cfba7e97e068f42626ba2317bcb7bebc7e3af83d1",
+      "AIRLINE_REFERENCE": "8a53f058343b8050e87b205f8323f9d9d2638448b408ac1567416fcb0ba3ebd3",
+      "AIRPORT_REFERENCE": "f3907f7ce5f87b678f9158ac11e73fecf7f3484ec943eee7a72436cd84546d22",
+      "PASSENGER_FORWARD": "c8b35b737e28321bc5bb568d8e34d0391ff7cc78049e6f3b510b27ed57cdbcae",
+      "PASSENGER_HISTORICAL": "ed706ae443d4c775d1b8e196e46f0ad41043c8e900c1bc1746ead2c8a34a322c",
+      "SCHEDULE_SNAPSHOT": "8ccafdff8a8105e960b1e3be1f1ce03f589ab3510cbbb87ed0b4c50e40cd6d66",
+      "SCHEDULE_SNAPSHOT_CALENDAR": "c308ea78808d0e4297c5eea1adb49bb85c1c2478bda4ac608457f71641cb6878"
+    },
+    "snowflake_load": {
+      "status": "PASSED",
+      "rows": 182039,
+      "per_table": {
+        "AIRCRAFT_CONFIGURATION": 2000,
+        "AIRCRAFT_FLIGHT": 3900,
+        "AIRCRAFT_HISTORY": 30233,
+        "AIRCRAFT_MASTER": 999,
+        "AIRLINE_REFERENCE": 190,
+        "AIRPORT_REFERENCE": 45,
+        "PASSENGER_FORWARD": 10000,
+        "PASSENGER_HISTORICAL": 10000,
+        "SCHEDULE_SNAPSHOT": 124636,
+        "SCHEDULE_SNAPSHOT_CALENDAR": 36
+      },
+      "in_snowflake_content_hash_matches_package": true,
+      "change_tracking": {
+        "AIRCRAFT_CONFIGURATION": "ON",
+        "AIRCRAFT_FLIGHT": "ON",
+        "AIRCRAFT_HISTORY": "ON",
+        "AIRCRAFT_MASTER": "ON",
+        "AIRLINE_REFERENCE": "ON",
+        "AIRPORT_REFERENCE": "ON",
+        "PASSENGER_FORWARD": "ON",
+        "PASSENGER_HISTORICAL": "ON",
+        "SCHEDULE_SNAPSHOT": "ON",
+        "SCHEDULE_SNAPSHOT_CALENDAR": "ON"
+      }
+    }
+  },
+  "model_input": {
+    "gates_total": 88,
+    "gates_passed": 88,
+    "gates_failed": [],
+    "enrichment_gates_added": [
+      {
+        "gate": "AT-16B",
+        "description": "D-0023: the 2027 REAP cohort adds exactly eight reappearing keys",
+        "expected": "9",
+        "observed": "9"
+      },
+      {
+        "gate": "AT-17B",
+        "description": "D-0023: the reappearance label reaches every enriched addition too",
+        "expected": "9",
+        "observed": "9"
+      },
+      {
+        "gate": "AT-19B",
+        "description": "D-0023: the 2027 block adds exactly two gap-crossing comparisons and no third",
+        "expected": "2026-10-12,2026-10-19|2027-03-15|2027-04-19",
+        "observed": "2026-10-12,2026-10-19|2027-03-15|2027-04-19"
+      },
+      {
+        "gate": "AT-34B",
+        "description": "D-0023: the enriched anomaly population adds self-loops and no other class drifts",
+        "expected": "14",
+        "observed": "14"
+      },
+      {
+        "gate": "AT-36B",
+        "description": "D-0023: every enriched cycle component is still emitted once at its minimum member",
+        "expected": "0",
+        "observed": "0"
+      }
+    ],
+    "all_gates": [
+      {
+        "gate": "HG-01",
+        "status": "PASS",
+        "description": "DV-43 grammar reproduces every SS-40 normalized row hash in SOURCE",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-01",
+        "status": "PASS",
+        "description": "Aircraft master to Aircraft: duplicate AM-01 is a hard source gate failure",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-02",
+        "status": "PASS",
+        "description": "AIRCRAFT_ELIGIBLE is one row per AM-01",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-03",
+        "status": "PASS",
+        "description": "AIRCRAFT_EVENT_ELIGIBLE is one row per AH-01",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-04",
+        "status": "PASS",
+        "description": "DV-04 audit assignment identity is unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-05",
+        "status": "PASS",
+        "description": "DV-05 daily assignment identity is unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-06",
+        "status": "PASS",
+        "description": "Exactly one final relevant observation per (aircraft, dimension, date)",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-07",
+        "status": "PASS",
+        "description": "At most one daily assignment per (dimension, aircraft, valid_from)",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-08",
+        "status": "PASS",
+        "description": "AircraftType definition FD holds for every non-null AC-05",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-09",
+        "status": "PASS",
+        "description": "EngineType definition FD holds for every non-null AC-14 (AC-08/AC-09 excluded)",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-10",
+        "status": "PASS",
+        "description": "AIRPORT_CURRENT is one row per AP-01",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-11",
+        "status": "PASS",
+        "description": "AIRLINE_CURRENT is one row per AL-01",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-12",
+        "status": "PASS",
+        "description": "CODE_RESOLUTION resolution_id is unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-13",
+        "status": "PASS",
+        "description": "Raw code to reference identity: zero/one/many maps to unresolved/exact/ambiguous and only one creates a link",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-14",
+        "status": "PASS",
+        "description": "CODE_RESOLUTION_CANDIDATE row count equals DV-11 candidate_count per resolution",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-15",
+        "status": "PASS",
+        "description": "SCHEDULE_CANONICAL_OBSERVATION is at most one row per (SS-01, SS-03)",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-16",
+        "status": "PASS",
+        "description": "DV-13 route_state_key is unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-17",
+        "status": "PASS",
+        "description": "SCHEDULE_EXACT_CHANGE grain (DV-34, SS-01, change_kind, field_name) is unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-18",
+        "status": "PASS",
+        "description": "DV-20 passenger_flight_key is unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-19",
+        "status": "PASS",
+        "description": "PASSENGER_SOURCE_LINEAGE grain (DV-20, source_system, DV-46) is unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-20",
+        "status": "PASS",
+        "description": "PASSENGER_FLIGHT_INVALID grain (source_system, stable_source_row_id) is unique and never null",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-21",
+        "status": "PASS",
+        "description": "AIRCRAFT_FLIGHT is one row per AF-01",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-22",
+        "status": "PASS",
+        "description": "ROTATION_LINK_VALIDATION grain (AF-01, target_token) is unique with no nullable identity",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-23",
+        "status": "PASS",
+        "description": "Actual flight to passenger flight: zero-or-one confirmed plan in v1",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-24",
+        "status": "PASS",
+        "description": "Exact and heuristic fulfillment never cover the same actual leg",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-25",
+        "status": "PASS",
+        "description": "DV-39 / DV-40 / DV-42 identities are unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-26",
+        "status": "PASS",
+        "description": "DV-35 / DV-36 / DV-37 identities are unique",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "MG-27",
+        "status": "PASS",
+        "description": "MONTH_END_CALENDAR has 600 distinct real month ends",
+        "expected": "600",
+        "observed": "600"
+      },
+      {
+        "gate": "MG-28",
+        "status": "PASS",
+        "description": "DV-44 quarantine keys are unique in both quarantine tables",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-01",
+        "status": "PASS",
+        "description": "Every daily assignment interval has positive width",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-02",
+        "status": "PASS",
+        "description": "Daily assignment intervals never overlap inside (dimension, aircraft)",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-03",
+        "status": "PASS",
+        "description": "No daily assignment escapes its aircraft existence interval",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-04",
+        "status": "PASS",
+        "description": "Every RouteState knowledge interval has positive width",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-05",
+        "status": "PASS",
+        "description": "RouteState knowledge intervals never overlap inside one SS-01",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-06",
+        "status": "PASS",
+        "description": "Source unknown-future sentinel 9999-12-31 never reaches a derived bound",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-07",
+        "status": "PASS",
+        "description": "Model open sentinel 9999-01-01 is used for open daily assignments",
+        "expected": "PRESENT",
+        "observed": "PRESENT"
+      },
+      {
+        "gate": "TG-08",
+        "status": "PASS",
+        "description": "The model open sentinel never appears as an interval start",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-09",
+        "status": "PASS",
+        "description": "No RouteState or exact change references an ineligible snapshot date",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "TG-10",
+        "status": "PASS",
+        "description": "Operating bounds stay inclusive and are never converted to an exclusive model bound",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "XG-01",
+        "status": "PASS",
+        "description": "Concurrent open RouteStates on one route are preserved, not collapsed",
+        "expected": "predicate",
+        "observed": "1339"
+      },
+      {
+        "gate": "XG-02",
+        "status": "PASS",
+        "description": "More than one route carries concurrent states at the same knowledge date",
+        "expected": "predicate",
+        "observed": "10"
+      },
+      {
+        "gate": "HG-02",
+        "status": "PASS",
+        "description": "DV-43 of the frozen null-ID forward observation matches the frozen known answer",
+        "expected": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+        "observed": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7"
+      },
+      {
+        "gate": "HG-03",
+        "status": "PASS",
+        "description": "Every contracted FLOAT input to DV-43 is integral, so CANON_FLOAT is exact here",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "HG-04",
+        "status": "PASS",
+        "description": "No contracted TIME or TIMESTAMP_NTZ input carries a sub-second component",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "HG-05",
+        "status": "PASS",
+        "description": "DV-46 is never built from an unqualified nullable ID",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-01",
+        "status": "PASS",
+        "description": "Before first event: no dimension is date-visible for aircraft 1004 on 2019-06-30",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-02",
+        "status": "PASS",
+        "description": "Before first event: aircraft 1004 nonetheless exists on 2019-06-30",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-03",
+        "status": "PASS",
+        "description": "End-of-life boundary is exclusive: nothing is date-visible for 1002 on 2024-07-01",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-04",
+        "status": "PASS",
+        "description": "The day before end of life stays fully covered for 1002",
+        "expected": "4",
+        "observed": "4"
+      },
+      {
+        "gate": "AT-05",
+        "status": "PASS",
+        "description": "Same-day ordering: four ordered status audit observations for 1001 on 2020-06-01",
+        "expected": "4",
+        "observed": "4"
+      },
+      {
+        "gate": "AT-06",
+        "status": "PASS",
+        "description": "Date-visible state is the final same-day observation (AH-01 101011)",
+        "expected": "101011",
+        "observed": "101011"
+      },
+      {
+        "gate": "AT-07",
+        "status": "PASS",
+        "description": "An irrelevant event (AH-01 101020) mints no assignment in any dimension",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-08",
+        "status": "PASS",
+        "description": "Missing configuration opens dimension-specific UNKNOWN_STATE gaps for 1002",
+        "expected": "4",
+        "observed": "4"
+      },
+      {
+        "gate": "AT-09",
+        "status": "PASS",
+        "description": "A -> B -> A survives: two adjacent Storage to In Service audit pairs for 1001",
+        "expected": "2",
+        "observed": "2"
+      },
+      {
+        "gate": "AT-10",
+        "status": "PASS",
+        "description": "One of those spells is same-day with zero duration",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-11",
+        "status": "PASS",
+        "description": "A null-to-value watched transition remains an audit assignment (AH-01 101021)",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-12",
+        "status": "PASS",
+        "description": "A value-to-null watched transition remains an audit assignment (AH-01 101023)",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-13",
+        "status": "PASS",
+        "description": "A same-day repeat of the previous value mints nothing (AH-01 101022)",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-14",
+        "status": "PASS",
+        "description": "An intraday null followed by a same-day value invents no daily unknown gap",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-15",
+        "status": "PASS",
+        "description": "Incomplete and missing snapshots create zero exact changes and zero route states",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-16",
+        "status": "PASS",
+        "description": "Reappearance after a proven absence is labelled on the RouteState segment",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-16B",
+        "status": "PASS",
+        "description": "D-0023: the 2027 REAP cohort adds exactly eight reappearing keys",
+        "expected": "9",
+        "observed": "9"
+      },
+      {
+        "gate": "AT-17",
+        "status": "PASS",
+        "description": "Reappearance is also labelled on the exact presence addition",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-17B",
+        "status": "PASS",
+        "description": "D-0023: the reappearance label reaches every enriched addition too",
+        "expected": "9",
+        "observed": "9"
+      },
+      {
+        "gate": "AT-18",
+        "status": "PASS",
+        "description": "Repeated unchanged complete snapshots coalesce into one RouteState",
+        "expected": "5",
+        "observed": "5"
+      },
+      {
+        "gate": "AT-19",
+        "status": "PASS",
+        "description": "A post-gap comparison exposes the skipped calendar dates and invents no date inside them",
+        "expected": "2026-10-12,2026-10-19",
+        "observed": "2026-10-12,2026-10-19"
+      },
+      {
+        "gate": "AT-19B",
+        "status": "PASS",
+        "description": "D-0023: the 2027 block adds exactly two gap-crossing comparisons and no third",
+        "expected": "2026-10-12,2026-10-19|2027-03-15|2027-04-19",
+        "observed": "2026-10-12,2026-10-19|2027-03-15|2027-04-19"
+      },
+      {
+        "gate": "AT-20",
+        "status": "PASS",
+        "description": "A unique candidate pair is never also an ambiguous group member",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-21",
+        "status": "PASS",
+        "description": "Quarantine invents no identity: no quarantined passenger row had a stable source ID",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-22",
+        "status": "PASS",
+        "description": "Invalid passenger observations never become canonical passenger flights",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-23",
+        "status": "PASS",
+        "description": "Every accepted rotation link independently satisfies all five validation conditions",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-24",
+        "status": "PASS",
+        "description": "Every typed rotation anomaly class is exercised by the 1099 fixture day",
+        "expected": "11",
+        "observed": "11"
+      },
+      {
+        "gate": "AT-25",
+        "status": "PASS",
+        "description": "Each cycle component has exactly one representative row",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-33",
+        "status": "PASS",
+        "description": "D-0022: a self-loop is not a cycle component",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-34",
+        "status": "PASS",
+        "description": "D-0022: the self-loop stays classified SELF_LOOP and auditable through its own flag",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-34B",
+        "status": "PASS",
+        "description": "D-0023: the enriched anomaly population adds self-loops and no other class drifts",
+        "expected": "14",
+        "observed": "14"
+      },
+      {
+        "gate": "AT-35",
+        "status": "PASS",
+        "description": "D-0022: every cycle edge stays inside one selected (aircraft, AF-06) chain",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-36",
+        "status": "PASS",
+        "description": "D-0022: exactly one cycle component with two members survives the scoped rule",
+        "expected": "1/2",
+        "observed": "1/2"
+      },
+      {
+        "gate": "AT-36B",
+        "status": "PASS",
+        "description": "D-0023: every enriched cycle component is still emitted once at its minimum member",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-26",
+        "status": "PASS",
+        "description": "Exact fulfillment stays separate from heuristic and ambiguous evidence",
+        "expected": "0",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-27",
+        "status": "PASS",
+        "description": "One passenger service can be fulfilled by many actual legs",
+        "expected": "predicate",
+        "observed": "2"
+      },
+      {
+        "gate": "AT-28",
+        "status": "PASS",
+        "description": "Marketing and operating carrier roles stay separate on RouteState",
+        "expected": "predicate",
+        "observed": "0"
+      },
+      {
+        "gate": "AT-29",
+        "status": "PASS",
+        "description": "Codeshare-only physical service is visibly unresolved, never guessed",
+        "expected": "UNRESOLVED_PHYSICAL_SERVICE",
+        "observed": "UNRESOLVED_PHYSICAL_SERVICE"
+      },
+      {
+        "gate": "AT-30",
+        "status": "PASS",
+        "description": "An INVALID_ROUTE_KEY observation yields no RouteState: only the one route-valid snapshot does",
+        "expected": "1",
+        "observed": "1"
+      },
+      {
+        "gate": "AT-31",
+        "status": "PASS",
+        "description": "An INVALID_ROUTE_KEY observation still produces exact schedule-key change evidence",
+        "expected": "2",
+        "observed": "2"
+      },
+      {
+        "gate": "AT-32",
+        "status": "PASS",
+        "description": "Five raw observations carry an INVALID_ROUTE_KEY and none of them mint a Route",
+        "expected": "5000",
+        "observed": "5000"
+      },
+      {
+        "gate": "MD-01",
+        "status": "PASS",
+        "description": "Every MODEL_INPUT column carries a Field-ID or declared-derivation comment",
+        "expected": "828",
+        "observed": "828"
+      },
+      {
+        "gate": "MD-02",
+        "status": "PASS",
+        "description": "Change tracking is ON for every MODEL_INPUT table bound by MODEL-01",
+        "expected": "0 untracked",
+        "observed": "0 untracked"
+      }
+    ]
+  },
+  "ontology": {
+    "concept_count": 46,
+    "table_count": 37,
+    "declared_column_count": 805,
+    "property_count": 1412,
+    "relationship_count": 22,
+    "sources_regenerated": "PYTHONPATH=rai_code .venv/bin/python -m aviation_model._regen_sources -> 37 tables, 805 columns",
+    "standalone_regenerated": "PYTHONPATH=rai_code .venv/bin/python -m aviation_model._gen_standalone -> rai_code/manual/aviation_temporal.py, 4156 lines from 16 modules",
+    "new_ah_columns_bound": [
+      "base_state",
+      "base_region",
+      "storage_location_type",
+      "noise_certification",
+      "has_winglets",
+      "aircraft_registration_country",
+      "transponder_miscode",
+      "maximum_landing_weight_lb",
+      "operating_empty_weight_lb"
+    ],
+    "d0027": {
+      "status": "IMPLEMENTED_AND_VERIFIED_LIVE",
+      "bound_objects": [
+        "MODEL_INPUT.CODE_RESOLUTION_INPUT",
+        "MODEL_INPUT.CODE_RESOLUTION",
+        "MODEL_INPUT.CODE_RESOLUTION_CANDIDATE"
+      ],
+      "new_concepts": [
+        "CodeResolution",
+        "CodeResolutionCandidate"
+      ],
+      "model_shape": {
+        "objects": 37,
+        "declared_columns": 805,
+        "concepts": 46
+      },
+      "live_query": {
+        "first_query_seconds": 692.9,
+        "first_query_note": "This is a full cold CDC re-sync after SOURCE and every MODEL_INPUT table was replaced, not the marginal cost of the three new objects. It is exactly the caveat D-0027 recorded when it said its 0.18 second measurement was marginal cost on already-synced sources and should not be cited as evidence about a cold first-ever sync.",
+        "CodeResolution_rows": 784140,
+        "CodeResolution_warm_seconds": 7.8,
+        "CodeResolutionCandidate_rows": 627424,
+        "CodeResolutionCandidate_warm_seconds": 14.3
+      },
+      "assessment": "The row-scoped binding is live and returns data; warm queries are seconds. Nothing beyond adding the two concepts and regenerating was needed, so it was not skipped."
+    }
+  },
+  "risks": [
+    {
+      "rank": 1,
+      "severity": "AMBER",
+      "risk": "Two declared preservation digests now fail",
+      "detail": "q06_preservation.current_v1_1_result_sets_sha256 and q07_preservation.prior_v1_0_result_sets_sha256 are declared over the whole result_sets LIST, so appending the D-0023 sets moves them. Recomputing each over its frozen subset reproduces the declared value exactly (Q06 5203cb15..., Q07 252a1849...) and Q06-CANONICAL's own object digest 8513a82b... still matches, so no expected value moved. Left failing on purpose: re-scoping the checker is a manifest-instrumentation decision, and the task forbade fixing the oracle.",
+      "action_for_the_caller": "Either re-declare the two digests over the frozen subset, or accept that a complete oracle run reports all_green=False until they are."
+    },
+    {
+      "rank": 2,
+      "severity": "AMBER",
+      "risk": "Q07-ENRICHED-ROLE returns 10 UNRESOLVED_PHYSICAL_SERVICE rows, not the predicted 4",
+      "detail": "SOURCE_CONTRACT.md counts operating capacity only on a physical base representative, which requires marketing and operating to resolve to the same airline. CAP block 0 was made base metal so the operating clock counts 8 markets and 14 of the 18 rows carry capacity. CLK 04..07 and CLK 10..11 cannot be made base metal without creating Q06 market entries and exits at pair 23, which would break Q06-ENRICHED at 7 and 5, so their 6 rows are unresolved. Under the specification's literal CAP construction the operating clock would have counted nothing at all.",
+      "action_for_the_caller": "Accept 8 counted plus 10 unresolved, or add an always-present cohort holding the CLK operating markets open, which changes the row budget."
+    },
+    {
+      "rank": 3,
+      "severity": "AMBER",
+      "risk": "AH-17 gains a registration form the frozen identity pattern does not describe",
+      "detail": "Specification 7.3 re-registers 27 C1 aircraft to SYN-REG-<id>-R2 on 2031-02-03, which does not match the frozen scope.identity_patterns.registration value ^SYN-REG-[0-9]+$. That pattern is declarative and is enforced by nothing in the repository. The frozen string is unchanged; an additive authority.added_in_1_2_0.identity_pattern_extension note records the extension.",
+      "action_for_the_caller": "Accept the extension note, or drop the re-registration, which costs the AH-17 versioning case and the AH-39 dual-representation beat."
+    },
+    {
+      "rank": 4,
+      "severity": "YELLOW",
+      "risk": "The row budget is 182,039, not the predicted 182,029",
+      "detail": "AIRLINE_REFERENCE lands at 190 rather than 180. The exact-required carrier union that specification 9.2 forces is 163, not the 145 the section 4 estimate implies, because it did not count the eight CAP base-metal carriers, eight codeshare marketing identities and four codeshare-only operating identities. Holding the table at 180 would push the demo padding block to 15, below smoke's 25, and break the declared 'demo is a strict semantic superset of smoke' property that tests/test_synthetic_data.py enforces."
+    },
+    {
+      "rank": 5,
+      "severity": "YELLOW",
+      "risk": "Five specification counts were wrong and are corrected in the specification, not absorbed",
+      "detail": "2,527 2027 keys (actual 2,459); MOD field 8 emitting two modification rows rather than one; SHIFTOLD/SHIFTNEW declared non-overlapping while also declared CANDIDATE_UNIQUE; ADD and REM given an identical candidate signature at the pair where they swap; and CAP never producing a physical base representative. All five are written up in data/SYNTHETIC_DATA_SPEC_V2.md section 14.1 with the resolution, per section 3.4 step 2."
+    },
+    {
+      "rank": 6,
+      "severity": "YELLOW",
+      "risk": "Candidate-evidence legs are 341, not the predicted 400",
+      "detail": "Section 10.2 allocates 400 HEUR-PF rows as 340 unique plus 30 ambiguous pairs, which can only reach 370 legs, and only the 340 unique ones become HEURISTIC_CANDIDATE. 400 and the 340+60 split are not simultaneously satisfiable. 340 enriched plus 1 anchored."
+    },
+    {
+      "rank": 7,
+      "severity": "YELLOW",
+      "risk": "Five MODEL_INPUT assertions were population-scoped where they meant to be fixture-scoped",
+      "detail": "AT-16, AT-17, AT-19, AT-34 and AT-36 asserted 'exactly one reappearance / self-loop / cycle / gap-crossing comparison' over the whole population, and the enrichment deliberately adds more of each. Each was re-scoped to the anchored fixture it was actually asserting and paired with a new AT-nnB gate recording the enriched population count, so nothing was weakened without a replacement. The gate count went from 86 to 88 and all 88 pass."
+    },
+    {
+      "rank": 8,
+      "severity": "YELLOW",
+      "risk": "AVAIL now excludes the 13 anchored PH-01 values as well as the 24 anchored AF-01 values",
+      "detail": "Section 11.1 defines AVAIL as 5000..8998 minus the 24 AF anchors, which places anchored PH-01 values 7301..7310 inside the FUL slice and duplicates PH-01. AVAIL is 3,966 rather than 3,975 identifiers; the slice sizes and the FUL block are unchanged, so the 700 exact fulfilments are unaffected."
+    },
+    {
+      "rank": 9,
+      "severity": "YELLOW",
+      "risk": "data/test_model_input.py mutates the live database",
+      "detail": "test_live_apply_is_idempotent calls build_model_input.apply(). Running it concurrently with a pipeline rebuild produced a spurious MD-01, MD-02 and TG-09 failure. Run alone against a settled database it passes 28 of 28. Worth a marker or a lock before Phase 8 wires prep_demo.py."
+    },
+    {
+      "rank": 10,
+      "severity": "GREEN",
+      "risk": "1,636 oracle-derived expected rows are a lot to review",
+      "detail": "Mitigated as section 3.4 asks: the aggregates were predicted a priori by the specification, recomputed independently in Python inside the generator before any file was written, and reproduced a third time by SQL. Q03 985/120/10, the full Q05 class histogram and 23-value per-pair distribution, Q06 7 and 5, and Q07 30/30/30/18 agree across all three producers."
+    }
+  ],
+  "regression_tests": {
+    "tests/test_synthetic_data.py": "23 passed, 0 failed - includes the two-clean-runs and reordered-input determinism tests and the demo-is-a-superset-of-smoke test",
+    "data/test_load_source.py": "48 passed as part of the combined run",
+    "data/test_model_input.py": "28 passed, 0 failed on a clean serialised run",
+    "concurrency_note": "data/test_model_input.py::test_live_apply_is_idempotent calls build_model_input.apply() against the live database. Running it concurrently with a pipeline rebuild produced a spurious MD-01/MD-02/TG-09 failure; re-run alone it passes."
+  },
+  "final_state": {
+    "SOURCE": "PK_AVIATION_TEMPORAL.SOURCE reloaded from the published package, content hashes verified in Snowflake, 182,039 rows across ten tables, 204 contracted columns",
+    "MODEL_INPUT": "rebuilt and verified, 88 of 88 gates pass",
+    "EXPECTED_ANSWERS.yaml": "1.2.0; the 24 frozen result sets and all 11 contract truth tables are byte-identical to 1.1.1; 25 result sets added with 1,636 oracle-derived rows",
+    "oracles": "49 of 49 result sets pass, 6 of 6 probes pass, 7 of 7 oracled truth tables pass; two container-scoped preservation digests fail and are reported unreconciled",
+    "ontology": "regenerated and imports clean at 46 concepts, 37 bound objects, 805 declared columns; the nine new AH columns and the D-0027 row-scoped resolution are bound",
+    "engine": "aviation_temporal_logic_s, HIGHMEM_X64_S, auto-suspend 5 minutes, unchanged",
+    "caveat": "SOURCE was reloaded last, so the RAI CDC streams are stale and the next first query will pay a full cold re-sync, measured at 693 seconds on this dataset."
+  }
+}

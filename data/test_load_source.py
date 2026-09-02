@@ -60,8 +60,8 @@ def manifest_of(scale: str) -> dict:
 # --- contract parsing --------------------------------------------------------------------------
 
 
-def test_contract_parses_195_fields(fields):
-    assert sum(len(value) for value in fields.values()) == 195
+def test_contract_parses_204_fields(fields):
+    assert sum(len(value) for value in fields.values()) == 204
     assert set(fields) == set(loader.TABLE_ORDER)
     for table, table_fields in fields.items():
         prefix = loader.PREFIX[table]

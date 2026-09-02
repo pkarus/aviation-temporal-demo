@@ -186,7 +186,7 @@ def canonical_json_bytes(value: Any) -> bytes:
 
 
 def parse_contract_fields(contract_path: Path | None = None) -> dict[str, tuple[Field, ...]]:
-    """Parse the 195 contracted SOURCE fields out of SOURCE_CONTRACT.md."""
+    """Parse the 204 contracted SOURCE fields out of SOURCE_CONTRACT.md."""
     text = (contract_path or ROOT / "SOURCE_CONTRACT.md").read_text(encoding="utf-8")
     matches = re.findall(
         r"^\| ((?:AM|AH|AC|SS|SC|PF|PH|AF|AP|AL)-\d{2}) \| `([^`]+)` \| "
@@ -205,8 +205,8 @@ def parse_contract_fields(contract_path: Path | None = None) -> dict[str, tuple[
         table: tuple(sorted(by_prefix[PREFIX[table]].values(), key=lambda field: field.field_id))
         for table in TABLE_ORDER
     }
-    if sum(map(len, result.values())) != 195:
-        raise GateError("SOURCE_CONTRACT did not produce exactly 195 fields")
+    if sum(map(len, result.values())) != 204:
+        raise GateError("SOURCE_CONTRACT did not produce exactly 204 fields")
     return result
 
 
@@ -573,7 +573,7 @@ def preflight_package(manifest_path: Path, *, expect_manifest_sha256: str | None
         "manifest_path": str(manifest_path),
         "manifest_sha256": manifest_sha,
         "scale": scale,
-        "contract_fields": 195,
+        "contract_fields": 204,
         "source_contract_sha256": sha256_file(ROOT / "SOURCE_CONTRACT.md"),
         "total_rows": total_rows,
         "tables": table_evidence,

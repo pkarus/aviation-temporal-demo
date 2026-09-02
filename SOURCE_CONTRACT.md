@@ -103,9 +103,19 @@ Normative conventions:
 | AH-31 | `certified_maximum_takeoff_weight_lb` | NUMBER(38,0) | yes | Historically observed, watched `aircraft_state` value. |
 | AH-32 | `not_for_use` | BOOLEAN | yes | Event eligibility/quality flag. |
 | AH-33 | `publish_date` | DATE | yes | Source lineage date, not state validity. |
+| AH-34 | `base_state` | VARCHAR | no | Watched `aircraft_state` value. Synthetic first-level administrative division token of the base airport, `SYN-ST-<CODE>`; never null. |
+| AH-35 | `base_region` | VARCHAR | no | Watched `aircraft_state` value. Synthetic operating region of the base airport, one of `SYN-RGN-WEST`, `SYN-RGN-MOUNTAIN`, `SYN-RGN-CENTRAL`, `SYN-RGN-EAST`; never null. |
+| AH-36 | `storage_location_type` | VARCHAR | yes | Watched `aircraft_state` value. Storage-programme class, `SYN-STG-LONG-TERM` at 180 days or more, `SYN-STG-SHORT-TERM` at 1 to 179 days, `SYN-STG-SAME-DAY` at 0 days; null whenever the observed status is not `Storage`. |
+| AH-37 | `noise_certification` | VARCHAR | no | Watched `aircraft_state` value. Regulatory noise chapter derived from the resolved engine, one of `SYN-NOISE-CH3`, `SYN-NOISE-CH4`, `SYN-NOISE-CH14`; never null. A re-engine changes it. |
+| AH-38 | `has_winglets` | BOOLEAN | no | Watched `aircraft_state` value. Wingtip-device fit as observed at this event; never null. |
+| AH-39 | `aircraft_registration_country` | VARCHAR | no | Watched `aircraft_state` value. Registration-country display name; the second representation of the fact AH-19 carries as a code. Never null. |
+| AH-40 | `transponder_miscode` | BOOLEAN | no | Watched `aircraft_state` value. Source data-quality flag: the observed transponder code is known to be mis-set. Never null. |
+| AH-41 | `maximum_landing_weight_lb` | NUMBER(38,0) | no | Watched `aircraft_state` value. Maximum landing weight in pounds, integral, range 50,000 to 400,000; never null. Revised by republication. |
+| AH-42 | `operating_empty_weight_lb` | NUMBER(38,0) | no | Watched `aircraft_state` value. Operating empty weight in pounds, integral, range 30,000 to 300,000; never null. Revised by republication. |
 
 Under D-0004, the complete ordered audit sequence and the final-per-day projection are different
-products. The complete `aircraft_state` watched set for this reduced demo is AH-17 through AH-31. The
+products. The complete `aircraft_state` watched set for this reduced demo is AH-17 through AH-31
+plus AH-34 through AH-42 (D-0024). The
 `aircraft_type` watched set is AH-14 through AH-16 plus the resolved type fields AC-02 through
 AC-07 and the type-resolution outcome of AH-13. The `engine_type` watched set is AC-08 through
 AC-15 plus the engine-resolution outcome of AH-13. Raw AH-13 itself is resolution/provenance, not
@@ -435,7 +445,7 @@ golden-answer tables. Each row retains the listed raw Field IDs or its declared 
 | Canonical object | Stable grain/key | Required modeled fields and derivation |
 |---|---|---|
 | `AIRCRAFT_ELIGIBLE` | AM-01 | Aircraft master fields; `existence_from = normalized AM-07`, falling back to first eligible AH-05; `existence_to = normalized exclusive AM-08` or model open sentinel. |
-| `AIRCRAFT_EVENT_ELIGIBLE` | AH-01 | AH-01 through AH-33 after eligibility/sentinel normalization; canonical order tuple retained. |
+| `AIRCRAFT_EVENT_ELIGIBLE` | AH-01 | AH-01 through AH-42 after eligibility/sentinel normalization; canonical order tuple retained. |
 | `AIRCRAFT_EVENT_QUARANTINE` | DV-44 | Raw lineage, missing required-field list, occurrence count, and reason; no guessed aircraft/event identity. Identical invalid rows without source IDs share a deterministic semantic quarantine key and retain occurrence count. |
 | `AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT` | `(dimension, AH-02, AH-05, AH-03, AH-01)` | `dimension`, ordered source tuple, null-safe watched-value payload, optional exact target, resolution status, AH-06/AH-08/AH-12 provenance; no `valid_from`/`valid_to`. |
 | `AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT` | `(dimension, AH-02, AH-05, AH-01)` | Final relevant observation for aircraft/dimension/date; `valid_from = AH-05`; `valid_to = next distinct daily assignment date` clipped to existence; target/DV-08 resolution/DV-33 query status and audit lineage. |
@@ -523,6 +533,10 @@ excluded from an evidence-backed reconciled total.
   multiple-types flag are represented; completeness is false when multiple types are indicated.
 - Under D-0005, master APU, dimension, and weight copies AM-11 through AM-14 are current-only and prohibited from
   historical reconstruction. Historical AH-28 through AH-31 own historical claims.
+- Nine of the customer's versioned `AIRCRAFT_STATE` attributes are still not carried after D-0024:
+  two physical dimensions, two non-MTOW weights, three free-text modifier strings, and two
+  master-side descriptors. Each is immutable or non-queryable in the bounded workload; the omission
+  is scope, not capability.
 - Ownership, operator/manager/financing chains, organization state, separate storage-location
   concepts, airport/airline state, connected routes, connection/MCT rules, and passenger itineraries
   are out of scope.

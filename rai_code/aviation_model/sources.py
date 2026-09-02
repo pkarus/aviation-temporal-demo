@@ -146,6 +146,15 @@ SCHEMA_MI_AIRCRAFT_EVENT_ELIGIBLE = {
     "aircraft_width_m": Float,
     "operating_maximum_takeoff_weight_lb": Integer,
     "certified_maximum_takeoff_weight_lb": Integer,
+    "base_state": String,
+    "base_region": String,
+    "storage_location_type": String,
+    "noise_certification": String,
+    "has_winglets": Bool,
+    "aircraft_registration_country": String,
+    "transponder_miscode": Bool,
+    "maximum_landing_weight_lb": Integer,
+    "operating_empty_weight_lb": Integer,
     "not_for_use": Bool,
     "publish_date": Date,
     "publish_date_is_unknown_future": Bool,
@@ -227,6 +236,15 @@ SCHEMA_MI_AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT = {
     "aircraft_width_m": Float,
     "operating_maximum_takeoff_weight_lb": Integer,
     "certified_maximum_takeoff_weight_lb": Integer,
+    "base_state": String,
+    "base_region": String,
+    "storage_location_type": String,
+    "noise_certification": String,
+    "has_winglets": Bool,
+    "aircraft_registration_country": String,
+    "transponder_miscode": Bool,
+    "maximum_landing_weight_lb": Integer,
+    "operating_empty_weight_lb": Integer,
     "aircraft_status_code": String,
     "aircraft_code_iata": String,
     "aircraft_code_icao": String,
@@ -290,6 +308,15 @@ SCHEMA_MI_AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT = {
     "aircraft_width_m": Float,
     "operating_maximum_takeoff_weight_lb": Integer,
     "certified_maximum_takeoff_weight_lb": Integer,
+    "base_state": String,
+    "base_region": String,
+    "storage_location_type": String,
+    "noise_certification": String,
+    "has_winglets": Bool,
+    "aircraft_registration_country": String,
+    "transponder_miscode": Bool,
+    "maximum_landing_weight_lb": Integer,
+    "operating_empty_weight_lb": Integer,
     "aircraft_status_code": String,
     "aircraft_code_iata": String,
     "aircraft_code_icao": String,
@@ -397,6 +424,50 @@ SCHEMA_MI_CODE_RESOLUTION_CODE_CANDIDATE = {
 }
 
 MI_CODE_RESOLUTION_CODE_CANDIDATE = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION_CODE_CANDIDATE", schema=SCHEMA_MI_CODE_RESOLUTION_CODE_CANDIDATE)
+
+SCHEMA_MI_CODE_RESOLUTION_INPUT = {
+    "domain": String,
+    "source_object": String,
+    "source_row_token": String,
+    "field_role": String,
+    "raw_field_id": String,
+    "raw_code": String,
+    "method": String,
+    "source_occurrence_count": Number.size(18, 0),
+}
+
+MI_CODE_RESOLUTION_INPUT = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION_INPUT", schema=SCHEMA_MI_CODE_RESOLUTION_INPUT)
+
+SCHEMA_MI_CODE_RESOLUTION = {
+    "resolution_id": String,
+    "domain": String,
+    "source_object": String,
+    "source_row_token": String,
+    "field_role": String,
+    "raw_field_id": String,
+    "raw_code": String,
+    "method": String,
+    "source_occurrence_count": Number.size(18, 0),
+    "candidate_count": Number.size(18, 0),
+    "resolution_status": String,
+    "resolved_identity_id": String,
+    "matched_code_systems": String,
+}
+
+MI_CODE_RESOLUTION = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION", schema=SCHEMA_MI_CODE_RESOLUTION)
+
+SCHEMA_MI_CODE_RESOLUTION_CANDIDATE = {
+    "resolution_id": String,
+    "candidate_id": String,
+    "domain": String,
+    "method": String,
+    "raw_code": String,
+    "matched_code_systems": String,
+    "candidate_count": Number.size(18, 0),
+    "resolution_status": String,
+}
+
+MI_CODE_RESOLUTION_CANDIDATE = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION_CANDIDATE", schema=SCHEMA_MI_CODE_RESOLUTION_CANDIDATE)
 
 SCHEMA_MI_MONTH_END_CALENDAR = {
     "month_end": Date,
@@ -980,6 +1051,9 @@ TABLE_INVENTORY = {
     "MI_AIRLINE_CURRENT": (MI_AIRLINE_CURRENT, "MODEL_INPUT.AIRLINE_CURRENT", SCHEMA_MI_AIRLINE_CURRENT),
     "MI_CODE_RESOLUTION_CODE": (MI_CODE_RESOLUTION_CODE, "MODEL_INPUT.CODE_RESOLUTION_CODE", SCHEMA_MI_CODE_RESOLUTION_CODE),
     "MI_CODE_RESOLUTION_CODE_CANDIDATE": (MI_CODE_RESOLUTION_CODE_CANDIDATE, "MODEL_INPUT.CODE_RESOLUTION_CODE_CANDIDATE", SCHEMA_MI_CODE_RESOLUTION_CODE_CANDIDATE),
+    "MI_CODE_RESOLUTION_INPUT": (MI_CODE_RESOLUTION_INPUT, "MODEL_INPUT.CODE_RESOLUTION_INPUT", SCHEMA_MI_CODE_RESOLUTION_INPUT),
+    "MI_CODE_RESOLUTION": (MI_CODE_RESOLUTION, "MODEL_INPUT.CODE_RESOLUTION", SCHEMA_MI_CODE_RESOLUTION),
+    "MI_CODE_RESOLUTION_CANDIDATE": (MI_CODE_RESOLUTION_CANDIDATE, "MODEL_INPUT.CODE_RESOLUTION_CANDIDATE", SCHEMA_MI_CODE_RESOLUTION_CANDIDATE),
     "MI_MONTH_END_CALENDAR": (MI_MONTH_END_CALENDAR, "MODEL_INPUT.MONTH_END_CALENDAR", SCHEMA_MI_MONTH_END_CALENDAR),
     "MI_ROUTE": (MI_ROUTE, "MODEL_INPUT.ROUTE", SCHEMA_MI_ROUTE),
     "MI_ROUTE_STATE": (MI_ROUTE_STATE, "MODEL_INPUT.ROUTE_STATE", SCHEMA_MI_ROUTE_STATE),

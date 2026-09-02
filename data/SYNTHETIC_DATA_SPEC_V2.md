@@ -1021,6 +1021,23 @@ not emitted at the ineligible 2027 dates.
     predictions with an arithmetic derivation, and section 3.4 step 2 exists precisely so that a
     mismatch is treated as a specification defect rather than quietly absorbed.
 
+## 14.1 Specification defects found by implementation, and how they were resolved
+
+Section 3.4 step 2 says an aggregate mismatch is a specification defect fixed in the
+specification, never absorbed by accepting a script's output. Implementation (ENRICH-02) found
+seven. The first five are corrected here; the last two are measured deviations reported as such.
+
+| # | Defect | Resolution |
+|---:|---|---|
+| 1 | Section 9.2 gives the 2027 key total as **2,527**. The per-cohort key counts in the same table sum to **2,459**, and the row counts derived from them sum to exactly the declared 54,636. | 2,459 is correct; 2,527 was an addition error. The row budget is unaffected. |
+| 2 | Section 9.2 `MOD` field index 8 changes `is_codeshare` **and** `SS-36` at the same pair, which emits two `EXACT_KEY_PRESERVING_MODIFICATION` rows for one key and makes that class 76 rather than the frozen 69. | `SS-36` is carried on every date for those seven keys and only `SS-35` transitions. The section 9.3 histogram is the primary frozen invariant, so the reading that satisfies it wins. |
+| 3 | Section 9.2 gives `SHIFTOLD` and `SHIFTNEW` contiguous **non-overlapping** operating ranges, then claims the pair classifies `CANDIDATE_UNIQUE`. Non-overlapping range shifts are exactly the conservative false negative `SOURCE_CONTRACT.md` names, so the pair would be two `UNPAIRED` rows and `CANDIDATE_UNIQUE` would be 0, not 23. | `SHIFTOLD` keeps the default `2027-08-01..2027-12-31` window so the two ranges overlap. |
+| 4 | Section 9.2 assigns `ADD` and `REM` carriers and routes "as for CORE", which gives `ADD-{q}` and `REM-{q}` an identical candidate signature at the very pair where one is added and the other removed. They would pair as `CANDIDATE_UNIQUE` instead of staying unpaired. | `ADD`, `REM` and `REAP` take route offsets `+24`, `+48` and `+30`, and `REAP` takes flight numbers 1960..1967. Every cohort now has a signature no other cohort can match. |
+| 5 | Section 9.2 `CAP` describes "eight routes times three carriers" but then assigns `SS-04 = P_MKT[n mod 8]` to both physical blocks, which collapses 24 marketing markets to 8, and never makes any `CAP` key a physical base representative, so the operating clock counts nothing at all. | Block 0 is base metal: `SS-04 = SS-05 = SYN-CAR-W27-{n:02}`. Block 1 is a marketing-only identity `P_MKT[n]` on the same operating market. Block 2 is the codeshare block. 24 marketing markets, 8 counted operating markets. |
+| 6 | Section 9.5 says `Q07-ENRICHED-KNOWLEDGE-LATE` and `-KNOWLEDGE-EARLY` "differ in exactly 4 rows" while also saying four services were withdrawn and four added. Those two statements are inconsistent. | Measured: 4 rows appear only in the first and 4 only in the second, a symmetric difference of 8. The `-LATE` versus `-OPERATING-SHIFT` pair does differ in exactly 4. |
+| 8 | Section 4 budgets `AIRLINE_REFERENCE` at 180 with "+80" new carriers. The exact-required union that section 9.2 actually forces is 163: 65 v1, 32 pool, 12 `MKTENT` and 12 `MKTEXIT` marketing, 10 `SYN-OP-W27-ENT` and 12 `SYN-OP-W27-EXIT` operating, 8 CAP base-metal carriers and 8 codeshare marketing plus 4 codeshare-only operating identities. At 180 rows the padding block would fall to 15, below `smoke`'s 25, and the declared "demo is a strict semantic superset of smoke" property would break. | `AIRLINE_REFERENCE` is 190 and the demo padding stays at 25. The total row budget is **182,039**, not 182,029. |
+| 7 | Section 3.4's `Q02-ENRICHED-LONG-SPELL` narrative expects one closed spell plus one still-open storage on aircraft 1556. Under section 7.3 C3 with `j = 99` the second spell starts 2030-12-11 and runs 1,091 days, so it closes on 2033-12-06, inside the data horizon. | Measured: two closed spells. The 1,091-day spell is still the longest in the population and is what the result set demonstrates. |
+
 ## 15. Failure, rollback, and handoff
 
 Generation is fail-closed and expected answers are never edited to accommodate generator output.

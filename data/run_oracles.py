@@ -86,6 +86,7 @@ ROLE = "RAI_DEMO_AVIATION_TEMPORAL"
 LABEL_COLUMNS = {
     "Q01": ["row_id"],
     "Q02": ["row_id"],
+    "Q02F": ["row_id"],
     "Q03": ["row_id"],
     "Q04": ["row_id"],
     "Q05": ["row_id", "event_id"],
@@ -119,7 +120,7 @@ LABEL_COLUMNS = {
 #       two-digit padding, the ROW_NUMBER() OVER (ORDER BY flight_id) anomaly
 #       ordinal and the ORDER BY root_id segment ordinal were all adopted.
 TEMPLATE_ADOPTED_COLUMNS = {
-    "Q01": [], "Q02": [], "Q03": [], "Q04": [],
+    "Q01": [], "Q02": [], "Q02F": [], "Q03": [], "Q04": [],
     "Q05": ["event_id"],
     "Q06": [], "Q07": [],
     "Q08": ["segment_id"],
@@ -174,6 +175,7 @@ POSITIONAL_ROW_IDS = {
 SQL_FILES = {
     "Q01": "q01_aircraft_as_of.sql",
     "Q02": "q02_status_reversion_spells.sql",
+    "Q02F": "q02f_fleet_spell_distribution.sql",
     "Q03": "q03_month_end_fleet_composition.sql",
     "Q04": "q04_type_engine_histories.sql",
     "Q05": "q05_schedule_four_week_changes.sql",
@@ -274,6 +276,11 @@ def parse_date(raw: Any) -> _dt.date | None:
 
 def validate_parameters(question_id: str, params: dict[str, Any]) -> str | None:
     """Return an error_code, or None when the parameters are valid."""
+    if question_id == "Q02F":
+        # D-0026: the fleet form has its own parameter shape; the frozen Q02 contract is untouched.
+        if params.get("aircraft_scope") != "FLEET":
+            return "INVALID_AIRCRAFT_SCOPE"
+        return None
     if question_id in ("Q01", "Q02", "Q04", "Q08"):
         aid = params.get("aircraft_id")
         if aid is None or not isinstance(aid, int) or isinstance(aid, bool) or aid <= 0:
@@ -532,7 +539,13 @@ def execute_result_set(question: dict, rs: dict) -> dict[str, Any]:
     actual_rows = [canonical_row(r, schema) for r in raw_rows]
 
     # 4. attach the row_id label
-    if rsid in POSITIONAL_ROW_IDS:
+    if rs.get("manifest_version") == "1.2.0":
+        # D-0023 additions are oracle-derived, so their row identifiers are positional labels
+        # minted from the result-set identifier and never carried over from a frozen manifest.
+        for i, row in enumerate(actual_rows):
+            row["row_id"] = f"{rsid}-R{i + 1:04d}"
+        record["row_id_source"] = "DERIVED_POSITIONAL"
+    elif rsid in POSITIONAL_ROW_IDS:
         prefix, start, width = POSITIONAL_ROW_IDS[rsid]
         for i, row in enumerate(actual_rows):
             row["row_id"] = f"{prefix}{start + i:0{width}d}"
@@ -586,21 +599,51 @@ def verify_declared_hashes(doc: dict) -> list[dict[str, Any]]:
 
     q6 = qs["Q06"]
     q6_canon = next(r for r in q6["result_sets"] if r["result_set_id"] == "Q06-CANONICAL")
+
+    def frozen_only(question: dict) -> list[dict]:
+        """The result sets frozen at manifest 1.1.1, excluding every set added at 1.2.0.
+
+        D-0028: the two list-scoped digests below were declared over the whole `result_sets`
+        list, so the authorised D-0023 additive enrichment moves them mechanically. Their
+        declared values are deliberately left unedited in EXPECTED_ANSWERS.yaml, and the
+        correctly scoped successors are checked here instead. Membership uses the manifest's
+        own declared marker -- `authority.added_in_1_2_0.marker` states that every set added by
+        D-0023 carries `manifest_version: "1.2.0"` and every set without that key is frozen
+        1.1.1 content -- rather than being inferred from the result-set name, so a future
+        addition cannot quietly fall inside the frozen subset by being named carefully.
+        """
+        return [r for r in question["result_sets"] if "manifest_version" not in r]
+
     checks = [
         {"name": "q06_preservation.prior_v1_0_and_current_canonical_result_set_sha256",
          "scope": "Q06-CANONICAL parsed result-set object",
          "expected": closure["q06_preservation"]["prior_v1_0_and_current_canonical_result_set_sha256"],
          "actual": h(q6_canon)},
-        {"name": "q06_preservation.current_v1_1_result_sets_sha256",
-         "scope": "Q06 parsed result_sets list",
-         "expected": closure["q06_preservation"]["current_v1_1_result_sets_sha256"],
-         "actual": h(q6["result_sets"])},
-        {"name": "q07_preservation.prior_v1_0_result_sets_sha256",
-         "scope": "Q07 parsed result_sets list",
-         "expected": closure["q07_preservation"]["prior_v1_0_result_sets_sha256"],
-         "actual": h(qs["Q07"]["result_sets"])},
+        {"name": "q06_preservation.frozen_result_sets_sha256",
+         "scope": "Q06 result sets frozen at 1.1.1 (D-0028 scoped successor)",
+         "expected": closure["q06_preservation"]["frozen_result_sets_sha256"],
+         "actual": h(frozen_only(q6))},
+        {"name": "q07_preservation.frozen_result_sets_sha256",
+         "scope": "Q07 result sets frozen at 1.1.1 (D-0028 scoped successor)",
+         "expected": closure["q07_preservation"]["frozen_result_sets_sha256"],
+         "actual": h(frozen_only(qs["Q07"]))},
     ]
+    # The superseded container-scoped digests are still recomputed and reported, so the audit
+    # trail shows what they now hash to and nobody has to take D-0028's word for why they moved.
+    for qid, key in (("Q06", "current_v1_1_result_sets_sha256"),
+                     ("Q07", "prior_v1_0_result_sets_sha256")):
+        section = closure[f"{qid.lower()}_preservation"]
+        checks.append({
+            "name": f"{qid.lower()}_preservation.{key}",
+            "scope": f"{qid} whole result_sets list -- SUPERSEDED by D-0028, informational",
+            "expected": section[key],
+            "actual": h(qs[qid]["result_sets"]),
+            "superseded": True,
+        })
     for c in checks:
+        if c.get("superseded"):
+            c["verdict"] = "SUPERSEDED"
+            continue
         c["verdict"] = "PASS" if c["expected"] == c["actual"] else "FAIL"
     return checks
 
@@ -826,7 +869,10 @@ def run_probes() -> list[dict[str, Any]]:
     for fname, name in (("probe_concurrent_route_states.sql", "concurrent_route_states_preserved"),
                         ("probe_incomplete_snapshots.sql", "incomplete_snapshots_create_no_removals"),
                         ("probe_temporal_integrity.sql", "temporal_integrity_and_sentinels"),
-                        ("probe_schedule_canonicalisation.sql", "schedule_canonicalisation_and_no_change")):
+                        ("probe_schedule_canonicalisation.sql", "schedule_canonicalisation_and_no_change"),
+                        # D-0023 / D-0025: the enriched population's own invariants.
+                        ("probe_fleet_lifecycle.sql", "enriched_fleet_lifecycle"),
+                        ("probe_schedule_2027.sql", "enriched_schedule_2027")):
         rows = run_sql(render(fname, {}), name)
         failing = [r for r in rows if str(r.get("VERDICT", "")).upper() != "PASS"]
         probes.append({
@@ -842,6 +888,41 @@ def run_probes() -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# D-0023 capture: the added 1.2.0 result sets take their expected rows from
+# this SQL oracle, never from hand authorship.  The capture writes a JSON
+# sidecar; splicing it into EXPECTED_ANSWERS.yaml is a separate, reviewable
+# step, so an oracle run can never silently rewrite a frozen expectation.
+# ---------------------------------------------------------------------------
+def capture_added_result_sets(doc: dict) -> int:
+    captured: dict[str, Any] = {}
+    for question in doc["questions"]:
+        for rs in question["result_sets"]:
+            if rs.get("manifest_version") != "1.2.0":
+                continue
+            rsid = rs["result_set_id"]
+            rec = execute_result_set(question, rs)
+            rows = rec.get("actual_rows", [])
+            captured[rsid] = {
+                "question_id": question["question_id"],
+                "parameters": rs["parameters"],
+                "invocation_status": rec.get("actual_invocation_status"),
+                "error_code": rec.get("actual_error_code"),
+                "cardinality": len(rows),
+                "result_set_sha256": result_hash(rows),
+                "rows": rows,
+            }
+            print(f"captured {rsid:<36} rows={len(rows):<5} "
+                  f"status={rec.get('actual_invocation_status')}", flush=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    path = os.path.join(OUTPUT_DIR, "_captured_1_2_0.json")
+    with open(path, "w") as fh:
+        json.dump(captured, fh, indent=2, sort_keys=True)
+    print(f"wrote {path}")
+    return 0
+
+
 def main() -> int:
     import yaml
 
@@ -851,10 +932,12 @@ def main() -> int:
     ap.add_argument("--result-set", action="append", default=[])
     ap.add_argument("--report", default=None)
     ap.add_argument("--skip-probes", action="store_true")
+    ap.add_argument("--capture-1-2-0", action="store_true",
+                    help="write oracle output into the empty D-0023 result sets as their expected rows")
     args = ap.parse_args()
 
-    if not (args.all or args.question or args.result_set):
-        ap.error("pass --all, --question Qnn or --result-set ID")
+    if not (args.all or args.question or args.result_set or args.capture_1_2_0):
+        ap.error("pass --all, --question Qnn, --result-set ID or --capture-1-2-0")
 
     with open(EXPECTED_PATH) as fh:
         doc = yaml.safe_load(fh)
@@ -862,6 +945,9 @@ def main() -> int:
 
     wanted_q = {q.upper() for q in args.question}
     wanted_rs = {r.upper() for r in args.result_set}
+
+    if args.capture_1_2_0:
+        return capture_added_result_sets(doc)
 
     started = time.time()
     records: list[dict[str, Any]] = []
@@ -910,9 +996,17 @@ def main() -> int:
     hashes = verify_declared_hashes(doc)
     for c in hashes:
         print(f"{c['verdict']:<5} hash {c['name']}")
+    # D-0028: a SUPERSEDED digest is neither a pass nor a failure. It is a container-scoped
+    # declaration whose scope an authorised addition invalidated, recomputed and reported here
+    # only so the audit trail is complete. It carries no verdict of its own; the correctly
+    # scoped successor beside it is the one that must pass. Only a real FAIL is a failure --
+    # an unrecognised verdict is also a failure, so a future verdict string cannot be
+    # silently tolerated by this branch.
+    live = [c for c in hashes if c["verdict"] != "SUPERSEDED"]
     record_group("declared_preservation_hashes",
-                 "FAIL" if any(c["verdict"] != "PASS" for c in hashes) else "PASS",
-                 detail={"checks": len(hashes)})
+                 "FAIL" if any(c["verdict"] != "PASS" for c in live) else "PASS",
+                 detail={"checks": len(live),
+                         "superseded": [c["name"] for c in hashes if c["verdict"] == "SUPERSEDED"]})
 
     # Q05 cross-question closure: needs the live Q05-CANONICAL rows.
     q05 = next((r for r in records if r["result_set_id"] == "Q05-CANONICAL"), None)

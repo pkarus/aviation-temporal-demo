@@ -12,7 +12,7 @@
 -- so A -> B -> A stays three assignments.
 --
 -- Watched sets (SOURCE_CONTRACT.md):
---   aircraft_state  : AH-17 .. AH-31
+--   aircraft_state  : AH-17 .. AH-31 plus AH-34 .. AH-42 (D-0024)
 --   aircraft_type   : AH-14 .. AH-16 + AC-02 .. AC-07 + the AH-13 type-resolution outcome
 --   engine_type     : AC-08 .. AC-15 + the AH-13 engine-resolution outcome
 --   aircraft_status : AH-09  (AH-08 and AH-12 stay provenance)
@@ -44,6 +44,15 @@ WITH per_dimension AS (
      || MODEL_INPUT.DV43_FIELD('AH-29','FLOAT',        MODEL_INPUT.CANON_FLOAT(e.aircraft_width_m))
      || MODEL_INPUT.DV43_FIELD('AH-30','NUMBER(38,0)', MODEL_INPUT.CANON_NUM(e.operating_maximum_takeoff_weight_lb))
      || MODEL_INPUT.DV43_FIELD('AH-31','NUMBER(38,0)', MODEL_INPUT.CANON_NUM(e.certified_maximum_takeoff_weight_lb))
+     || MODEL_INPUT.DV43_FIELD('AH-34','VARCHAR', e.base_state)
+     || MODEL_INPUT.DV43_FIELD('AH-35','VARCHAR', e.base_region)
+     || MODEL_INPUT.DV43_FIELD('AH-36','VARCHAR', e.storage_location_type)
+     || MODEL_INPUT.DV43_FIELD('AH-37','VARCHAR', e.noise_certification)
+     || MODEL_INPUT.DV43_FIELD('AH-38','BOOLEAN', MODEL_INPUT.CANON_BOOL(e.has_winglets))
+     || MODEL_INPUT.DV43_FIELD('AH-39','VARCHAR', e.aircraft_registration_country)
+     || MODEL_INPUT.DV43_FIELD('AH-40','BOOLEAN', MODEL_INPUT.CANON_BOOL(e.transponder_miscode))
+     || MODEL_INPUT.DV43_FIELD('AH-41','NUMBER(38,0)', MODEL_INPUT.CANON_NUM(e.maximum_landing_weight_lb))
+     || MODEL_INPUT.DV43_FIELD('AH-42','NUMBER(38,0)', MODEL_INPUT.CANON_NUM(e.operating_empty_weight_lb))
     , 256) AS watched_signature,
     IFF(COALESCE(e.aircraft_registration_number, e.aircraft_transponder_code,
                  e.aircraft_registration_country_code_iso, e.aircraft_registration_region,
@@ -51,13 +60,20 @@ WITH per_dimension AS (
                  e.base_airport, e.base_airport_code_iata, e.base_city, e.base_country,
                  e.apu_type, TO_VARCHAR(e.aircraft_width_m),
                  TO_VARCHAR(e.operating_maximum_takeoff_weight_lb),
-                 TO_VARCHAR(e.certified_maximum_takeoff_weight_lb)) IS NULL,
+                 TO_VARCHAR(e.certified_maximum_takeoff_weight_lb),
+                 e.base_state, e.base_region, e.storage_location_type, e.noise_certification,
+                 TO_VARCHAR(e.has_winglets), e.aircraft_registration_country,
+                 TO_VARCHAR(e.transponder_miscode), TO_VARCHAR(e.maximum_landing_weight_lb),
+                 TO_VARCHAR(e.operating_empty_weight_lb)) IS NULL,
         'UNRESOLVED_NULL_VALUE', 'EXACT')::VARCHAR AS dimension_resolution_status,
     e.aircraft_registration_number, e.aircraft_transponder_code,
     e.aircraft_registration_country_code_iso, e.aircraft_registration_region, e.aircraft_cargo,
     e.storage_location, e.storage_airport_code_iata, e.base_airport, e.base_airport_code_iata,
     e.base_city, e.base_country, e.apu_type, e.aircraft_width_m,
     e.operating_maximum_takeoff_weight_lb, e.certified_maximum_takeoff_weight_lb,
+    e.base_state, e.base_region, e.storage_location_type, e.noise_certification,
+    e.has_winglets, e.aircraft_registration_country, e.transponder_miscode,
+    e.maximum_landing_weight_lb, e.operating_empty_weight_lb,
     NULL::VARCHAR AS aircraft_status_code,
     NULL::VARCHAR AS aircraft_code_iata, NULL::VARCHAR AS aircraft_code_icao,
     NULL::VARCHAR AS aircraft_value_sub_series,
@@ -94,6 +110,7 @@ WITH per_dimension AS (
     , 256),
     e.type_resolution_status,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     NULL,
     e.aircraft_code_iata, e.aircraft_code_icao, e.aircraft_value_sub_series,
     e.aircraft_subseries, IFF(e.type_resolution_status = 'EXACT', e.aircraft_subseries, NULL),
@@ -123,6 +140,7 @@ WITH per_dimension AS (
     , 256),
     e.engine_resolution_status,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     NULL,
     NULL, NULL, NULL,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -142,6 +160,7 @@ WITH per_dimension AS (
     SHA2(MODEL_INPUT.DV43_FIELD('AH-09','VARCHAR', e.start_aircraft_status), 256),
     IFF(e.start_aircraft_status IS NULL, 'UNRESOLVED_NULL_VALUE', 'EXACT'),
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     e.start_aircraft_status,
     NULL, NULL, NULL,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -203,6 +222,15 @@ SELECT
   r.aircraft_width_m,
   r.operating_maximum_takeoff_weight_lb,
   r.certified_maximum_takeoff_weight_lb,
+  r.base_state,
+  r.base_region,
+  r.storage_location_type,
+  r.noise_certification,
+  r.has_winglets,
+  r.aircraft_registration_country,
+  r.transponder_miscode,
+  r.maximum_landing_weight_lb,
+  r.operating_empty_weight_lb,
   -- aircraft_status payload
   r.aircraft_status_code,
   -- aircraft_type payload
@@ -308,6 +336,15 @@ SELECT
   b.aircraft_width_m,
   b.operating_maximum_takeoff_weight_lb,
   b.certified_maximum_takeoff_weight_lb,
+  b.base_state,
+  b.base_region,
+  b.storage_location_type,
+  b.noise_certification,
+  b.has_winglets,
+  b.aircraft_registration_country,
+  b.transponder_miscode,
+  b.maximum_landing_weight_lb,
+  b.operating_empty_weight_lb,
   b.aircraft_status_code,
   b.aircraft_code_iata,
   b.aircraft_code_icao,

@@ -428,6 +428,15 @@ SCHEMA_MI_AIRCRAFT_EVENT_ELIGIBLE = {
     "aircraft_width_m": Float,
     "operating_maximum_takeoff_weight_lb": Integer,
     "certified_maximum_takeoff_weight_lb": Integer,
+    "base_state": String,
+    "base_region": String,
+    "storage_location_type": String,
+    "noise_certification": String,
+    "has_winglets": Bool,
+    "aircraft_registration_country": String,
+    "transponder_miscode": Bool,
+    "maximum_landing_weight_lb": Integer,
+    "operating_empty_weight_lb": Integer,
     "not_for_use": Bool,
     "publish_date": Date,
     "publish_date_is_unknown_future": Bool,
@@ -509,6 +518,15 @@ SCHEMA_MI_AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT = {
     "aircraft_width_m": Float,
     "operating_maximum_takeoff_weight_lb": Integer,
     "certified_maximum_takeoff_weight_lb": Integer,
+    "base_state": String,
+    "base_region": String,
+    "storage_location_type": String,
+    "noise_certification": String,
+    "has_winglets": Bool,
+    "aircraft_registration_country": String,
+    "transponder_miscode": Bool,
+    "maximum_landing_weight_lb": Integer,
+    "operating_empty_weight_lb": Integer,
     "aircraft_status_code": String,
     "aircraft_code_iata": String,
     "aircraft_code_icao": String,
@@ -572,6 +590,15 @@ SCHEMA_MI_AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT = {
     "aircraft_width_m": Float,
     "operating_maximum_takeoff_weight_lb": Integer,
     "certified_maximum_takeoff_weight_lb": Integer,
+    "base_state": String,
+    "base_region": String,
+    "storage_location_type": String,
+    "noise_certification": String,
+    "has_winglets": Bool,
+    "aircraft_registration_country": String,
+    "transponder_miscode": Bool,
+    "maximum_landing_weight_lb": Integer,
+    "operating_empty_weight_lb": Integer,
     "aircraft_status_code": String,
     "aircraft_code_iata": String,
     "aircraft_code_icao": String,
@@ -679,6 +706,50 @@ SCHEMA_MI_CODE_RESOLUTION_CODE_CANDIDATE = {
 }
 
 MI_CODE_RESOLUTION_CODE_CANDIDATE = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION_CODE_CANDIDATE", schema=SCHEMA_MI_CODE_RESOLUTION_CODE_CANDIDATE)
+
+SCHEMA_MI_CODE_RESOLUTION_INPUT = {
+    "domain": String,
+    "source_object": String,
+    "source_row_token": String,
+    "field_role": String,
+    "raw_field_id": String,
+    "raw_code": String,
+    "method": String,
+    "source_occurrence_count": Number.size(18, 0),
+}
+
+MI_CODE_RESOLUTION_INPUT = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION_INPUT", schema=SCHEMA_MI_CODE_RESOLUTION_INPUT)
+
+SCHEMA_MI_CODE_RESOLUTION = {
+    "resolution_id": String,
+    "domain": String,
+    "source_object": String,
+    "source_row_token": String,
+    "field_role": String,
+    "raw_field_id": String,
+    "raw_code": String,
+    "method": String,
+    "source_occurrence_count": Number.size(18, 0),
+    "candidate_count": Number.size(18, 0),
+    "resolution_status": String,
+    "resolved_identity_id": String,
+    "matched_code_systems": String,
+}
+
+MI_CODE_RESOLUTION = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION", schema=SCHEMA_MI_CODE_RESOLUTION)
+
+SCHEMA_MI_CODE_RESOLUTION_CANDIDATE = {
+    "resolution_id": String,
+    "candidate_id": String,
+    "domain": String,
+    "method": String,
+    "raw_code": String,
+    "matched_code_systems": String,
+    "candidate_count": Number.size(18, 0),
+    "resolution_status": String,
+}
+
+MI_CODE_RESOLUTION_CANDIDATE = model.Table(f"{DB}.MODEL_INPUT.CODE_RESOLUTION_CANDIDATE", schema=SCHEMA_MI_CODE_RESOLUTION_CANDIDATE)
 
 SCHEMA_MI_MONTH_END_CALENDAR = {
     "month_end": Date,
@@ -1262,6 +1333,9 @@ TABLE_INVENTORY = {
     "MI_AIRLINE_CURRENT": (MI_AIRLINE_CURRENT, "MODEL_INPUT.AIRLINE_CURRENT", SCHEMA_MI_AIRLINE_CURRENT),
     "MI_CODE_RESOLUTION_CODE": (MI_CODE_RESOLUTION_CODE, "MODEL_INPUT.CODE_RESOLUTION_CODE", SCHEMA_MI_CODE_RESOLUTION_CODE),
     "MI_CODE_RESOLUTION_CODE_CANDIDATE": (MI_CODE_RESOLUTION_CODE_CANDIDATE, "MODEL_INPUT.CODE_RESOLUTION_CODE_CANDIDATE", SCHEMA_MI_CODE_RESOLUTION_CODE_CANDIDATE),
+    "MI_CODE_RESOLUTION_INPUT": (MI_CODE_RESOLUTION_INPUT, "MODEL_INPUT.CODE_RESOLUTION_INPUT", SCHEMA_MI_CODE_RESOLUTION_INPUT),
+    "MI_CODE_RESOLUTION": (MI_CODE_RESOLUTION, "MODEL_INPUT.CODE_RESOLUTION", SCHEMA_MI_CODE_RESOLUTION),
+    "MI_CODE_RESOLUTION_CANDIDATE": (MI_CODE_RESOLUTION_CANDIDATE, "MODEL_INPUT.CODE_RESOLUTION_CANDIDATE", SCHEMA_MI_CODE_RESOLUTION_CANDIDATE),
     "MI_MONTH_END_CALENDAR": (MI_MONTH_END_CALENDAR, "MODEL_INPUT.MONTH_END_CALENDAR", SCHEMA_MI_MONTH_END_CALENDAR),
     "MI_ROUTE": (MI_ROUTE, "MODEL_INPUT.ROUTE", SCHEMA_MI_ROUTE),
     "MI_ROUTE_STATE": (MI_ROUTE_STATE, "MODEL_INPUT.ROUTE_STATE", SCHEMA_MI_ROUTE_STATE),
@@ -1408,6 +1482,62 @@ CodeResolutionCode.candidates = model.Relationship(
 )
 model.define(CodeResolutionCode.candidates(CodeResolutionCodeCandidate)).where(
     CodeResolutionCodeCandidate.resolution == CodeResolutionCode
+)
+
+# --- Code resolution, at row grain (D-0027) ---------------------------------------
+#
+# D-0019 excluded the row-scoped resolution on a suspicion about sync and cold-start cost and
+# gated the exclusion on one measurement. The measurement came back at 0.18 seconds against an
+# 18-second first query, inside the warm-query noise band, so the premise is refuted and the
+# exclusion does not stand. ``CodeResolutionCode`` above remains the grain link semantics read;
+# ``CodeResolution`` adds the provenance grain, which is the one question the code grain cannot
+# answer: which source object, row and field role mentioned a given raw code.
+
+CodeResolution = model.Concept("CodeResolution", identify_by={"resolution_id": String})
+
+_row_resolution_scalars = scalar_properties(
+    CodeResolution, SCHEMA_MI_CODE_RESOLUTION, exclude=("resolution_id",)
+)
+model.define(CodeResolution.new(resolution_id=MI_CODE_RESOLUTION.resolution_id))
+bind_scalars(
+    CodeResolution,
+    MI_CODE_RESOLUTION,
+    {"resolution_id": MI_CODE_RESOLUTION.resolution_id},
+    _row_resolution_scalars,
+)
+
+CodeResolutionCandidate = model.Concept(
+    "CodeResolutionCandidate",
+    identify_by={"resolution": CodeResolution, "candidate_id": String},
+)
+
+_row_candidate_scalars = scalar_properties(
+    CodeResolutionCandidate,
+    SCHEMA_MI_CODE_RESOLUTION_CANDIDATE,
+    exclude=("resolution_id", "candidate_id"),
+)
+_row_candidate_key = {
+    "resolution": CodeResolution.lookup(
+        resolution_id=MI_CODE_RESOLUTION_CANDIDATE.resolution_id
+    ),
+    "candidate_id": MI_CODE_RESOLUTION_CANDIDATE.candidate_id,
+}
+model.define(CodeResolutionCandidate.new(**_row_candidate_key))
+bind_scalars(
+    CodeResolutionCandidate,
+    MI_CODE_RESOLUTION_CANDIDATE,
+    _row_candidate_key,
+    _row_candidate_scalars,
+)
+
+# Same reasoning as the code-grain relationship: zero, one or many candidates are all legal and
+# only a cardinality-one EXACT resolution ever creates a link, so this carries no functional
+# dependency.
+CodeResolution.candidates = model.Relationship(
+    f"{CodeResolution:resolution} has row candidate {CodeResolutionCandidate:candidate}"
+)
+model.define(CodeResolution.candidates(CodeResolutionCandidate)).where(
+    CodeResolutionCandidate.resolution == CodeResolution
 )
 
 # --- SnapshotDate (SC-01) ---------------------------------------------------------

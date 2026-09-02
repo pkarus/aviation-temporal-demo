@@ -138,7 +138,17 @@ immutable attributes were moved from `AIRCRAFT` to the versioned stream.** The a
 columns are listed in section A. Point-in-time reconstruction (their golden question 1) therefore
 cannot return `base_state`, `base_region`, `noise_certification`, `has_winglets`,
 `aircraft_length_m`/`height_m`, `transponder_miscode`, `storage_location_type` or the four
-non-MTOW weights at all. Separately, D-0005 versioned width, APU type and both MTOWs, so
+non-MTOW weights at all.
+
+**A4 status: partly closed by D-0024.** Nine of the named attributes were added as AH-34 through
+AH-42, taking the contracted column count from 195 to 204 and attribute coverage from roughly 20
+of 38 to roughly 29 of 38. `base_state`, `base_region`, `storage_location_type`,
+`noise_certification`, `has_winglets`, `aircraft_registration_country`, `transponder_miscode`,
+`maximum_landing_weight_lb` and `operating_empty_weight_lb` are now watched `aircraft_state`
+values and are returned by point-in-time reconstruction. The remaining nine are named with a
+reason in `SOURCE_CONTRACT.md` section 12: two physical dimensions, two non-MTOW weights, three
+free-text modifier strings and two master-side descriptors, each immutable or non-queryable in
+the bounded workload. Separately, D-0005 versioned width, APU type and both MTOWs, so
 `Aircraft.master_current_only_*` is prohibited from historical reconstruction: asking their
 question "what were this aircraft's dimensions" as at a past date returns the versioned value
 where one was observed and nothing otherwise, where their model returns the immutable master
@@ -167,6 +177,30 @@ versions per aircraft, but the bulk is synthetic daily churn through `SYN-TYPE-F
 rather than realistic conversions. Their golden question 2 (In Service -> Storage -> In Service
 spells) has essentially no population behind it, and `FULFILLMENT_EXACT` holds 4 rows. The
 ontology can express these questions; the loaded data cannot show them convincingly.
+
+**A7 status: closed by D-0023, measured against the live v2 load.** Every figure below is a
+measurement, not a prediction.
+
+| Measure | v1 live | v2 live |
+|---|---:|---:|
+| `aircraft_state` versions per filler aircraft | 1.005 | **8.83** |
+| filler aircraft with more than one state version | 2 of 999 | **993 of 993** |
+| `aircraft_status` versions per filler aircraft | 1.004 | **2.36** |
+| filler aircraft with more than one status version | 2 of 999 | **468** |
+| `aircraft_type` versions per filler aircraft | 48 (synthetic daily churn) | **1.20**, 200 aircraft convert |
+| `engine_type` versions per filler aircraft | 48 (synthetic daily churn) | **1.31**, 305 aircraft re-engine |
+| status observation vocabulary | 1,001 / 3 / 2 | **28,272 / 1,654 / 283** |
+| closed In Service -> Storage -> In Service spells | 2 | **439** over 258 aircraft |
+| spell-duration buckets populated | 2 | **7**, minimum 0 days, median 157, maximum 1,091 |
+| Q03 over its window | 132 rows, 2 aircraft, 2 types | **985 rows, 120 month ends, 10 types** (2025-2034) |
+| Q05 rows and populated classes | 35 rows, 8 classes, 6 of them at 1 to 3 rows | **392 rows, 8 classes, minimum 6** |
+| `AIRCRAFT_HISTORY` rows | 48,000 | **30,233** - fewer rows, more structure |
+| exact fulfilments | 4 | **704** over 653 canonical passenger flights |
+| canonical passenger flights carrying a schedule key | 1 of 19,996 | **7,951 of 19,446** |
+| versioned A4 attributes carried | about 20 of 38 | about **29 of 38** |
+
+The type and engine version counts fall, and that is the improvement: 48 daily
+`SYN-TYPE-FILL-NNN` values per aircraft was noise that made golden question 4 unreadable.
 
 ## Section 2 - Deviations that are cosmetic
 

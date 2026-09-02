@@ -127,6 +127,15 @@ SELECT
   c.aircraft_width_m,
   c.operating_maximum_takeoff_weight_lb,
   c.certified_maximum_takeoff_weight_lb,
+  c.base_state,
+  c.base_region,
+  c.storage_location_type,
+  c.noise_certification,
+  c.has_winglets,
+  c.aircraft_registration_country,
+  c.transponder_miscode,
+  c.maximum_landing_weight_lb,
+  c.operating_empty_weight_lb,
   c.not_for_use,
   MODEL_INPUT.NORMALIZE_SOURCE_DATE(c.publish_date)            AS publish_date,
   MODEL_INPUT.IS_UNKNOWN_FUTURE(c.publish_date)                AS publish_date_is_unknown_future,
@@ -253,6 +262,15 @@ WITH classified AS (
       || MODEL_INPUT.DV43_FIELD('AH-31','NUMBER(38,0)', MODEL_INPUT.CANON_NUM(c.certified_maximum_takeoff_weight_lb))
       || MODEL_INPUT.DV43_FIELD('AH-32','BOOLEAN',      MODEL_INPUT.CANON_BOOL(c.not_for_use))
       || MODEL_INPUT.DV43_FIELD('AH-33','DATE',         MODEL_INPUT.CANON_DATE(c.publish_date))
+      || MODEL_INPUT.DV43_FIELD('AH-34','VARCHAR', c.base_state)
+      || MODEL_INPUT.DV43_FIELD('AH-35','VARCHAR', c.base_region)
+      || MODEL_INPUT.DV43_FIELD('AH-36','VARCHAR', c.storage_location_type)
+      || MODEL_INPUT.DV43_FIELD('AH-37','VARCHAR', c.noise_certification)
+      || MODEL_INPUT.DV43_FIELD('AH-38','BOOLEAN', MODEL_INPUT.CANON_BOOL(c.has_winglets))
+      || MODEL_INPUT.DV43_FIELD('AH-39','VARCHAR', c.aircraft_registration_country)
+      || MODEL_INPUT.DV43_FIELD('AH-40','BOOLEAN', MODEL_INPUT.CANON_BOOL(c.transponder_miscode))
+      || MODEL_INPUT.DV43_FIELD('AH-41','NUMBER(38,0)', MODEL_INPUT.CANON_NUM(c.maximum_landing_weight_lb))
+      || MODEL_INPUT.DV43_FIELD('AH-42','NUMBER(38,0)', MODEL_INPUT.CANON_NUM(c.operating_empty_weight_lb))
     , 256) AS typed_normalized_row_hash
   FROM classified c
   WHERE c.quarantine_reason IS NOT NULL

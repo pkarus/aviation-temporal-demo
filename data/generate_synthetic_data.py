@@ -18,7 +18,7 @@ import os
 import re
 import shutil
 import tempfile
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
@@ -31,8 +31,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SEED = "20260901"
 GENERATION_DATE = "2026-09-01"
 GENERATION_TIMESTAMP = "2026-09-01T00:00:00Z"
-SPEC_VERSION = "1.0.0"
-EXPECTED_VERSION = "1.1.1"
+SPEC_VERSION = "2.0.0"
+EXPECTED_VERSION = "1.2.0"
 SERIALIZER_VERSION = "sf-csv-v1"
 TYPED_ROW_VERSION = "typed-row-lp-v1"
 DV43_VERSION = "dv43-lp-v1"
@@ -76,19 +76,77 @@ EXPECTED_COUNTS = {
     },
     "demo": {
         "AIRCRAFT_MASTER": 999,
-        "AIRCRAFT_HISTORY": 48_000,
+        "AIRCRAFT_HISTORY": 30_233,
         "AIRCRAFT_CONFIGURATION": 2_000,
-        "SCHEDULE_SNAPSHOT": 70_000,
-        "SCHEDULE_SNAPSHOT_CALENDAR": 10,
+        "SCHEDULE_SNAPSHOT": 124_636,
+        "SCHEDULE_SNAPSHOT_CALENDAR": 36,
         "PASSENGER_FORWARD": 10_000,
         "PASSENGER_HISTORICAL": 10_000,
         "AIRCRAFT_FLIGHT": 3_900,
         "AIRPORT_REFERENCE": 45,
-        "AIRLINE_REFERENCE": 100,
+        "AIRLINE_REFERENCE": 190,
     },
 }
 WHITELIST = ("SFO", "LAX", "LAS", "SEA", "DEN", "ORD", "PHX", "BOS", "MIA")
 ANCHOR_AIRCRAFT = {1001, 1002, 1004, 1005, 1098, 1099}
+
+# --- specification 2.0.0 enrichment constants ----------------------------------------------------
+DATA_HORIZON = "2035-01-01"          # exclusive; no filler event is emitted at or after service_end
+ENRICHED_FLOOR = "2025-01-01"        # every filler AM-07 and AH-05 is at or after this date
+W27_FIRST = "2027-01-04"             # first 2027 weekly snapshot date
+W27_WEEKS = 26
+W27_INCOMPLETE_INDEX = 10            # 2027-03-15, PRESENT_INCOMPLETE
+W27_MISSING_INDEX = 15               # 2027-04-19, MISSING_DECLARED
+
+# AC-01, AC-05 subseries, AC-03 type label, AC-07 design class, AC-08 engine count,
+# AC-14 engine subseries, AC-12 engine label.
+FLEET_DEFINITIONS = (
+    (300000, "SYN-TYPE-NB1", "Synthetic narrowbody generation 1", "SYN-CLASS-NB", 2, "SYN-ENGINE-N1A", "Synthetic turbofan N1A"),
+    (300001, "SYN-TYPE-NB1", "Synthetic narrowbody generation 1", "SYN-CLASS-NB", 2, "SYN-ENGINE-N1B", "Synthetic turbofan N1B"),
+    (300002, "SYN-TYPE-NB2", "Synthetic narrowbody generation 2", "SYN-CLASS-NB", 2, "SYN-ENGINE-N1A", "Synthetic turbofan N1A"),
+    (300003, "SYN-TYPE-NB2", "Synthetic narrowbody generation 2", "SYN-CLASS-NB", 2, "SYN-ENGINE-N2A", "Synthetic turbofan N2A"),
+    (300004, "SYN-TYPE-NB3", "Synthetic narrowbody generation 3", "SYN-CLASS-NB", 2, "SYN-ENGINE-N3A", "Synthetic turbofan N3A"),
+    (300005, "SYN-TYPE-NB3", "Synthetic narrowbody generation 3", "SYN-CLASS-NB", 2, "SYN-ENGINE-N3B", "Synthetic turbofan N3B"),
+    (300006, "SYN-TYPE-WB1", "Synthetic widebody generation 1", "SYN-CLASS-WB", 2, "SYN-ENGINE-W1A", "Synthetic turbofan W1A"),
+    (300007, "SYN-TYPE-WB1", "Synthetic widebody generation 1", "SYN-CLASS-WB", 2, "SYN-ENGINE-W1B", "Synthetic turbofan W1B"),
+    (300008, "SYN-TYPE-WB2", "Synthetic widebody generation 2", "SYN-CLASS-WB", 4, "SYN-ENGINE-W2A", "Synthetic turbofan W2A"),
+    (300009, "SYN-TYPE-RJ1", "Synthetic regional jet generation 1", "SYN-CLASS-RJ", 2, "SYN-ENGINE-R1A", "Synthetic turbofan R1A"),
+    (300010, "SYN-TYPE-RJ2", "Synthetic regional jet generation 2", "SYN-CLASS-RJ", 2, "SYN-ENGINE-R2A", "Synthetic turbofan R2A"),
+    (300011, "SYN-TYPE-FRT1", "Synthetic freighter generation 1", "SYN-CLASS-FRT", 2, "SYN-ENGINE-F1A", "Synthetic turbofan F1A"),
+    (300012, "SYN-TYPE-NB2", "Synthetic narrowbody generation 2", "SYN-CLASS-NB", 2, "SYN-ENGINE-N1B", "Synthetic turbofan N1B"),
+)
+FLEET_BY_ID = {row[0]: row for row in FLEET_DEFINITIONS}
+NOISE_BY_ENGINE = {
+    "N1A": "SYN-NOISE-CH3", "R1A": "SYN-NOISE-CH3", "W1A": "SYN-NOISE-CH3", "F1A": "SYN-NOISE-CH3",
+    "N1B": "SYN-NOISE-CH4", "N2A": "SYN-NOISE-CH4", "R2A": "SYN-NOISE-CH4", "W1B": "SYN-NOISE-CH4",
+    "N3A": "SYN-NOISE-CH14", "N3B": "SYN-NOISE-CH14", "W2A": "SYN-NOISE-CH14",
+}
+WEIGHTS_BY_CLASS = {"NB": (142_000, 92_000), "WB": (210_000, 138_000), "RJ": (84_000, 52_000), "FRT": (146_000, 88_000)}
+BASE_STATE_BY_IATA = {
+    "SFO": "SYN-ST-CA", "LAX": "SYN-ST-CA", "LAS": "SYN-ST-NV", "SEA": "SYN-ST-WA", "DEN": "SYN-ST-CO",
+    "ORD": "SYN-ST-IL", "PHX": "SYN-ST-AZ", "BOS": "SYN-ST-MA", "MIA": "SYN-ST-FL",
+}
+BASE_REGION_BY_IATA = {
+    "SFO": "SYN-RGN-WEST", "LAX": "SYN-RGN-WEST", "LAS": "SYN-RGN-WEST", "SEA": "SYN-RGN-WEST",
+    "PHX": "SYN-RGN-WEST", "DEN": "SYN-RGN-MOUNTAIN", "ORD": "SYN-RGN-CENTRAL",
+    "BOS": "SYN-RGN-EAST", "MIA": "SYN-RGN-EAST",
+}
+# Cohort name, inclusive i range, base configuration id.
+COHORTS = (
+    ("C1_FOUNDING_NB1", 0, 299, 300000),
+    ("C2_LEGACY_RJ1", 300, 449, 300009),
+    ("C3_MIDLIFE_WB1", 450, 549, 300006),
+    ("C4_RENEWAL_NB3", 550, 749, 300004),
+    ("C5_RENEWAL_WB2", 750, 799, 300008),
+    ("C6_FREIGHT_FRT1", 800, 849, 300011),
+    ("C7_CHURN_NB2", 850, 959, 300002),
+    ("C8_SHORT_LIFE_RJ2", 960, 992, 300010),
+)
+C7_DURATIONS = (0, 1, 3, 14, 45, 90, 180, 365, 450)
+# Event ordinal -> AH-03 row_sequence_number.  Ordinal 1 is storage/maintenance and ordinal 2 the
+# return, so a zero-day spell lands on 20 and 30 exactly like the anchored 101010/101011 pair.
+EVENT_ORDINALS = {"entry": 0, "hold": 1, "return": 2, "fleet": 3, "identity": 4, "periodic": 5}
+STATE_FIELD_NUMBERS = tuple(range(17, 32)) + tuple(range(34, 43))
 NEGATIVE_FIXTURE_CLASSES = (
     "NF-A01", "NF-A02", "NF-A03", "NF-A04", "NF-A05",
     "NF-S01", "NF-S02", "NF-S03", "NF-S04", "NF-S05", "NF-S06", "NF-S07", "NF-S08", "NF-S09", "NF-S10",
@@ -212,10 +270,10 @@ def parse_contract_fields() -> dict[str, tuple[Field, ...]]:
         prefix = PREFIX[table]
         fields = tuple(sorted(by_prefix[prefix].values(), key=lambda field: field.field_id))
         result[table] = fields
-    assert sum(map(len, result.values())) == 195
+    assert sum(map(len, result.values())) == 204
     assert {name: len(result[name]) for name in TABLE_ORDER} == {
         "AIRCRAFT_MASTER": 19,
-        "AIRCRAFT_HISTORY": 33,
+        "AIRCRAFT_HISTORY": 42,
         "AIRCRAFT_CONFIGURATION": 16,
         "SCHEDULE_SNAPSHOT": 40,
         "SCHEDULE_SNAPSHOT_CALENDAR": 6,
@@ -246,6 +304,54 @@ def row_for(table: str, values: Mapping[str, Any]) -> dict[str, Any]:
 
 def plus_days(value: str, days: int) -> str:
     return (date.fromisoformat(value) + timedelta(days=days)).isoformat()
+
+
+def filler_aircraft_ids() -> list[int]:
+    """The 993 sorted filler aircraft identifiers; ``a_i`` in specification 2.0.0."""
+    values = sorted(set(range(1000, 2000)) - {1003} - ANCHOR_AIRCRAFT)
+    assert len(values) == 993
+    return values
+
+
+def cohort_of(index: int) -> tuple[str, int, int, int]:
+    for entry in COHORTS:
+        if entry[1] <= index <= entry[2]:
+            return entry
+    raise AssertionError(index)
+
+
+def service_start(index: int) -> str:
+    """Specification 7.2 cohort entry-into-service date."""
+    name, low, _high, _config = cohort_of(index)
+    j = index - low
+    if name in {"C1_FOUNDING_NB1", "C2_LEGACY_RJ1", "C3_MIDLIFE_WB1", "C6_FREIGHT_FRT1"}:
+        return "2025-01-01"
+    if name == "C4_RENEWAL_NB3":
+        return plus_days("2028-01-03", 9 * j)
+    if name == "C5_RENEWAL_WB2":
+        return plus_days("2030-01-07", 21 * j)
+    if name == "C7_CHURN_NB2":
+        return plus_days("2026-01-05", 7 * j)
+    if name == "C8_SHORT_LIFE_RJ2":
+        return "2025-07-01"
+    raise AssertionError(name)
+
+
+def end_of_life(index: int) -> str | None:
+    """Specification 7.2 cohort AM-08; None means the aircraft is still in the fleet."""
+    name, low, _high, _config = cohort_of(index)
+    j = index - low
+    if name == "C1_FOUNDING_NB1":
+        return plus_days("2032-01-05", 7 * index) if index < 100 else None
+    if name == "C2_LEGACY_RJ1":
+        return plus_days("2028-01-03", 7 * j)
+    if name == "C8_SHORT_LIFE_RJ2":
+        return plus_days("2027-07-05", 14 * j)
+    return None
+
+
+def service_end(index: int) -> str:
+    return end_of_life(index) or DATA_HORIZON
 
 
 def load_expected() -> dict[str, Any]:
@@ -293,18 +399,25 @@ def aircraft_master(scale: str) -> list[dict[str, Any]]:
             row[column] = value
         rows.append(row)
     if scale == "demo":
-        filler = sorted(set(range(1000, 2000)) - {1003} - ANCHOR_AIRCRAFT)
-        assert len(filler) == 993
-        for i, aircraft_id in enumerate(filler):
+        # Specification 7.1/7.2.  Every milestone is floored at 2025-01-01 so that no filler
+        # aircraft can be visible at any Q03-CANONICAL month end (2015-01-31..2024-12-31).  The
+        # resulting order-to-delivery compression for the 2025-01-01 cohorts is a declared
+        # synthetic artifact; relaxing the floor would break the isolation argument silently.
+        def floored(start: str, back: int) -> str:
+            candidate = plus_days(start, -back)
+            return max(ENRICHED_FLOOR, candidate)
+
+        for i, aircraft_id in enumerate(filler_aircraft_ids()):
             row = base(aircraft_id)
-            p = plus_days("2025-01-01", i % 365)
+            start = service_start(i)
             row.update({
-                "aircraft_order_date": p,
-                "aircraft_build_date": plus_days(p, 30),
-                "aircraft_delivery_date": plus_days(p, 60),
-                "aircraft_roll_out_date": plus_days(p, 75),
-                "aircraft_first_flight_date": plus_days(p, 90),
-                "aircraft_start_of_life_date": plus_days(p, 120),
+                "aircraft_order_date": floored(start, 540),
+                "aircraft_build_date": floored(start, 120),
+                "aircraft_delivery_date": floored(start, 30),
+                "aircraft_roll_out_date": floored(start, 100),
+                "aircraft_first_flight_date": floored(start, 60),
+                "aircraft_start_of_life_date": start,
+                "aircraft_end_of_life_date": end_of_life(i),
                 "aircraft_build_airport_code_iata": WHITELIST[i % 9],
                 "aircraft_build_airport": f"Synthetic build label {WHITELIST[i % 9]}",
             })
@@ -322,7 +435,31 @@ def aircraft_configuration(scale: str) -> list[dict[str, Any]]:
     columns = [field.column for field in FIELDS["AIRCRAFT_CONFIGURATION"][:-1]]
     rows = [row_for("AIRCRAFT_CONFIGURATION", dict(zip(columns, values)) | {"publish_date": "2026-08-31"}) for values in anchors]
     if scale == "demo":
-        for i in range(1996):
+        # Specification 6: thirteen referenced fleet definitions replace the first thirteen v1
+        # filler definitions.  Filler definitions 300013..301995 keep the v1 template verbatim and
+        # are deliberately unreferenced, which is what a real definition table looks like.
+        for config_id, subseries, type_label, design_class, engines, engine_subseries, engine_label in FLEET_DEFINITIONS:
+            type_suffix = subseries.removeprefix("SYN-TYPE-")
+            engine_suffix = engine_subseries.removeprefix("SYN-ENGINE-")
+            rows.append(row_for("AIRCRAFT_CONFIGURATION", {
+                "aircraft_configuration_id": config_id,
+                "aircraft_family": f"SYN-FAMILY-{type_suffix}",
+                "aircraft_type": type_label,
+                "aircraft_series": f"SYN-SERIES-{type_suffix}",
+                "aircraft_subseries": subseries,
+                "aircraft_manufacturer": f"SYN-MFR-{design_class.removeprefix('SYN-CLASS-')}",
+                "aircraft_design_class": design_class,
+                "engine_count": engines,
+                "has_multiple_engine_types": False,
+                "engine_manufacturer": f"SYN-ENG-MFR-{engine_suffix}",
+                "engine_family": f"SYN-ENG-FAM-{engine_suffix}",
+                "engine_type": engine_label,
+                "engine_series": f"SYN-ENG-SER-{engine_suffix}",
+                "engine_subseries": engine_subseries,
+                "engine_propulsion_type": "TURBOFAN",
+                "publish_date": "2026-08-31",
+            }))
+        for i in range(len(FLEET_DEFINITIONS), 1996):
             rows.append(row_for("AIRCRAFT_CONFIGURATION", {
                 "aircraft_configuration_id": 300000 + i,
                 "aircraft_family": f"SYN-FAMILY-FILL-{i}",
@@ -379,6 +516,17 @@ def history_template(history_id: int, aircraft_id: int, sequence: int, event_dat
         "certified_maximum_takeoff_weight_lb": 170000,
         "not_for_use": False,
         "publish_date": "2026-08-31",
+        # D-0024 AH-34..AH-42.  These template values are exactly the constants specification 8
+        # freezes for the six anchored aircraft, so no anchored event can mint a state version.
+        "base_state": "SYN-ST-CA",
+        "base_region": "SYN-RGN-WEST",
+        "storage_location_type": None,
+        "noise_certification": "SYN-NOISE-CH3",
+        "has_winglets": False,
+        "aircraft_registration_country": "Synthetic United States",
+        "transponder_miscode": False,
+        "maximum_landing_weight_lb": 142_000,
+        "operating_empty_weight_lb": 92_000,
     })
 
 
@@ -393,6 +541,211 @@ def apply_variant(row: dict[str, Any], variant: str) -> None:
     }
     for column, value in zip(("aircraft_configuration_id", "aircraft_code_iata", "aircraft_code_icao", "aircraft_value_sub_series"), variants[variant]):
         row[column] = value
+
+
+QUARTER_DAYS = ((1, 1), (4, 1), (7, 1), (10, 1))
+
+
+def periodic_dates() -> tuple[str, ...]:
+    return tuple(
+        date(year, month, day).isoformat()
+        for year in range(2025, 2035)
+        for month, day in QUARTER_DAYS
+    )
+
+
+def filler_events(index: int) -> list[dict[str, Any]]:
+    """Specification 7.3 and 7.4 event stream for filler aircraft ``a_index``.
+
+    Returns events ordered by ``(date, ordinal)``.  Every event carries the mutation it names;
+    everything else carries forward from the immediately preceding event.
+    """
+    name, low, _high, base_config = cohort_of(index)
+    i, j = index, index - low
+    start, end = service_start(index), service_end(index)
+    events: list[dict[str, Any]] = [{"date": start, "kind": "entry", "config": base_config}]
+
+    def add(day: str, kind: str, **params: Any) -> None:
+        # No event is emitted at or after service_end; this truncation is load bearing for the
+        # predicted 1.20 type and 1.31 engine version means.
+        if start <= day < end:
+            events.append({"date": day, "kind": kind, **params})
+
+    def spell(day: str, duration: int, *, hold: str = "storage") -> None:
+        add(day, hold, duration=duration)
+        add(plus_days(day, duration), "return")
+
+    if name == "C1_FOUNDING_NB1":
+        if i % 5 == 0:
+            k = i // 5
+            spell(plus_days("2026-03-02", 7 * k), 30 + 17 * (k % 11))
+        if i < 150:
+            add(plus_days("2028-03-01", 5 * i), "fleet", config=300001)
+        if 100 <= i < 150:
+            add(plus_days("2032-06-01", 10 * (i - 100)), "fleet", config=300012)
+        if 200 <= i < 300:
+            add(plus_days("2030-06-03", 15 * (i - 200)), "fleet", config=300002)
+        if i % 7 == 3:
+            add("2029-05-01", "base", iata=WHITELIST[(i + 4) % 9])
+        if i % 11 == 5:
+            add("2031-02-03", "registration")
+    elif name == "C2_LEGACY_RJ1":
+        spell(plus_days("2026-02-02", 5 * j), 21, hold="maintenance")
+        if j % 3 == 0:
+            add(plus_days("2027-01-04", 9 * (j // 3)), "fleet", config=300010)
+    elif name == "C3_MIDLIFE_WB1":
+        spell(plus_days("2025-09-01", 3 * j), 7 + 3 * j)
+        spell(plus_days("2028-07-03", 9 * j), 200 + 9 * j)
+        if j % 2 == 0:
+            add("2031-03-03", "fleet", config=300007)
+    elif name == "C4_RENEWAL_NB3":
+        if j % 3 == 0:
+            add(plus_days(start, 1095), "fleet", config=300005)
+        if j % 4 == 1:
+            spell(plus_days(start, 500), 18, hold="maintenance")
+    elif name == "C7_CHURN_NB2":
+        for s in range(1, (j % 4) + 1):
+            spell(plus_days(start, 150 + 500 * (s - 1) + 13 * (j % 25)), C7_DURATIONS[(7 * j + 13 * s) % 9])
+        if j % 3 == 0:
+            spell(plus_days(start, 90), 12, hold="maintenance")
+    elif name == "C8_SHORT_LIFE_RJ2":
+        if j % 2 == 0:
+            spell(plus_days("2026-03-02", 30 * j), 60)
+    # C5 and C6 carry no lifecycle event after entry; C6 is the deliberate flat control.
+
+    lifecycle_dates = {event["date"] for event in events}
+    for day in periodic_dates():
+        if start < day < end and day not in lifecycle_dates:
+            events.append({"date": day, "kind": "periodic"})
+    events.sort(key=lambda event: (event["date"], EVENT_ORDINALS[
+        "hold" if event["kind"] in {"storage", "maintenance"} else
+        "identity" if event["kind"] in {"base", "registration"} else event["kind"]]))
+    return events
+
+
+def fleet_payload(config_id: int) -> dict[str, Any]:
+    """AH-13..AH-16, AH-37 and the weight pair implied by a fleet configuration."""
+    _cid, subseries, _label, design_class, _count, engine_subseries, _engine_label = FLEET_BY_ID[config_id]
+    type_suffix = subseries.removeprefix("SYN-TYPE-")
+    engine_suffix = engine_subseries.removeprefix("SYN-ENGINE-")
+    landing, empty = WEIGHTS_BY_CLASS[design_class.removeprefix("SYN-CLASS-")]
+    return {
+        "aircraft_configuration_id": config_id,
+        "aircraft_code_iata": f"SYN-SERIES-{type_suffix}",
+        "aircraft_code_icao": f"SYN-SUBTYPE-{type_suffix}",
+        "aircraft_value_sub_series": subseries,
+        "noise_certification": NOISE_BY_ENGINE[engine_suffix],
+        "maximum_landing_weight_lb": landing,
+        "operating_empty_weight_lb": empty,
+    }
+
+
+def base_payload(iata: str) -> dict[str, Any]:
+    return {
+        "base_airport": f"Synthetic base {iata}",
+        "base_airport_code_iata": iata,
+        "base_city": f"Synthetic city {iata}",
+        "base_state": BASE_STATE_BY_IATA[iata],
+        "base_region": BASE_REGION_BY_IATA[iata],
+    }
+
+
+def storage_class(duration: int) -> str:
+    if duration >= 180:
+        return "SYN-STG-LONG-TERM"
+    return "SYN-STG-SHORT-TERM" if duration >= 1 else "SYN-STG-SAME-DAY"
+
+
+def enriched_history(masters: Sequence[Mapping[str, Any]], available: Iterable[int]) -> list[dict[str, Any]]:
+    """Specification 7.3 / 7.4 / 7.5 filler event stream for the 993 enriched aircraft."""
+    ids = iter(available)
+    rows: list[dict[str, Any]] = []
+    for index, aircraft_id in enumerate(filler_aircraft_ids()):
+        name, low, _high, base_config = cohort_of(index)
+        j = index - low
+        start = service_start(index)
+        state = fleet_payload(base_config) | base_payload(WHITELIST[index % 9]) | {
+            "start_aircraft_status": "In Service",
+            "aircraft_registration_number": f"SYN-REG-{aircraft_id}",
+            "aircraft_transponder_code": f"SYN-XPDR-{aircraft_id}",
+            "aircraft_registration_country_code_iso": "US",
+            "aircraft_registration_region": "SYN-US",
+            "aircraft_cargo": "FREIGHTER" if name == "C6_FREIGHT_FRT1" else "PASSENGER",
+            "storage_location": None,
+            "storage_airport_code_iata": None,
+            "storage_location_type": None,
+            "base_country": "United States",
+            "apu_type": None,
+            "aircraft_width_m": 35.0,
+            "operating_maximum_takeoff_weight_lb": 165_000,
+            "certified_maximum_takeoff_weight_lb": 170_000,
+            "has_winglets": name in {"C4_RENEWAL_NB3", "C5_RENEWAL_WB2", "C7_CHURN_NB2"},
+            "aircraft_registration_country": "Synthetic United States",
+            "transponder_miscode": name == "C7_CHURN_NB2" and j % 17 == 4,
+        }
+        miscode_clear_from = plus_days(start, 400)
+        periodic_index = 0
+        for event in filler_events(index):
+            kind = event["kind"]
+            if kind == "entry":
+                provenance = ("SYN-ENTRY-INTO-SERVICE", "SYNTHETIC_LIFECYCLE")
+            elif kind == "storage":
+                state = state | {
+                    "start_aircraft_status": "Storage",
+                    "storage_location": f"SYN-AP-{WHITELIST[(index + 3) % 9]}",
+                    "storage_airport_code_iata": WHITELIST[(index + 3) % 9],
+                    "storage_location_type": storage_class(event["duration"]),
+                }
+                provenance = ("SYN-STORAGE-IN", "SYNTHETIC_LIFECYCLE")
+            elif kind == "maintenance":
+                state = state | {"start_aircraft_status": "Maintenance"}
+                provenance = ("SYN-MAINTENANCE-IN", "SYNTHETIC_LIFECYCLE")
+            elif kind == "return":
+                state = state | {
+                    "start_aircraft_status": "In Service",
+                    "storage_location": None, "storage_airport_code_iata": None,
+                    "storage_location_type": None,
+                }
+                provenance = ("SYN-RETURN-TO-SERVICE", "SYNTHETIC_LIFECYCLE")
+            elif kind == "fleet":
+                previous = state["aircraft_value_sub_series"]
+                state = state | fleet_payload(event["config"])
+                if name == "C1_FOUNDING_NB1" and index % 5 == 2 and event["config"] == 300001:
+                    state = state | {"has_winglets": True}
+                changed_type = state["aircraft_value_sub_series"] != previous
+                provenance = ("SYN-TYPE-CHANGE" if changed_type else "SYN-ENGINE-CHANGE", "SYNTHETIC_LIFECYCLE")
+            elif kind == "base":
+                state = state | base_payload(event["iata"])
+                provenance = ("SYN-BASE-CHANGE", "SYNTHETIC_LIFECYCLE")
+            elif kind == "registration":
+                state = state | {
+                    "aircraft_registration_number": f"SYN-REG-{aircraft_id}-R2",
+                    "aircraft_registration_country": "Synthetic United States (reregistered)",
+                }
+                provenance = ("SYN-REGISTRATION-CHANGE", "SYNTHETIC_LIFECYCLE")
+            elif kind == "periodic":
+                updates: dict[str, Any] = {}
+                if periodic_index % 4 == 3:
+                    updates["maximum_landing_weight_lb"] = state["maximum_landing_weight_lb"] + 250
+                    updates["operating_empty_weight_lb"] = state["operating_empty_weight_lb"] + 150
+                if state["transponder_miscode"] and event["date"] >= miscode_clear_from:
+                    updates["transponder_miscode"] = False
+                if name == "C3_MIDLIFE_WB1" and j % 3 == 1 and event["date"] == "2030-04-01":
+                    updates["has_winglets"] = True
+                state = state | updates
+                periodic_index += 1
+                provenance = ("SYN-OBSERVATION", "SYNTHETIC_PERIODIC")
+            else:
+                raise AssertionError(kind)
+            ordinal = EVENT_ORDINALS[
+                "hold" if kind in {"storage", "maintenance"} else
+                "identity" if kind in {"base", "registration"} else kind]
+            sequence = 10 * (ordinal + 1)
+            row = history_template(next(ids), aircraft_id, sequence, event["date"])
+            row.update(state)
+            row["start_event"], row["event_source"] = provenance
+            rows.append(row)
+    return rows
 
 
 def aircraft_history(scale: str, masters: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -417,8 +770,9 @@ def aircraft_history(scale: str, masters: Sequence[Mapping[str, Any]]) -> list[d
         row = history_template(history_id, aircraft_id, seq, event_date)
         if aircraft_id in prior:
             # Only the contracted state payload carries forward.  Provenance and audit fields are
-            # row-local template values, so the deliberately irrelevant AH-12 cannot leak.
-            for field_number in range(17, 32):
+            # row-local template values, so the deliberately irrelevant AH-12 cannot leak.  D-0024
+            # widened the watched set to AH-17..AH-31 plus AH-34..AH-42.
+            for field_number in STATE_FIELD_NUMBERS:
                 column = FIELD_BY_ID[f"AH-{field_number:02d}"].column
                 row[column] = prior[aircraft_id][column]
         row.update({"start_aircraft_status":status})
@@ -434,24 +788,239 @@ def aircraft_history(scale: str, masters: Sequence[Mapping[str, Any]]) -> list[d
         prior[aircraft_id] = dict(row)
         rows.append(row)
     if scale == "demo":
-        master_by_id = {row["aircraft_id"]: row for row in masters}
-        filler = sorted(set(master_by_id) - ANCHOR_AIRCRAFT)
         used = {row["aircraft_history_id"] for row in rows}
-        available = iter(value for value in range(101000, 200000) if value not in used)
-        for i, aircraft_id in enumerate(filler):
-            count = 49 if i < 312 else 48
-            for j in range(count):
-                history_id = next(available)
-                row = history_template(history_id, aircraft_id, j + 1, plus_days(master_by_id[aircraft_id]["aircraft_start_of_life_date"], j))
-                config_index = (i + j) % 1996
-                row.update({
-                    "aircraft_configuration_id": 300000 + config_index,
-                    "aircraft_code_iata": f"SYN-SERIES-FILL-{config_index}",
-                    "aircraft_code_icao": f"SYN-SUBTYPE-FILL-{config_index}",
-                    "aircraft_value_sub_series": f"SYN-TYPE-FILL-{config_index}",
-                })
-                rows.append(row)
+        available = (value for value in range(101000, 200000) if value not in used)
+        rows.extend(enriched_history(masters, available))
     return rows
+
+
+ROUTES = tuple((WHITELIST[a], WHITELIST[b]) for a in range(9) for b in range(9) if a != b)
+P_MKT = tuple(f"SYN-MKT-W27-{c:02d}" for c in range(16))
+P_OP = tuple(f"SYN-OP-W27-{c:02d}" for c in range(16))
+W27_CABIN = {
+    100.0: (0.0, 10.0, 10.0, 90.0),
+    180.0: (8.0, 20.0, 20.0, 152.0),
+    240.0: (12.0, 28.0, 30.0, 200.0),
+    320.0: (16.0, 44.0, 40.0, 260.0),
+}
+W27_FREQUENCIES = (2, 3, 5, 7, 10, 14)
+W27_TOTALS = (100.0, 180.0, 240.0, 320.0)
+W27_MOD_FIELDS = (
+    "total_seats", "weekly_frequency", "departure_terminal", "arrival_terminal",
+    "business_class_seats", "premium_economy_seats", "scheduled_block_minutes",
+    "equipment_subtype_code_iata", "is_codeshare", "service_type_iata",
+)
+W27_MOD_NEW_VALUES = {
+    "total_seats": 186.0, "weekly_frequency": 8, "departure_terminal": "SYN-T-W27-A2",
+    "arrival_terminal": "SYN-T-W27-B2", "business_class_seats": 26.0,
+    "premium_economy_seats": 26.0, "scheduled_block_minutes": 135,
+    "equipment_subtype_code_iata": "SYN-EQ-WB", "is_codeshare": True, "service_type_iata": "F",
+}
+
+
+def w27_dates() -> tuple[str, ...]:
+    return tuple(plus_days(W27_FIRST, 7 * k) for k in range(W27_WEEKS))
+
+
+def w27_eligible() -> tuple[str, ...]:
+    """The 24 eligible complete 2027 knowledge dates, ascending; ``E`` in specification 9.1."""
+    return tuple(d for k, d in enumerate(w27_dates()) if k not in {W27_INCOMPLETE_INDEX, W27_MISSING_INDEX})
+
+
+def w27_physical() -> tuple[str, ...]:
+    """The 25 dates that physically carry 2027 rows: the 24 eligible plus the incomplete date."""
+    return tuple(d for k, d in enumerate(w27_dates()) if k != W27_MISSING_INDEX)
+
+
+def w27_defaults() -> dict[str, Any]:
+    return {
+        "service_type_iata": "J", "effective_date": "2027-08-01", "discontinue_date": "2027-12-31",
+        "departure_terminal": "SYN-T-W27-A", "arrival_terminal": "SYN-T-W27-B",
+        "is_operating_monday": True, "is_operating_tuesday": True, "is_operating_wednesday": True,
+        "is_operating_thursday": True, "is_operating_friday": True, "is_operating_saturday": True,
+        "is_operating_sunday": True, "days_pattern": "1234567", "weekly_frequency": 7,
+        "passenger_departure_utc_time": "16:00:00", "passenger_arrival_utc_time": "18:00:00",
+        "passenger_departure_local_time": "09:00:00", "passenger_arrival_local_time": "11:00:00",
+        "arrival_day_indicator": 0, "scheduled_block_minutes": 120,
+        "equipment_subtype_code_iata": "SYN-EQ-NB", "total_seats": 180.0, "first_class_seats": 8.0,
+        "business_class_seats": 20.0, "premium_economy_seats": 20.0, "economy_class_seats": 152.0,
+        "is_codeshare": False, "codeshare_carrier_internal": None,
+        "number_of_intermediate_stops": 0, "intermediate_stop_station_codes_iata": None,
+    }
+
+
+def w27_route(index: int) -> dict[str, Any]:
+    origin, destination = ROUTES[index % 72]
+    return {"departure_station_code_iata": origin, "arrival_station_code_iata": destination}
+
+
+def schedule_2027_plan() -> list[tuple[str, str, dict[str, Any]]]:
+    """Specification 9.2 traversal of ``(cohort_rank, key_index, physical_date_index)``.
+
+    Returns ``(schedule_key, publish_date, watched_values)`` in the exact order that allocates the
+    PRF ordinal block ``400000 + m``.  Three specification defects are corrected here under section
+    3.4 step 2, because the section 9.3 aggregate invariants are the authority when the prose and
+    the aggregates disagree:
+
+    * ``MOD`` field index 8 carries ``codeshare_carrier_internal`` on every date and transitions
+      only ``is_codeshare``.  Transitioning both would emit two modification rows for one key and
+      make ``EXACT_KEY_PRESERVING_MODIFICATION`` 76 rather than the frozen 69.
+    * ``SHIFTOLD`` keeps the default operating range so that it overlaps ``SHIFTNEW``.  The
+      literal contiguous non-overlapping ranges are exactly the conservative false negative
+      ``SOURCE_CONTRACT.md`` names, and would yield zero ``CANDIDATE_UNIQUE`` rows instead of 23.
+    * ``ADD``, ``REM`` and ``REAP`` take disjoint route offsets.  Under the literal "as for CORE"
+      rule ``ADD`` and ``REM`` share a full candidate signature at the very pair where one is
+      added and the other removed, which would silently pair them.
+    """
+    eligible, physical = w27_eligible(), w27_physical()
+    base = w27_defaults()
+    plan: list[tuple[str, str, dict[str, Any]]] = []
+
+    def emit(key: str, dates: Sequence[str], values_for: Any) -> None:
+        for day in dates:
+            plan.append((key, day, dict(values_for(day))))
+
+    def pool(index: int) -> dict[str, Any]:
+        return {"marketing_carrier_internal": P_MKT[index % 16], "operating_carrier_internal": P_OP[index % 16]}
+
+    # 1 CORE: always present, byte-identical content, and therefore the market protection every
+    # other cohort relies on.  16 carriers x 72 routes = all 1,152 pool markets.
+    for j in range(2000):
+        values = base | pool(j) | {"flight_number": 1900 + j % 100} | w27_route(j // 16)
+        emit(f"SYN-SK-W27-CORE-{j:05d}", physical, lambda _d, v=values: v)
+
+    # 2 MOD: exactly one watched field changes at exactly one adjacent pair.
+    for j in range(69):
+        pair = (j // 3) + 1
+        field = W27_MOD_FIELDS[j % 10]
+        before = base | pool(j) | {"flight_number": 1900 + j % 100} | w27_route(j // 16)
+        if field == "is_codeshare":
+            before = before | {"codeshare_carrier_internal": P_MKT[(j + 1) % 16]}
+        after = before | {field: W27_MOD_NEW_VALUES[field]}
+        cutover = eligible[pair]
+        emit(f"SYN-SK-W27-MOD-{j:03d}", physical, lambda d, b=before, a=after, c=cutover: a if d >= c else b)
+
+    # 3 ADD / 4 REM: presence alone.  Disjoint route offsets keep them unpaired.
+    for a in range(23):
+        values = base | pool(a) | {"flight_number": 1900 + a} | w27_route(a + 24)
+        emit(f"SYN-SK-W27-ADD-{a:03d}", eligible[a + 1:], lambda _d, v=values: v)
+    for a in range(23):
+        values = base | pool(a) | {"flight_number": 1900 + a} | w27_route(a + 48)
+        emit(f"SYN-SK-W27-REM-{a:03d}", eligible[:a + 1], lambda _d, v=values: v)
+
+    # 5 SHIFTOLD / 6 SHIFTNEW: one key-changing amendment per pair, resolvable to CANDIDATE_UNIQUE.
+    for q in range(23):
+        shared = base | {"marketing_carrier_internal": P_MKT[q % 16], "operating_carrier_internal": P_OP[q % 16],
+                         "flight_number": 1900 + q} | w27_route(q)
+        old = shared
+        new = shared | {"effective_date": "2027-11-01", "discontinue_date": "2027-12-31"}
+        emit(f"SYN-SK-W27-SHIFTOLD-{q:03d}", eligible[:q + 1], lambda _d, v=old: v)
+        emit(f"SYN-SK-W27-SHIFTNEW-{q:03d}", eligible[q + 1:], lambda _d, v=new: v)
+
+    # 7 AMBOLD / 8 AMBNEWA + AMBNEWB: two overlapping candidates, so the group stays ambiguous.
+    for g in range(6):
+        pair = 2 * g + 1
+        shared = base | {"marketing_carrier_internal": P_MKT[(g + 8) % 16],
+                         "operating_carrier_internal": P_OP[(g + 8) % 16],
+                         "flight_number": 1950 + g} | w27_route(60 + g)
+        emit(f"SYN-SK-W27-AMBOLD-{g:02d}", eligible[:pair], lambda _d, v=shared: v)
+        for suffix, window in (("A", ("2027-11-01", "2027-12-31")), ("B", ("2027-11-08", "2028-01-07"))):
+            values = shared | {"effective_date": window[0], "discontinue_date": window[1]}
+            emit(f"SYN-SK-W27-AMBNEW{suffix}-{g:02d}", eligible[pair:], lambda _d, v=values: v)
+
+    # 9 UNPOLD / 10 UNPNEW: removal and addition eight pairs apart, so they can never pair.
+    for u in range(6):
+        pair = u + 2
+        shared = base | {"marketing_carrier_internal": P_MKT[(u + 4) % 16],
+                         "operating_carrier_internal": P_OP[(u + 4) % 16],
+                         "flight_number": 1980 + u} | w27_route(40 + u)
+        emit(f"SYN-SK-W27-UNPOLD-{u:02d}", eligible[:pair], lambda _d, v=shared: v)
+        emit(f"SYN-SK-W27-UNPNEW-{u:02d}", eligible[pair + 8:], lambda _d, v=shared: v)
+
+    # 11 REAP: absent at exactly one eligible date, mirroring SYN-SK-REAPPEAR_400.
+    for r in range(8):
+        gap = 2 * r + 2
+        values = base | pool(r) | {"flight_number": 1960 + r} | w27_route(r + 30)
+        emit(f"SYN-SK-W27-REAP-{r:03d}", eligible[:gap] + eligible[gap + 1:], lambda _d, v=values: v)
+
+    # 12 MKTENT / 13 MKTEXIT: genuine market entries and exits on carriers nothing else uses.
+    for m in range(12):
+        pair = 23 if m <= 3 else 2 * (m - 4) + 3
+        operating = P_OP[m % 16] if m <= 1 else f"SYN-OP-W27-ENT-{m:02d}"
+        values = base | {"marketing_carrier_internal": f"SYN-MKT-W27-ENT-{m:02d}",
+                         "operating_carrier_internal": operating,
+                         "flight_number": 1900 + m} | w27_route(m)
+        emit(f"SYN-SK-W27-MKTENT-{m:02d}", eligible[pair:], lambda _d, v=values: v)
+    for m in range(12):
+        pair = 23 if m <= 2 else 2 * (m - 3) + 2
+        values = base | {"marketing_carrier_internal": f"SYN-MKT-W27-EXIT-{m:02d}",
+                         "operating_carrier_internal": f"SYN-OP-W27-EXIT-{m:02d}",
+                         "flight_number": 1900 + m} | w27_route(20 + m)
+        emit(f"SYN-SK-W27-MKTEXIT-{m:02d}", eligible[:pair], lambda _d, v=values: v)
+
+    # 14-16 CLK: the two-clock cohort.  Markets are pool markets, so no Q06 event is produced.
+    july = {"effective_date": "2027-07-01", "discontinue_date": "2027-07-31"}
+    for c in range(4):
+        values = base | pool(c) | {"flight_number": 1900 + c} | w27_route(8 + c) | july
+        emit(f"SYN-SK-W27-CLK-{c:02d}", eligible[:23] + (w27_dates()[W27_INCOMPLETE_INDEX],), lambda _d, v=values: v)
+    for c in range(4, 8):
+        values = base | pool(c) | {"flight_number": 1900 + c} | w27_route(12 + c) | july
+        emit(f"SYN-SK-W27-CLK-{c:02d}", eligible[23:], lambda _d, v=values: v)
+    for c in (8, 9):
+        values = base | pool(c) | {"flight_number": 1900 + c} | w27_route(20 + c) | {
+            "effective_date": "2027-06-01", "discontinue_date": "2027-07-04"}
+        emit(f"SYN-SK-W27-CLK-{c:02d}", physical, lambda _d, v=values: v)
+    for c in (10, 11):
+        values = base | pool(c) | {"flight_number": 1900 + c} | w27_route(20 + c) | july | {
+            "is_operating_tuesday": False, "is_operating_wednesday": False,
+            "is_operating_thursday": False, "is_operating_friday": False,
+            "is_operating_saturday": False, "is_operating_sunday": False,
+            "days_pattern": "1000000", "weekly_frequency": 1}
+        emit(f"SYN-SK-W27-CLK-{c:02d}", physical, lambda _d, v=values: v)
+
+    # 17 CAP: eight routes times three marketing identities.  The third block is codeshare-only;
+    # four of its keys resolve to a physical service and four reproduce UNRESOLVED_PHYSICAL_SERVICE.
+    for n in range(24):
+        block, slot = n // 8, n % 8
+        values = base | july | w27_route(slot)
+        base_metal = f"SYN-CAR-W27-{slot:02d}"
+        if block <= 1:
+            total = W27_TOTALS[n % 4]
+            first, business, premium, economy = W27_CABIN[total]
+            # Block 0 is the physical base metal: marketing and operating resolve to one airline,
+            # which is what SOURCE_CONTRACT.md requires before operating capacity may be counted.
+            # Block 1 is a marketing-only identity on the same operating market, so the market has
+            # sixteen keys and exactly eight counted operating representatives.
+            values = values | {
+                "marketing_carrier_internal": base_metal if block == 0 else P_MKT[n],
+                "operating_carrier_internal": base_metal,
+                "flight_number": (1900 if block == 0 else 1910) + slot,
+                "weekly_frequency": W27_FREQUENCIES[n % 6], "total_seats": total,
+                "first_class_seats": first, "business_class_seats": business,
+                "premium_economy_seats": premium, "economy_class_seats": economy,
+            }
+        else:
+            resolved = slot <= 3
+            values = values | {
+                "marketing_carrier_internal": f"SYN-MKT-W27-CSH-{slot:02d}",
+                "operating_carrier_internal": base_metal if resolved else f"SYN-OP-W27-CSH-{slot - 4:02d}",
+                "flight_number": (1900 + slot) if resolved else (1920 + slot - 4),
+                "is_codeshare": True, "codeshare_carrier_internal": P_MKT[(n + 4) % 16],
+            }
+            if n == 20:
+                values = values | {"total_seats": 181.0}
+            if n == 21:
+                values = values | {"first_class_seats": None}
+            if n == 22:
+                values = values | {"premium_economy_seats": 40.0, "economy_class_seats": 30.0}
+        emit(f"SYN-SK-W27-CAP-{n:03d}", physical, lambda _d, v=values: v)
+
+    # 18 INERT: physically retained at the incomplete date, semantically inert everywhere.
+    incomplete = (w27_dates()[W27_INCOMPLETE_INDEX],)
+    for n in range(200):
+        values = base | pool(n) | {"flight_number": 1900 + n % 100} | w27_route(n)
+        emit(f"SYN-SK-W27-INERT-{n:03d}", incomplete, lambda _d, v=values: v)
+    return plan
 
 
 def schedule_rows(scale: str, expected: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -544,6 +1113,10 @@ def schedule_rows(scale: str, expected: Mapping[str, Any]) -> list[dict[str, Any
                 "arrival_station_code_iata": WHITELIST[(i + 1) % 9],
             }
             rows.append(complete({"schedule_key":f"SYN-SK-INCOMPLETE-{i:04d}","publish_date":"2026-10-19"} | watched, 200000 + i))
+        # D-0025: the 2027 knowledge block.  Ordinal block 400000 + m is disjoint from every v1
+        # block, so no v1 row's PRF input changes.
+        for m, (key, publish_date, watched) in enumerate(schedule_2027_plan()):
+            rows.append(complete({"schedule_key":key,"publish_date":publish_date} | watched, 400000 + m))
     assert all(field.column in row for row in rows for field in FIELDS["SCHEDULE_SNAPSHOT"])
     assert set(field_by_column) == set(rows[0])
     return rows
@@ -562,6 +1135,20 @@ def snapshot_calendar(scale: str) -> list[dict[str, Any]]:
         ("2026-10-19",True,False,"SC-20261019-INCOMPLETE",5,9917,"INCOMPLETE_RETAINED"),
         ("2026-10-26",True,True,"SC-20261026-COMPLETE",0,0,"COMPLETE_VALIDATED"),
     ]
+    if scale == "demo":
+        # D-0025: 26 weekly 2027 dates.  Every one is after 2026-10-26, which is what preserves
+        # SYN-SK-GAP_CONTROL_001's previous-eligible-complete date and the ten v1 rows including
+        # SC-05, since no v2 row is emitted at any v1 snapshot date.
+        counts = defaultdict(int)
+        for _key, publish_date, _watched in schedule_2027_plan():
+            counts[publish_date] += 1
+        for k, day in enumerate(w27_dates()):
+            if k == W27_INCOMPLETE_INDEX:
+                data.append((day, True, False, f"SC-{day.replace('-','')}-INCOMPLETE", 0, counts[day], "INCOMPLETE_RETAINED"))
+            elif k == W27_MISSING_INDEX:
+                data.append((day, False, False, f"SC-{day.replace('-','')}-MISSING", 0, 0, "MISSING_DECLARED"))
+            else:
+                data.append((day, True, True, f"SC-{day.replace('-','')}-COMPLETE", 0, counts[day], "COMPLETE_VALIDATED"))
     rows = []
     for expected_date, present, complete, lineage, smoke_count, demo_count, status in data:
         rows.append(row_for("SCHEDULE_SNAPSHOT_CALENDAR", {
@@ -607,20 +1194,63 @@ def passenger_forward(scale: str) -> list[dict[str, Any]]:
         rows.append(row)
     if scale == "demo":
         anchors = {row["forward_source_row_id"] for row in rows if row["forward_source_row_id"] is not None}
-        ids = iter(value for value in range(5000,8000) if value not in anchors)
-        for i in range(9_991):
-            c, f, d = i % 16, (i // 16) % 100, i // 1600
-            source_id = next(ids) if i < 2_993 else None
-            operating_date = plus_days("2035-01-01", d)
-            row = forward_template(source_id)
-            row.update({
-                "marketing_carrier_internal":f"SYN-MKT-FILL-{c:02d}", "operating_carrier_internal":f"SYN-OP-FILL-{c:02d}",
-                "flight_number":2700+f, "operating_date":operating_date, "publish_date":"2034-12-01",
-                "departure_station_code_iata":WHITELIST[d % 9], "arrival_station_code_iata":WHITELIST[(d+1) % 9],
-                "passenger_departure_time_local":f"{operating_date}T09:00:00", "passenger_arrival_time_local":f"{operating_date}T11:00:00",
-                "passenger_departure_time_utc":f"{operating_date}T16:00:00", "passenger_arrival_time_utc":f"{operating_date}T18:00:00",
-            })
-            rows.append(row)
+        rows.extend(enriched_forward(anchors))
+    return rows
+
+
+def enriched_forward(anchors: set[int]) -> list[dict[str, Any]]:
+    """Specification 10.2: HEUR-PF 400, SCHED-PF 8000, UNION-OVERLAP-PF 500, PLAIN-PF 1091."""
+    assert HEURISTIC_LEGS, "aircraft_flights must run before passenger_forward"
+    rows: list[dict[str, Any]] = []
+
+    def forward(source_id: int | None, marketing: str, operating: str, number: int, day: str,
+                origin: str, destination: str, publish: str) -> dict[str, Any]:
+        row = forward_template(source_id)
+        row.update({
+            "marketing_carrier_internal": marketing, "operating_carrier_internal": operating,
+            "flight_number": number, "operating_date": day, "publish_date": publish,
+            "departure_station_code_iata": origin, "arrival_station_code_iata": destination,
+            "passenger_departure_time_local": f"{day}T09:00:00", "passenger_arrival_time_local": f"{day}T11:00:00",
+            "passenger_departure_time_utc": f"{day}T16:00:00", "passenger_arrival_time_utc": f"{day}T18:00:00",
+        })
+        return row
+
+    # HEUR-PF: 340 legs get exactly one compatible plan; 30 legs get two, which is an ambiguous
+    # candidate group of two members rather than a heuristic candidate.
+    for m, actual in enumerate(HEURISTIC_LEGS[:370]):
+        day = actual["flight_departure_date"]
+        origin = actual["departure_airport_code"].removeprefix("SYN-AP-")
+        destination = actual["arrival_airport_code"].removeprefix("SYN-AP-")
+        number = int(actual["flight_number"])
+        rows.append(forward(None, actual["marketing_carrier_code"], actual["operating_carrier_code"],
+                            number, day, origin, destination, "2027-01-04"))
+        if m >= 340:
+            rows.append(forward(None, P_MKT[(m + 3) % 16], actual["operating_carrier_code"],
+                                number, day, origin, destination, "2027-01-04"))
+
+    def plan(index: int, key_index: int, offset: int, epoch: str = FUL_EPOCH) -> dict[str, Any]:
+        facts = core_key_facts(key_index)
+        return forward(None, facts["marketing_carrier_internal"], facts["operating_carrier_internal"],
+                       facts["flight_number"], plus_days(epoch, offset),
+                       facts["departure_station_code_iata"], facts["arrival_station_code_iata"],
+                       eligible_knowledge_date(index))
+
+    for n in range(8000):
+        rows.append(plan(n, n % 2000, 7 * (n % 21) + 5))
+    for n in range(500):
+        rows.append(plan(n, n, 7 * (n % 21) + 3))
+    # PLAIN-PF: forward-only 2027 plans, before the operating window, so no actual leg and no
+    # historical row can share a canonical key with them.
+    for n in range(1091):
+        facts = core_key_facts((n + 900) % 2000)
+        rows.append(forward(None, facts["marketing_carrier_internal"], facts["operating_carrier_internal"],
+                            facts["flight_number"], plus_days("2027-04-01", n % 60),
+                            facts["departure_station_code_iata"], facts["arrival_station_code_iata"],
+                            "2027-01-04"))
+    pool = iter(value for value in range(5000, 8000) if value not in anchors)
+    for row in rows:
+        row["forward_source_row_id"] = next(pool, None)
+    assert len(rows) == 9991
     return rows
 
 
@@ -658,18 +1288,88 @@ def passenger_historical(scale: str) -> list[dict[str, Any]]:
         row=historical_template(source_id); row.update(overrides); rows.append(row)
     if scale == "demo":
         anchors={row["historical_source_row_id"] for row in rows if row["historical_source_row_id"] is not None}
-        ids=iter(value for value in range(5000,8000) if value not in anchors)
-        for i in range(9_987):
-            c,f,d=i%16,(i//16)%100,i//1600
-            source_id=next(ids) if i<2_987 else None
-            operating_date=plus_days("2036-01-01",d)
-            row=historical_template(source_id)
-            row.update({"publish_date":"2035-12-01","effective_date":"2036-01-01","operating_date":operating_date,
-                "marketing_carrier_internal":f"SYN-MKT-FILL-{c:02d}","operating_carrier_internal":f"SYN-OP-FILL-{c:02d}","flight_number":2800+f,
-                "departure_station_code_iata":WHITELIST[d%9],"arrival_station_code_iata":WHITELIST[(d+1)%9],
-                "passenger_departure_local_time":"09:00:00","passenger_arrival_local_time":"11:00:00","passenger_departure_utc_time":"09:00:00","passenger_arrival_utc_time":"11:00:00",
-                "departure_utc_offset_minutes":0.0,"arrival_utc_offset_minutes":0.0,"arrival_day_indicator":0})
-            rows.append(row)
+        rows.extend(enriched_historical(anchors))
+    return rows
+
+
+def w27_plan_defaults() -> dict[str, Any]:
+    """Shared 2027 passenger clock payload; specification 10.1."""
+    return {"publish_date":"2027-01-04","effective_date":"2027-08-01",
+            "passenger_departure_local_time":"09:00:00","passenger_arrival_local_time":"11:00:00",
+            "passenger_departure_utc_time":"16:00:00","passenger_arrival_utc_time":"18:00:00",
+            "departure_utc_offset_minutes":-420.0,"arrival_utc_offset_minutes":-420.0,
+            "arrival_day_indicator":0,"equipment_subtype_code_iata":"SYN-EQ-NB","total_seats":180.0,
+            "is_codeshare":False,"number_of_intermediate_stops":0,"intermediate_stop_station_codes_iata":None}
+
+
+def core_key_facts(k: int) -> dict[str, Any]:
+    """SS-04, SS-05, SS-06, SS-10 and SS-11 of ``SYN-SK-W27-CORE-{k:05d}``."""
+    origin, destination = ROUTES[(k // 16) % 72]
+    return {"schedule_key": f"SYN-SK-W27-CORE-{k:05d}", "marketing_carrier_internal": P_MKT[k % 16],
+            "operating_carrier_internal": P_OP[k % 16], "flight_number": 1900 + k % 100,
+            "departure_station_code_iata": origin, "arrival_station_code_iata": destination}
+
+
+def eligible_knowledge_date(index: int) -> str:
+    eligible = w27_eligible()
+    return eligible[index % len(eligible)]
+
+
+def enriched_historical(anchors: set[int]) -> list[dict[str, Any]]:
+    """Specification 10.1: FUL-PH 700, SCHED-PH 6800, UNION-OVERLAP-PH 500, PLAIN-PH 1987."""
+    assert len(FULFILMENT_LEGS) == 700, "aircraft_flights must run before passenger_historical"
+    used = set(anchors) | {row["flight_id"] for row in FULFILMENT_LEGS}
+    pool = iter(value for value in range(5000, 8000) if value not in used)
+    rows: list[dict[str, Any]] = []
+    base = w27_plan_defaults()
+
+    # FUL-PH: PH-01 deliberately equals AF-01, which is what EXACT_FULFILLMENT is defined on.
+    # The last 100 legs form 50 two-leg stopover plans that share one canonical key each.
+    for m, actual in enumerate(FULFILMENT_LEGS):
+        origin = actual["departure_airport_code"].removeprefix("SYN-AP-")
+        destination = actual["arrival_airport_code"].removeprefix("SYN-AP-")
+        stops, intermediate = 0, None
+        if m >= 600:
+            # The two legs of a stopover plan share one canonical key: both PH rows carry the
+            # overall plan endpoints with the connecting airport as the single intermediate stop.
+            pair = (m - 600) // 2
+            origin, intermediate = WHITELIST[pair % 9], WHITELIST[(pair + 1) % 9]
+            destination, stops = WHITELIST[(pair + 2) % 9], 1
+        row = historical_template(actual["flight_id"])
+        row.update(base | {
+            "schedule_key": core_key_facts(m % 2000)["schedule_key"],
+            "publish_date": eligible_knowledge_date(m),
+            "operating_date": actual["flight_departure_date"],
+            "marketing_carrier_internal": actual["marketing_carrier_code"],
+            "operating_carrier_internal": actual["operating_carrier_code"],
+            "flight_number": int(actual["flight_number"]),
+            "departure_station_code_iata": origin, "arrival_station_code_iata": destination,
+            "number_of_intermediate_stops": stops, "intermediate_stop_station_codes_iata": intermediate,
+        })
+        rows.append(row)
+
+    def plan(index: int, key_index: int, offset: int, source_id: int | None, schedule_key: bool = True) -> dict[str, Any]:
+        facts = core_key_facts(key_index)
+        row = historical_template(source_id)
+        row.update(base | {k: v for k, v in facts.items() if schedule_key or k != "schedule_key"} | {
+            "publish_date": eligible_knowledge_date(index),
+            "operating_date": plus_days("2027-08-01", offset)})
+        if not schedule_key:
+            row["schedule_key"] = None
+        return row
+
+    # SCHED-PH: operating dates on offsets congruent to 1 modulo 7, disjoint from every other block.
+    for n in range(6800):
+        rows.append(plan(n, n % 2000, 7 * (n % 21) + 1, None))
+    # UNION-OVERLAP-PH: 500 canonical keys the forward side reproduces exactly.
+    for n in range(500):
+        rows.append(plan(n, n, 7 * (n % 21) + 3, None))
+    # PLAIN-PH: deliberately schedule-keyless historical evidence.
+    for n in range(1987):
+        rows.append(plan(n, (n + 500) % 2000, 7 * (n % 21) + 4, None, schedule_key=False))
+    for row in rows[700:]:
+        row["historical_source_row_id"] = next(pool, None)
+    assert len(rows) == 9987
     return rows
 
 
@@ -685,7 +1385,14 @@ def actual_template(flight_id: int) -> dict[str, Any]:
     })
 
 
-def aircraft_flights(scale: str, masters: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+ANCHOR_FLIGHT_IDS = frozenset({5101,5102,5103,7101,7102,7199,7200,8001,8002,8003,8101,8102,8103,8104,8105,8106,8107,8108,8109,8110,8111,8112,8205,8206})
+PH_ANCHOR_IDS = frozenset({5001, 5101, 5102, 5103, 7200, 7301, 7302, 7303, 7304, 7305, 7306, 7309, 7310})
+FULFILMENT_LEGS: list[dict[str, Any]] = []
+HEURISTIC_LEGS: list[dict[str, Any]] = []
+
+
+def aircraft_flights(scale: str, masters: Sequence[Mapping[str, Any]],
+                     history: Sequence[Mapping[str, Any]] = ()) -> list[dict[str, Any]]:
     definitions = [
         (5101,1100,"720","2026-08-31","2026-08-31","SFO","LAX","14:00:00","15:30:00",None,{}),
         (5102,1100,"721","2026-08-31","2026-08-31","SFO","LAX","14:00:00","15:30:00",None,{}),
@@ -724,18 +1431,263 @@ def aircraft_flights(scale: str, masters: Sequence[Mapping[str, Any]]) -> list[d
             row.update({"operating_carrier_code":"SYN-OP-ROT","marketing_carrier_code":"SYN-MKT-ROT"})
         row.update(overrides); rows.append(row)
     if scale == "demo":
-        used={row["flight_id"] for row in rows}
-        ids=iter(value for value in range(5000,8999) if value not in used)
-        filler_aircraft=sorted({row["aircraft_id"] for row in masters}-ANCHOR_AIRCRAFT)
-        for i in range(3_876):
-            flight_id=next(ids); local_date=plus_days("2040-01-01",i//100)
-            row=actual_template(flight_id)
-            row.update({"aircraft_id":filler_aircraft[i%993],"operating_carrier_code":f"SYN-OP-FILL-{i%16:02d}","marketing_carrier_code":f"SYN-MKT-FILL-{i%16:02d}",
-                "flight_number":str(3700+i%100),"flight_departure_date":local_date,"flight_departure_date_utc":local_date,
-                "departure_airport_code":f"SYN-AP-{WHITELIST[i%9]}","arrival_airport_code":f"SYN-AP-{WHITELIST[(i+1)%9]}",
-                "actual_gate_departure_time_utc":f"{local_date}T09:00:00","actual_gate_arrival_time_utc":f"{local_date}T11:00:00","next_flight_id":None})
-            rows.append(row)
+        # AVAIL excludes the 24 anchored AF-01 values and the 13 anchored PH-01 values, so the
+        # only place PH-01 and AF-01 deliberately coincide is the 700-row FUL fulfilment block.
+        used={row["flight_id"] for row in rows} | PH_ANCHOR_IDS
+        available=[value for value in range(5000,8999) if value not in used]
+        assert len(available)==3966
+        filler,fulfilment,heuristic=enriched_flights(masters,history,available)
+        rows.extend(filler)
+        FULFILMENT_LEGS.clear(); FULFILMENT_LEGS.extend(fulfilment)
+        HEURISTIC_LEGS.clear(); HEURISTIC_LEGS.extend(heuristic)
     return rows
+
+
+ANOMALY_CODES = (
+    "SELF_LOOP", "CYCLE", "MISSING_TARGET", "DIFFERENT_AIRCRAFT", "OUTSIDE_SELECTED_DAY",
+    "BACKWARD_TIME", "BROKEN_CONTINUITY", "DIVERSION_ENDPOINT_CONFLICT", "CANCELLED",
+    "MISSING_TIME", "UNKNOWN_OR_INVALID_CANCELLATION_FLAG",
+)
+ANOMALY_AIRCRAFT_INDEXES = (30, 90, 150, 210, 270, 330, 390, 450, 510, 570)
+ROTATION_COUNT = 609
+ROTATION_FIRST_DATE = "2027-06-01"
+FUL_EPOCH = "2027-08-01"
+
+
+def rotation_leg_counts() -> list[int]:
+    """300 four-leg, 120 three-leg, 60 five-leg and 129 single-leg rotations.
+
+    Single-leg rotations avoid ``r mod 5 == 0`` so that all 122 late-departing rotations are
+    multi-leg and their final leg genuinely crosses UTC midnight, and avoid ``r mod 20 == 13`` so
+    that every anomaly-carrying rotation has a link to corrupt.
+    """
+    counts: list[int | None] = [None] * ROTATION_COUNT
+    singles = [r for r in range(ROTATION_COUNT) if r % 5 and r % 20 != 13][:129]
+    for r in singles:
+        counts[r] = 1
+    for position, r in enumerate(r for r in range(ROTATION_COUNT) if counts[r] is None):
+        counts[r] = 4 if position < 300 else (3 if position < 420 else 5)
+    assert Counter(counts) == {4: 300, 3: 120, 5: 60, 1: 129}
+    return [value for value in counts if value is not None]
+
+
+def aircraft_timeline(masters: Sequence[Mapping[str, Any]],
+                      history: Sequence[Mapping[str, Any]]) -> dict[int, list[tuple[str, int, str, int | None]]]:
+    """Per-aircraft ordered ``(date, row_sequence, status, configuration)`` for as-of resolution."""
+    timeline: dict[int, list[tuple[str, int, str, int | None]]] = defaultdict(list)
+    for row in history:
+        timeline[row["aircraft_id"]].append((row["start_event_date"], row["row_sequence_number"],
+                                             row["start_aircraft_status"], row["aircraft_configuration_id"]))
+    for entries in timeline.values():
+        entries.sort()
+    return timeline
+
+
+def visible_state(entries: Sequence[tuple[str, int, str, int | None]], day: str) -> tuple[str, int | None] | None:
+    eligible = [entry for entry in entries if entry[0] <= day]
+    return (eligible[-1][2], eligible[-1][3]) if eligible else None
+
+
+def enriched_flights(masters: Sequence[Mapping[str, Any]], history: Sequence[Mapping[str, Any]],
+                     available: Sequence[int]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Specification 11.  Returns ``(rows, fulfilment_legs)``; the second feeds ``FUL-PH``."""
+    ids = filler_aircraft_ids()
+    timeline = aircraft_timeline(masters, history)
+    master_by_id = {row["aircraft_id"]: row for row in masters}
+    configs = {config_id: FLEET_BY_ID[config_id] for config_id in FLEET_BY_ID}
+    rot, ful, heur, anom, unm = (available[0:1989], available[1989:2689], available[2689:3089],
+                                 available[3089:3229], available[3229:3876])
+    heuristic: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+
+    def labels(aircraft_id: int, day: str) -> dict[str, Any]:
+        state = visible_state(timeline.get(aircraft_id, ()), day)
+        config = FLEET_BY_ID.get(state[1]) if state else None
+        if config is None:
+            return {"aircraft_type": "Synthetic narrowbody B", "aircraft_code_iata": "SB1", "aircraft_family": "SYN-FAMILY-B"}
+        suffix = config[1].removeprefix("SYN-TYPE-")
+        return {"aircraft_type": config[2], "aircraft_code_iata": f"SYN-SERIES-{suffix}",
+                "aircraft_family": f"SYN-FAMILY-{suffix}"}
+
+    def leg(flight_id: int, aircraft_id: int, carrier: int, number: int, local_day: str,
+            origin: str, destination: str, depart: datetime | None, arrive: datetime | None,
+            next_id: int | None, **overrides: Any) -> dict[str, Any]:
+        row = actual_template(flight_id)
+        row.update({
+            "aircraft_id": aircraft_id,
+            "operating_carrier_code": P_OP[carrier % 16], "marketing_carrier_code": P_MKT[carrier % 16],
+            "flight_number": str(number), "flight_departure_date": local_day,
+            "flight_departure_date_utc": local_day if depart is None else depart.date().isoformat(),
+            "departure_airport_code": f"SYN-AP-{origin}", "arrival_airport_code": f"SYN-AP-{destination}",
+            "actual_gate_departure_time_utc": None if depart is None else depart.isoformat(),
+            "actual_gate_arrival_time_utc": None if arrive is None else arrive.isoformat(),
+            "next_flight_id": next_id,
+        })
+        row.update(labels(aircraft_id, local_day))
+        row.update(overrides)
+        return row
+
+    # --- 11.3 rotations -------------------------------------------------------------------------
+    counts = rotation_leg_counts()
+    assigned: dict[str, set[int]] = defaultdict(set)
+    cursor = 0
+    rotations: list[dict[str, Any]] = []
+    for r in range(ROTATION_COUNT):
+        day = plus_days(ROTATION_FIRST_DATE, r % 30)
+        index = (7 * r) % 993
+        for _step in range(993):
+            aircraft_id = ids[index]
+            master = master_by_id[aircraft_id]
+            state = visible_state(timeline.get(aircraft_id, ()), day)
+            existing = (master["aircraft_start_of_life_date"] <= day
+                        and (master["aircraft_end_of_life_date"] is None or day < master["aircraft_end_of_life_date"]))
+            if existing and state and state[0] == "In Service" and state[1] in configs and aircraft_id not in assigned[day]:
+                break
+            index = (index + 1) % 993
+        else:
+            raise AssertionError(f"no assignable aircraft for rotation {r}")
+        assigned[day].add(aircraft_id)
+        legs = counts[r]
+        start = datetime.fromisoformat(f"{day}T{'21:30:00' if r % 5 == 0 else '13:00:00'}")
+        rotation = {"r": r, "date": day, "aircraft_id": aircraft_id, "legs": [],
+                    "anomaly": ANOMALY_CODES[(r // 20) % 11] if r % 20 == 13 else None}
+        clock = start
+        for l in range(legs):
+            if l:
+                clock = clock + timedelta(minutes=45 + 15 * (l % 3))
+            block = timedelta(minutes=90 + 30 * (l % 4))
+            rotation["legs"].append({
+                "flight_id": rot[cursor + l], "origin": WHITELIST[(r + l) % 9],
+                "destination": WHITELIST[(r + l + 1) % 9], "depart": clock, "arrive": clock + block,
+                "number": 1900 + (r + l) % 100,
+            })
+            clock = clock + block
+        cursor += legs
+        rotations.append(rotation)
+    assert cursor == 1989
+    by_date: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for rotation in rotations:
+        by_date[rotation["date"]].append(rotation)
+    for rotation in rotations:
+        r, day, legs = rotation["r"], rotation["date"], rotation["legs"]
+        anomaly = rotation["anomaly"]
+        target = len(legs) - 2 if len(legs) > 1 else 0
+        for l, item in enumerate(legs):
+            overrides: dict[str, Any] = {}
+            next_id = legs[l + 1]["flight_id"] if l + 1 < len(legs) else None
+            depart, arrive = item["depart"], item["arrive"]
+            origin, destination = item["origin"], item["destination"]
+            if (r + l) % 12 == 5:
+                # Deliberate plan/actual type discrepancy on roughly 8% of legs.
+                overrides["aircraft_type"] = FLEET_DEFINITIONS[(r + l) % len(FLEET_DEFINITIONS)][2]
+            if anomaly and l == target:
+                if anomaly == "SELF_LOOP":
+                    next_id = item["flight_id"]
+                elif anomaly == "CYCLE" and l + 1 < len(legs):
+                    next_id = legs[l + 1]["flight_id"]
+                    legs[l + 1]["cycle_back"] = item["flight_id"]
+                elif anomaly == "MISSING_TARGET":
+                    next_id = 8999
+                elif anomaly == "DIFFERENT_AIRCRAFT":
+                    other = next((o for o in by_date[day] if o["aircraft_id"] != rotation["aircraft_id"]), None)
+                    if other: next_id = other["legs"][0]["flight_id"]
+                elif anomaly == "OUTSIDE_SELECTED_DAY":
+                    later = next((o for o in by_date[plus_days(day, 1)] if o["r"] != r), None) if plus_days(day, 1) in by_date else None
+                    if later: next_id = later["legs"][0]["flight_id"]
+                elif anomaly == "BACKWARD_TIME":
+                    next_id = legs[0]["flight_id"] if l else item["flight_id"]
+                elif anomaly == "BROKEN_CONTINUITY":
+                    destination = WHITELIST[(r + l + 5) % 9]
+                    if destination == origin: destination = WHITELIST[(r + l + 6) % 9]
+                elif anomaly == "DIVERSION_ENDPOINT_CONFLICT":
+                    overrides.update({"is_diverted": 1, "diverted_airport_code": f"SYN-AP-{WHITELIST[(r + l + 4) % 9]}"})
+                elif anomaly == "CANCELLED":
+                    overrides["is_cancelled"] = 1
+                elif anomaly == "MISSING_TIME":
+                    depart = arrive = None
+                elif anomaly == "UNKNOWN_OR_INVALID_CANCELLATION_FLAG":
+                    overrides["is_cancelled"] = 2
+            if item.get("cycle_back") is not None:
+                next_id = item["cycle_back"]
+            rows.append(leg(item["flight_id"], rotation["aircraft_id"], r, item["number"], day,
+                            origin, destination, depart, arrive, next_id, **overrides))
+
+    # --- 11.1 FUL: 700 exact-fulfilment legs, identifiers deliberately shared with PH-01 ---------
+    # Every passenger and actual block sits on its own residue of the operating-date offset modulo
+    # 7, so no two blocks can accidentally share a canonical passenger key or an exact fulfilment.
+    fulfilment: list[dict[str, Any]] = []
+    for m, flight_id in enumerate(ful):
+        if m < 600:
+            carrier, number, day = m, 1990 + m % 10, plus_days(FUL_EPOCH, 7 * (m % 21))
+            origin, destination = ROUTES[m % 72]
+        else:
+            p, second = (m - 600) // 2, (m - 600) % 2
+            carrier, number, day = p, 1980 + p % 10, plus_days(FUL_EPOCH, 7 * (p % 21))
+            origin = WHITELIST[(p + second) % 9]
+            destination = WHITELIST[(p + second + 1) % 9]
+        aircraft_id = ids[(11 * m) % 993]
+        depart = datetime.fromisoformat(f"{day}T12:00:00")
+        row = leg(flight_id, aircraft_id, carrier, number, day, origin, destination,
+                  depart, depart + timedelta(minutes=120), None)
+        rows.append(row)
+        fulfilment.append(row)
+
+    # --- HEUR: candidate-only evidence ----------------------------------------------------------
+    for m, flight_id in enumerate(heur):
+        day = plus_days(FUL_EPOCH, 7 * (m % 21) + 2)
+        aircraft_id = ids[(13 * m) % 993]
+        origin, destination = ROUTES[(m + 7) % 72]
+        depart = datetime.fromisoformat(f"{day}T12:00:00")
+        row = leg(flight_id, aircraft_id, m, 1970 + m % 10, day, origin, destination,
+                  depart, depart + timedelta(minutes=120), None)
+        rows.append(row)
+        heuristic.append(row)
+
+    # --- 11.4 the ten dedicated anomaly aircraft ------------------------------------------------
+    pattern = [
+        ("SELF_LOOP", 0, 1, "13:00", 90, "self"), ("CYCLE_A", 0, 1, "13:00", 90, "next"),
+        ("CYCLE_B", 1, 0, "15:00", 90, "back"), ("MISSING_TARGET", 3, 4, "14:00", 180, "absent"),
+        ("DIFFERENT_AIRCRAFT", 1, 2, "15:00", 60, "other_aircraft"),
+        ("OUTSIDE_SELECTED_DAY", 2, 0, "17:00", 90, "next_day"),
+        ("BACKWARD_TIME", 0, 1, "19:00", 90, "first"), ("BROKEN_CONTINUITY", 0, 1, "13:00", 90, "prior"),
+        ("DIVERSION", 0, 2, "13:00", 120, "none"), ("CANCELLED", 0, 1, "13:00", 90, "none"),
+        ("MISSING_TIME", 0, 1, None, 0, "none"), ("BAD_FLAG", 0, 1, "21:00", 90, "none"),
+    ]
+    for n, aircraft_index in enumerate(ANOMALY_AIRCRAFT_INDEXES):
+        aircraft_id, day = ids[aircraft_index], plus_days("2027-07-06", 2 * n)
+        block = anom[14 * n:14 * (n + 1)]
+        source, targets = block[:12], block[12:]
+        rows.append(leg(targets[0], ids[(aircraft_index + 1) % 993], n, 1965, day,
+                        WHITELIST[1], WHITELIST[2], datetime.fromisoformat(f"{day}T18:00:00"),
+                        datetime.fromisoformat(f"{day}T19:00:00"), None))
+        later = plus_days(day, 1)
+        rows.append(leg(targets[1], aircraft_id, n, 1966, later, WHITELIST[0], WHITELIST[1],
+                        datetime.fromisoformat(f"{later}T15:00:00"),
+                        datetime.fromisoformat(f"{later}T16:30:00"), None))
+        for k, (code, origin_index, destination_index, start_time, minutes, link) in enumerate(pattern):
+            depart = None if start_time is None else datetime.fromisoformat(f"{day}T{start_time}:00")
+            arrive = None if depart is None else depart + timedelta(minutes=minutes)
+            next_id = {"self": source[k], "next": source[2], "back": source[1], "absent": 8999,
+                       "other_aircraft": targets[0], "next_day": targets[1], "first": source[0],
+                       "prior": source[6], "none": None}[link]
+            overrides = {}
+            if code == "DIVERSION":
+                overrides = {"is_diverted": 1, "diverted_airport_code": f"SYN-AP-{WHITELIST[1]}"}
+                destination_index = 2
+            if code == "CANCELLED": overrides = {"is_cancelled": 1}
+            if code == "BAD_FLAG": overrides = {"is_cancelled": 2}
+            rows.append(leg(source[k], aircraft_id, n, 1930 + k, day, WHITELIST[origin_index],
+                            WHITELIST[destination_index], depart, arrive, next_id, **overrides))
+
+    # --- UNM: deliberately unmatched actual legs ------------------------------------------------
+    for m, flight_id in enumerate(unm):
+        day = plus_days(FUL_EPOCH, 7 * (m % 21) + 6)
+        aircraft_id = ids[(17 * m) % 993]
+        origin, destination = ROUTES[(m + 31) % 72]
+        depart = datetime.fromisoformat(f"{day}T08:00:00")
+        rows.append(leg(flight_id, aircraft_id, m, 1940 + m % 20, day, origin, destination,
+                        depart, depart + timedelta(minutes=120), None))
+    return rows, fulfilment, heuristic
 
 
 def airport_reference(scale: str, expected: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -780,12 +1732,20 @@ def airline_reference(scale: str, tables: Mapping[str, Sequence[Mapping[str, Any
             for column in columns:
                 value=row[column]
                 if value not in {None,"SYN-DUP","SYN-ZZZ"}: required.add(value)
-    expected_count=33 if scale=="smoke" else 65
+    # 65 v1 carriers plus the 90 the 2027 block introduces: 32 pool, 12 MKTENT and 12 MKTEXIT
+    # marketing, 10 SYN-OP-W27-ENT and 12 SYN-OP-W27-EXIT operating, 8 codeshare marketing and 4
+    # codeshare-only operating identities.
+    expected_count=33 if scale=="smoke" else 163
     assert len(required)==expected_count, (scale,len(required),sorted(required))
     rows=[airline_row(carrier) for carrier in sorted(required)]
     for suffix in ("A","B"):
         row=airline_row(f"SYN-MKT-DUP-{suffix}"); row["carrier_code_iata"]="SYN-DUP"; row["carrier_code_icao"]=f"SYN-ICAO-DUP-{suffix}"; rows.append(row)
-    padding=25 if scale=="smoke" else 33
+    # Demo padding must be at least the smoke padding, or the demo scale stops being a strict
+    # semantic superset of smoke. The exact-required union grew from 65 to 163 because
+    # specification 9.2 needs eight CAP base-metal carriers, eight codeshare marketing
+    # identities and four codeshare-only operating identities that the "+80" estimate in
+    # section 4 did not count, so the table lands at 190 rather than 180.
+    padding=25
     rows.extend(airline_row(f"SYN-MKT-REF-FILL-{i:03d}") for i in range(padding))
     return rows
 
@@ -832,10 +1792,10 @@ def result_value(value: Any) -> str | None:
     return str(value)
 
 
-def compute_q05(tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[str,Any]]:
+def compute_q05(tables: Mapping[str, Sequence[Mapping[str, Any]]], dates: Sequence[str] | None=None) -> list[dict[str,Any]]:
     selected=selected_schedules(tables)
     watched=[field.column for field in FIELDS["SCHEDULE_SNAPSHOT"] if "SS-04" <= field.field_id <= "SS-38"]
-    dates=("2026-08-03","2026-08-10","2026-08-17","2026-08-24","2026-08-31")
+    if dates is None: dates=("2026-08-03","2026-08-10","2026-08-17","2026-08-24","2026-08-31")
     results=[]
     for before,after in zip(dates,dates[1:]):
         old={key:row for (d,key),row in selected.items() if d==before}
@@ -878,15 +1838,17 @@ def compute_q05(tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[
     return results
 
 
-def compute_q06(tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[str,Any]]:
+def compute_q06(tables: Mapping[str, Sequence[Mapping[str, Any]]], latest: str="2026-08-31",
+                comparison: str="2026-08-24", role: str="marketing") -> list[dict[str,Any]]:
     selected=selected_schedules(tables)
+    carrier_column="marketing_carrier_internal" if role=="marketing" else "operating_carrier_internal"
     def counts(d: str) -> dict[tuple[str,str],int]:
         result=defaultdict(int)
         for (publish,key),row in selected.items():
-            if publish!=d or row["marketing_carrier_internal"] is None or row["departure_station_code_iata"] is None or row["arrival_station_code_iata"] is None: continue
-            result[(row["marketing_carrier_internal"],f"{row['departure_station_code_iata']}->{row['arrival_station_code_iata']}")]+=1
+            if publish!=d or row[carrier_column] is None or row["departure_station_code_iata"] is None or row["arrival_station_code_iata"] is None: continue
+            result[(row[carrier_column],f"{row['departure_station_code_iata']}->{row['arrival_station_code_iata']}")]+=1
         return result
-    before,after=counts("2026-08-24"),counts("2026-08-31")
+    before,after=counts(comparison),counts(latest)
     result=[]
     for market in sorted(set(before)|set(after)):
         b,a=before[market],after[market]
@@ -895,17 +1857,31 @@ def compute_q06(tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[
     return result
 
 
-def compute_q07(tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[str,Any]]:
+WEEKDAY_COLUMNS=("is_operating_monday","is_operating_tuesday","is_operating_wednesday","is_operating_thursday","is_operating_friday","is_operating_saturday","is_operating_sunday")
+
+
+def compute_q07(tables: Mapping[str, Sequence[Mapping[str, Any]]], knowledge: str="2026-08-31",
+                operating: str="2026-09-07", weekday_filter: bool=False) -> list[dict[str,Any]]:
     selected=selected_schedules(tables)
-    active=[row for (publish,_),row in selected.items() if publish=="2026-08-31" and row["effective_date"] <= "2026-09-07" <= row["discontinue_date"] and row["departure_station_code_iata"] and row["arrival_station_code_iata"]]
+    weekday=WEEKDAY_COLUMNS[date.fromisoformat(operating).weekday()]
+    active=[row for (publish,_),row in selected.items() if publish==knowledge and row["effective_date"] <= operating <= row["discontinue_date"] and row["departure_station_code_iata"] and row["arrival_station_code_iata"] and (not weekday_filter or row[weekday])]
     physical=[row for row in active if not row["is_codeshare"]]
+    def weighted(rows: Sequence[Mapping[str,Any]], value: Any) -> Any:
+        # Null-safe: a null cabin figure makes the whole weekly metric unknown rather than zero,
+        # which is what the CAP-021 null-cabin defect is there to exercise.
+        total=0
+        for row in rows:
+            item=value(row)
+            if item is None: return None
+            total+=row["weekly_frequency"]*item
+        return total
     def metrics(rows: Sequence[Mapping[str,Any]]) -> dict[str,Any]:
         return {"active_schedule_count":len(rows),"weekly_frequency":sum(row["weekly_frequency"] for row in rows),
-            "weekly_total_seats":sum(row["weekly_frequency"]*row["total_seats"] for row in rows),
-            "weekly_first_seats":sum(row["weekly_frequency"]*row["first_class_seats"] for row in rows),
-            "weekly_business_seats":sum(row["weekly_frequency"]*row["business_class_seats"] for row in rows),
-            "weekly_premium_economy_seats":sum(row["weekly_frequency"]*row["premium_economy_seats"] for row in rows),
-            "weekly_economy_excluding_premium_seats":sum(row["weekly_frequency"]*(row["economy_class_seats"]-row["premium_economy_seats"]) for row in rows)}
+            "weekly_total_seats":weighted(rows,lambda row:row["total_seats"]),
+            "weekly_first_seats":weighted(rows,lambda row:row["first_class_seats"]),
+            "weekly_business_seats":weighted(rows,lambda row:row["business_class_seats"]),
+            "weekly_premium_economy_seats":weighted(rows,lambda row:row["premium_economy_seats"]),
+            "weekly_economy_excluding_premium_seats":weighted(rows,lambda row:None if row["economy_class_seats"] is None or row["premium_economy_seats"] is None else row["economy_class_seats"]-row["premium_economy_seats"])}
     result=[]
     marketing=defaultdict(list)
     for row in active:
@@ -924,10 +1900,20 @@ def compute_q07(tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[
     return result
 
 
+def frozen_result_sets(expected: Mapping[str,Any]) -> list[Mapping[str,Any]]:
+    """The 1.1.1 result sets.  D-0023 additions carry manifest_version and are excluded here."""
+    return [result_set for question in expected["questions"] for result_set in question["result_sets"]
+            if "manifest_version" not in result_set]
+
+
+def added_result_sets(expected: Mapping[str,Any]) -> list[Mapping[str,Any]]:
+    return [result_set for question in expected["questions"] for result_set in question["result_sets"]
+            if result_set.get("manifest_version")=="1.2.0"]
+
+
 def expected_rows(expected: Mapping[str,Any]) -> list[dict[str,Any]]:
     result=[]
-    for question in expected["questions"]:
-        for result_set in question["result_sets"]: result.extend(result_set["rows"])
+    for result_set in frozen_result_sets(expected): result.extend(result_set["rows"])
     for table in expected["contract_truth_tables"]: result.extend(table["rows"])
     return result
 
@@ -1083,29 +2069,34 @@ def validate_identity_namespaces(tables: Mapping[str,Sequence[Mapping[str,Any]]]
     assert all(row["original_delivery_operator"].startswith("SYN-") and row["apu_type"].startswith("SYN-") for row in am)
     assert all(101000<=row["aircraft_history_id"]<=199999 and row["aircraft_id"] in am_ids for row in ah)
     assert all(row["aircraft_configuration_id"] in ac_ids|{None,999999} for row in ah)
-    assert all(row["aircraft_registration_number"]==f"SYN-REG-{row['aircraft_id']}" and row["aircraft_transponder_code"]==f"SYN-XPDR-{row['aircraft_id']}" for row in ah)
+    assert all(row["aircraft_registration_number"] in {f"SYN-REG-{row['aircraft_id']}", f"SYN-REG-{row['aircraft_id']}-R2"} and row["aircraft_transponder_code"]==f"SYN-XPDR-{row['aircraft_id']}" for row in ah)
     assert all(row["aircraft_code_iata"] is None or row["aircraft_code_iata"] in {"SA1","SB1","SM1"} or row["aircraft_code_iata"].startswith("SYN-") for row in ah)
     assert all(row["aircraft_code_icao"] is None or row["aircraft_code_icao"].startswith("SYN") for row in ah)
     assert all(row["aircraft_value_sub_series"] is None or row["aircraft_value_sub_series"].startswith("SYN-") for row in ah)
     assert all(row["storage_location"] is None or row["storage_location"] in ap_ids for row in ah)
     assert all(row["aircraft_configuration_id"] in {2001,2002,2003,2005} or 300000<=row["aircraft_configuration_id"]<=301995 for row in ac)
+    assert all(row["base_state"].startswith("SYN-ST-") and row["base_region"].startswith("SYN-RGN-") for row in ah)
+    assert all(row["storage_location_type"] is None or row["storage_location_type"].startswith("SYN-STG-") for row in ah)
+    assert all(row["noise_certification"].startswith("SYN-NOISE-") for row in ah)
+    assert all(row["aircraft_registration_country"].startswith("Synthetic United States") for row in ah)
+    assert all(50_000<=row["maximum_landing_weight_lb"]<=400_000 and 30_000<=row["operating_empty_weight_lb"]<=300_000 for row in ah)
     for row in ac:
         for column in ("aircraft_family","aircraft_series","aircraft_subseries","aircraft_manufacturer","aircraft_design_class","engine_manufacturer","engine_family","engine_series","engine_subseries"):
             assert row[column].startswith("SYN-")
         assert row["aircraft_type"].startswith("Synthetic ") and row["engine_type"].startswith("Synthetic ")
     assert all(row["schedule_key"].startswith("SYN-SK-") and row["schedule_key_readable"].startswith("SYN-READABLE|") for row in ss)
     assert all(row[column] is None or row[column].startswith("SYN-") for row in ss for column in ("marketing_carrier_internal","operating_carrier_internal","codeshare_carrier_internal"))
-    assert all(700<=row["flight_number"]<=799 or 1700<=row["flight_number"]<=1899 for row in ss)
+    assert all(700<=row["flight_number"]<=799 or 1700<=row["flight_number"]<=1999 for row in ss)
     assert all(9000<=row["itinerary_variation_identifier"]<=9999 and re.fullmatch(r"[0-9a-f]{64}",row["normalized_row_hash"]) for row in ss)
     assert all(row["equipment_subtype_code_iata"].startswith("SYN-") for row in ss)
-    for rows,id_column,filler_range in ((pf,"forward_source_row_id",range(2700,2800)),(ph,"historical_source_row_id",range(2800,2900))):
+    for rows,id_column,filler_range in ((pf,"forward_source_row_id",range(1900,2000)),(ph,"historical_source_row_id",range(1900,2000))):
         assert all(row[id_column] is None or 5000<=row[id_column]<=7999 for row in rows)
         assert all(row["marketing_carrier_internal"].startswith("SYN-") and row["operating_carrier_internal"].startswith("SYN-") for row in rows)
         assert all(700<=row["flight_number"]<=799 or row["flight_number"] in filler_range for row in rows)
         assert all(row["equipment_subtype_code_iata"].startswith("SYN-") for row in rows)
     assert all(5000<=row["flight_id"]<=8998 and 1000<=row["aircraft_id"]<=1999 for row in af)
     assert all(row["operating_carrier_code"].startswith("SYN-") and row["marketing_carrier_code"].startswith("SYN-") for row in af)
-    assert all((700<=int(row["flight_number"])<=799) or (3700<=int(row["flight_number"])<=3799) for row in af)
+    assert all((700<=int(row["flight_number"])<=799) or (1900<=int(row["flight_number"])<=1999) for row in af)
     assert all(row["next_flight_id"] is None or row["next_flight_id"] in af_ids or row["next_flight_id"]==8999 for row in af)
     assert all(row["departure_airport_code"] in ap_ids and row["arrival_airport_code"] in ap_ids and (row["diverted_airport_code"] is None or row["diverted_airport_code"] in ap_ids) for row in af)
     assert all(row["airport_id"].startswith("SYN-AP-") for row in ap)
@@ -1126,7 +2117,7 @@ def validate_tables(scale: str, tables: Mapping[str,Sequence[Mapping[str,Any]]],
     assert tuple(tables)==TABLE_ORDER
     counts={table:len(rows) for table,rows in tables.items()}
     assert counts==EXPECTED_COUNTS[scale]
-    assert sum(counts.values())==(249 if scale=="smoke" else 145_054)
+    assert sum(counts.values())==(249 if scale=="smoke" else 182_039)
     for table,rows in tables.items():
         columns={field.column for field in FIELDS[table]}
         for row in rows:
@@ -1148,6 +2139,10 @@ def validate_tables(scale: str, tables: Mapping[str,Sequence[Mapping[str,Any]]],
     vector=f"{SEED}|{SOURCE_TOKEN['SCHEDULE_SNAPSHOT']}|100000|SS-39".encode("ascii")
     assert len(vector)==46 and sha256_bytes(vector)=="491861981a7e9e11dd9d7f5650a019f5cd99b2eff006d88f74b9b18081ded65d"
     assert 9000+int.from_bytes(hashlib.sha256(vector).digest()[:2],"big")%1000==9712
+    # Specification 2.1 requires a second known-answer vector for the 2027 ordinal block.
+    vector_2027=f"{SEED}|{SOURCE_TOKEN['SCHEDULE_SNAPSHOT']}|400000|SS-39".encode("ascii")
+    assert len(vector_2027)==46 and sha256_bytes(vector_2027)=="462b1a2f2ab0a15afb0464736986f1bbde121ce5b4310b8933c193943f48fd16"
+    assert 9000+int.from_bytes(hashlib.sha256(vector_2027).digest()[:2],"big")%1000==9963
     valid_null=next(row for row in tables["PASSENGER_FORWARD"] if row["forward_source_row_id"] is None and row["flight_number"]==726)
     payload=typed_payload(FIELDS["PASSENGER_FORWARD"],valid_null,"FORWARD")
     assert len(payload)==610 and sha256_bytes(payload)=="a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7"
@@ -1199,15 +2194,19 @@ def validate_tables(scale: str, tables: Mapping[str,Sequence[Mapping[str,Any]]],
         watched=[field.column for field in FIELDS["SCHEDULE_SNAPSHOT"] if "SS-04"<=field.field_id<="SS-38"]
         assert len(grouped)==12_000 and all(len(rows)==5 and len({tuple(row[column] for column in watched) for row in rows})==1 for rows in grouped.values())
         assert all(not (row["effective_date"]<="2026-09-07"<=row["discontinue_date"]) for row in filler)
-        pf_filler=[row for row in tables["PASSENGER_FORWARD"] if row["operating_date"]>="2035-01-01"]
-        ph_filler=[row for row in tables["PASSENGER_HISTORICAL"] if row["operating_date"]>="2036-01-01"]
-        af_filler=[row for row in tables["AIRCRAFT_FLIGHT"] if row["flight_departure_date"]>="2040-01-01"]
-        pf_keys={(row["marketing_carrier_internal"],row["flight_number"],row["departure_station_code_iata"],row["arrival_station_code_iata"],row["operating_date"]) for row in pf_filler}
-        ph_keys={(row["marketing_carrier_internal"],row["flight_number"],row["departure_station_code_iata"],row["arrival_station_code_iata"],row["operating_date"]) for row in ph_filler}
-        assert pf_keys.isdisjoint(ph_keys)
-        passenger_match={(row["operating_carrier_internal"],str(row["flight_number"]),row["operating_date"]) for row in pf_filler+ph_filler}
-        actual_match={(row["operating_carrier_code"],row["flight_number"],row["flight_departure_date"]) for row in af_filler}
-        assert passenger_match.isdisjoint(actual_match)
+        # D-0023 replaced the 2035/2036/2040 filler blocks with 2027 populations, so the v1
+        # "filler cannot interact" assertion becomes a controlled-interaction assertion: the
+        # canonical passenger key overlap is exactly the 500 rows section 10.2 asks for.
+        def canonical_key(row: Mapping[str,Any], carrier: str) -> tuple[Any,...]:
+            return (row[carrier],row["flight_number"],row["departure_station_code_iata"],row["arrival_station_code_iata"],row["operating_date"])
+        pf_keys={canonical_key(row,"marketing_carrier_internal") for row in tables["PASSENGER_FORWARD"]}
+        ph_keys={canonical_key(row,"marketing_carrier_internal") for row in tables["PASSENGER_HISTORICAL"]}
+        # 500 enriched overlaps plus the one anchored TT-PASSENGER-UNION fixture (PH-5001/PF-6001).
+        assert len(pf_keys & ph_keys)==501, len(pf_keys & ph_keys)
+        assert ("SYN-MKT-A",700,"SFO","LAX","2026-08-31") in (pf_keys & ph_keys)
+        # 8,000 enriched plus the one anchored SYN-SK-HIST_700 row.
+        assert sum(row["schedule_key"] is not None for row in tables["PASSENGER_HISTORICAL"])==8_001
+        assert all(row["flight_departure_date"][:4]=="2027" for row in tables["AIRCRAFT_FLIGHT"] if row["flight_id"] not in ANCHOR_FLIGHT_IDS)
     for row in tables["SCHEDULE_SNAPSHOT"]:
         # The CLOCK_BOUNDARY negative fixture intentionally opens/closes a route with a null
         # destination.  Every supplied (non-null) endpoint remains in the public whitelist.
@@ -1304,15 +2303,19 @@ def construct_tables(scale: str, *, reordered_input: bool=False) -> tuple[dict[s
     if scale not in EXPECTED_COUNTS: raise ValueError("scale must be smoke or demo")
     expected=load_expected()
     masters=aircraft_master(scale)
+    history=aircraft_history(scale,masters)
+    # Actual flights are constructed first: the FUL block deliberately shares its identifiers with
+    # PH-01, and the HEUR block is what the forward candidate plans mirror.
+    flights=aircraft_flights(scale,masters,history)
     tables: dict[str,list[dict[str,Any]]]={
         "AIRCRAFT_MASTER":masters,
-        "AIRCRAFT_HISTORY":aircraft_history(scale,masters),
+        "AIRCRAFT_HISTORY":history,
         "AIRCRAFT_CONFIGURATION":aircraft_configuration(scale),
         "SCHEDULE_SNAPSHOT":schedule_rows(scale,expected),
         "SCHEDULE_SNAPSHOT_CALENDAR":snapshot_calendar(scale),
         "PASSENGER_FORWARD":passenger_forward(scale),
         "PASSENGER_HISTORICAL":passenger_historical(scale),
-        "AIRCRAFT_FLIGHT":aircraft_flights(scale,masters),
+        "AIRCRAFT_FLIGHT":flights,
         "AIRPORT_REFERENCE":airport_reference(scale,expected),
     }
     tables["AIRLINE_REFERENCE"]=airline_reference(scale,tables)
@@ -1344,7 +2347,7 @@ def build_tables(scale: str, *, reordered_input: bool=False) -> tuple[dict[str,l
 def authority_hashes() -> dict[str,str]:
     # D-0017: DECISION_LOG.md is governance prose, not a determinant of the generated data, so it
     # is not bound here.  These five inputs do determine the data.
-    names=("EXPECTED_ANSWERS.yaml","SOURCE_CONTRACT.md","ATTRIBUTE_AUTHORITY.md","data/SYNTHETIC_DATA_SPEC.md","build/task_reports/DATA-01.json")
+    names=("EXPECTED_ANSWERS.yaml","SOURCE_CONTRACT.md","ATTRIBUTE_AUTHORITY.md","data/SYNTHETIC_DATA_SPEC.md","data/SYNTHETIC_DATA_SPEC_V2.md","build/task_reports/DATA-01.json")
     return {name:sha256_file(ROOT/name) for name in names}
 
 
@@ -1359,7 +2362,7 @@ def stage_package(scale: str, directory: Path, *, reordered_input: bool=False) -
             "columns":[field.column for field in FIELDS[table]],"snowflake_types":[field.type_tag for field in FIELDS[table]],
             "file_sha256":sha256_bytes(content),"ordered_typed_rows_sha256":ordered_row_hash(table,rows)}
     manifest={
-        "manifest_version":"1.1.0","scale":scale,"claim_scope":"synthetic U.S.-domestic representative functional shape; non-production",
+        "manifest_version":"1.2.0","scale":scale,"claim_scope":"synthetic U.S.-domestic representative functional shape; non-production",
         "seed":int(SEED),"generation_date":GENERATION_DATE,"generation_timestamp":GENERATION_TIMESTAMP,
         "specification_version":SPEC_VERSION,"expected_manifest_version":EXPECTED_VERSION,
         "serializer":{"version":SERIALIZER_VERSION,"encoding":"UTF-8","line_ending":"LF","delimiter":",","quote_char":"\"","double_quote":True,
@@ -1371,6 +2374,7 @@ def stage_package(scale: str, directory: Path, *, reordered_input: bool=False) -
         "typed_row_hash_version":TYPED_ROW_VERSION,"dv43_version":DV43_VERSION,"authority_sha256":authority_hashes(),
         "tables":table_manifest,"validation":validation,
         "known_answers":{"schedule_prf_sha256":"491861981a7e9e11dd9d7f5650a019f5cd99b2eff006d88f74b9b18081ded65d","schedule_prf_ss39":9712,
+            "schedule_prf_2027_sha256":"462b1a2f2ab0a15afb0464736986f1bbde121ce5b4310b8933c193943f48fd16","schedule_prf_2027_ss39":9963,
             "pf_valid_null_id_payload_bytes":610,"pf_valid_null_id_dv43":"a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
             "pf_valid_null_id_dv46":"FORWARD|a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7"},
     }

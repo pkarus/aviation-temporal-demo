@@ -520,8 +520,8 @@ def parse_contract_fields() -> dict[str, list[tuple[str, str]]]:
         r"([A-Z][A-Z0-9_]*(?:\([^)]*\))?) \| (?:yes|no) \| ([^|]+)\|",
         text, flags=re.MULTILINE,
     )
-    if len(rows) != 195:
-        raise GateError(f"expected 195 contract field rows, parsed {len(rows)}")
+    if len(rows) != 204:
+        raise GateError(f"expected 204 contract field rows, parsed {len(rows)}")
     by_column: dict[str, list[tuple[str, str]]] = defaultdict(list)
     for field_id, column, _type_tag, role in rows:
         by_column[column.upper()].append((field_id, role.strip()))
@@ -812,14 +812,25 @@ GATES: tuple[tuple[str, str, str, Any], ...] = (
      f"OR c.previous_knowledge_date IN (DATE '2026-10-12', DATE '2026-10-19')) "
      f"+ (SELECT COUNT(*) FROM {MI}.ROUTE_STATE WHERE knowledge_valid_from IN (DATE '2026-10-12', DATE '2026-10-19'))", "0"),
     ("AT-16", "Reappearance after a proven absence is labelled on the RouteState segment",
-     f"SELECT COUNT(*) FROM {MI}.ROUTE_STATE WHERE is_reappearance", "1"),
+     f"SELECT COUNT(*) FROM {MI}.ROUTE_STATE WHERE is_reappearance "
+     f"AND schedule_key = 'SYN-SK-REAPPEAR_400'", "1"),
+    ("AT-16B", "D-0023: the 2027 REAP cohort adds exactly eight reappearing keys",
+     f"SELECT COUNT(*) FROM {MI}.ROUTE_STATE WHERE is_reappearance", "9"),
     ("AT-17", "Reappearance is also labelled on the exact presence addition",
-     f"SELECT COUNT(*) FROM {MI}.SCHEDULE_EXACT_CHANGE WHERE is_reappearance", "1"),
+     f"SELECT COUNT(*) FROM {MI}.SCHEDULE_EXACT_CHANGE WHERE is_reappearance "
+     f"AND schedule_key = 'SYN-SK-REAPPEAR_400'", "1"),
+    ("AT-17B", "D-0023: the reappearance label reaches every enriched addition too",
+     f"SELECT COUNT(*) FROM {MI}.SCHEDULE_EXACT_CHANGE WHERE is_reappearance", "9"),
     ("AT-18", "Repeated unchanged complete snapshots coalesce into one RouteState",
      f"SELECT contributing_snapshot_count FROM {MI}.ROUTE_STATE WHERE schedule_key = 'SYN-SK-STABLE_010'", "5"),
     ("AT-19", "A post-gap comparison exposes the skipped calendar dates and invents no date inside them",
-     f"SELECT skipped_calendar_dates FROM {MI}.SCHEDULE_COMPARISON WHERE crosses_snapshot_gap",
+     f"SELECT skipped_calendar_dates FROM {MI}.SCHEDULE_COMPARISON WHERE crosses_snapshot_gap "
+     f"AND comparison_date = DATE '2026-10-26'",
      "2026-10-12,2026-10-19"),
+    ("AT-19B", "D-0023: the 2027 block adds exactly two gap-crossing comparisons and no third",
+     f"SELECT LISTAGG(skipped_calendar_dates, '|') WITHIN GROUP (ORDER BY comparison_date) "
+     f"FROM {MI}.SCHEDULE_COMPARISON WHERE crosses_snapshot_gap",
+     "2026-10-12,2026-10-19|2027-03-15|2027-04-19"),
     ("AT-20", "A unique candidate pair is never also an ambiguous group member",
      f"SELECT COUNT(*) FROM {MI}.SCHEDULE_AMENDMENT_CANDIDATE a JOIN {MI}.SCHEDULE_AMENDMENT_GROUP_MEMBER m "
      f"ON m.comparison_id = a.comparison_id AND m.member_class = 'AMBIGUOUS_GROUP_MEMBER' "
@@ -852,7 +863,10 @@ GATES: tuple[tuple[str, str, str, Any], ...] = (
      f"WHERE is_self_loop_link AND cycle_component_id IS NOT NULL", "0"),
     ("AT-34", "D-0022: the self-loop stays classified SELF_LOOP and auditable through its own flag",
      f"SELECT COUNT(*) FROM {MI}.ROTATION_LINK_VALIDATION "
-     f"WHERE is_self_loop_link AND rotation_anomaly_class = 'SELF_LOOP'", "1"),
+     f"WHERE is_self_loop_link AND rotation_anomaly_class = 'SELF_LOOP' AND flight_id = 8101", "1"),
+    ("AT-34B", "D-0023: the enriched anomaly population adds self-loops and no other class drifts",
+     f"SELECT COUNT(*) FROM {MI}.ROTATION_LINK_VALIDATION "
+     f"WHERE is_self_loop_link AND rotation_anomaly_class = 'SELF_LOOP'", "14"),
     ("AT-35", "D-0022: every cycle edge stays inside one selected (aircraft, AF-06) chain",
      f"SELECT COUNT(*) FROM {MI}.ROTATION_LINK_VALIDATION v "
      f"JOIN {MI}.AIRCRAFT_FLIGHT t ON t.flight_id = v.next_flight_id "
@@ -861,7 +875,12 @@ GATES: tuple[tuple[str, str, str, Any], ...] = (
      f"OR t.flight_departure_date IS DISTINCT FROM v.selected_local_date)", "0"),
     ("AT-36", "D-0022: exactly one cycle component with two members survives the scoped rule",
      f"SELECT TO_VARCHAR(COUNT(DISTINCT cycle_component_id)) || '/' || TO_VARCHAR(COUNT(*)) "
-     f"FROM {MI}.ROTATION_LINK_VALIDATION WHERE cycle_component_id IS NOT NULL", "1/2"),
+     f"FROM {MI}.ROTATION_LINK_VALIDATION "
+     f"WHERE cycle_component_id IS NOT NULL AND flight_id IN (8102, 8103)", "1/2"),
+    ("AT-36B", "D-0023: every enriched cycle component is still emitted once at its minimum member",
+     f"SELECT COUNT(*) FROM (SELECT cycle_component_id FROM {MI}.ROTATION_LINK_VALIDATION "
+     f"WHERE cycle_component_id IS NOT NULL AND is_cycle_representative "
+     f"GROUP BY 1 HAVING COUNT(*) > 1)", "0"),
     ("AT-26", "Exact fulfillment stays separate from heuristic and ambiguous evidence",
      f"SELECT (SELECT COUNT(*) FROM {MI}.FULFILLMENT_EXACT WHERE NOT confirmed_link) "
      f"+ (SELECT COUNT(*) FROM {MI}.FULFILLMENT_CANDIDATE WHERE confirmed_link) "

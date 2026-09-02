@@ -150,7 +150,7 @@ def test_plan_needs_no_connection(monkeypatch):
 def test_contract_field_parse_is_complete():
     contract = bmi.parse_contract_fields()
     field_ids = {fid for entries in contract.values() for fid, _ in entries}
-    assert len(field_ids) == 195
+    assert len(field_ids) == 204
 
 
 def test_every_contract_canonical_object_has_a_table():

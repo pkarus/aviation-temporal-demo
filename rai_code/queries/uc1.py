@@ -102,7 +102,7 @@ def _require_aircraft_id(value: Any) -> int:
         raise QueryParameterError(
             "INVALID_AIRCRAFT_ID", f"aircraft_id {value!r} is not an integer"
         ) from None
-    if aircraft_id != value if isinstance(value, float) else False:
+    if isinstance(value, float) and aircraft_id != value:
         raise QueryParameterError("INVALID_AIRCRAFT_ID", f"aircraft_id {value!r} is not integral")
     if aircraft_id <= 0:
         raise QueryParameterError(
@@ -181,7 +181,7 @@ def _to_int(value: Any) -> int | None:
 
 
 def _to_bool(value: Any) -> bool | None:
-    """RAI ``Bool`` to ``bool``. Absence stays ``None`` - Q04's ``is_type_change`` is three-valued."""
+    """RAI ``Bool`` to ``bool``. Absence stays ``None``; Q04's flag is three-valued."""
     return None if _is_missing(value) else bool(value)
 
 
@@ -260,9 +260,15 @@ def _finalise(
     nullable order key"; ``kind="stable"`` keeps the sort deterministic when the declared keys
     do not fully order the rows. Row order out of ``to_df()`` is explicitly not guaranteed, so
     ordering here is mandatory rather than cosmetic.
+
+    ``dtype=object`` is load-bearing, not defensive. Left to infer, pandas turns a nullable
+    integer column such as Q04's ``engine_count`` (``[None, None, 2, 2]``) into ``float64`` and
+    the frozen ``null`` cells silently become ``NaN`` floats, so a null and a zero-ish float
+    stop being distinguishable and ``2`` is reported as ``2.0``. Keeping Python scalars means
+    the frame compares against the YAML exactly as parsed.
     """
     payload_columns = [name for name in columns if name != "row_id"]
-    frame = pd.DataFrame(list(rows), columns=payload_columns)
+    frame = pd.DataFrame(list(rows), columns=payload_columns, dtype=object)
     if len(frame):
         frame = frame.sort_values(
             list(order_by), kind="stable", na_position="last"
@@ -352,7 +358,7 @@ Q03_STATUS_ENUM = (am.STATUS_IN_SERVICE,)
 _ref_counter = itertools.count(1)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class _Dimension:
     """One of Q01's four independently clocked dimension streams.
 
@@ -920,7 +926,7 @@ def expected_frame(question_id: str, result_set: Mapping[str, Any]) -> pd.DataFr
         | {"row_id": row["row_id"]}
         for row in (result_set.get("rows") or [])
     ]
-    frame = pd.DataFrame(rows, columns=list(columns))
+    frame = pd.DataFrame(rows, columns=list(columns), dtype=object)
     return frame[list(columns)]
 
 

@@ -23,10 +23,14 @@ from .model import model
 from .sources import (
     MI_AIRLINE_CURRENT,
     MI_AIRPORT_CURRENT,
+    MI_CODE_RESOLUTION,
+    MI_CODE_RESOLUTION_CANDIDATE,
     MI_CODE_RESOLUTION_CODE,
     MI_CODE_RESOLUTION_CODE_CANDIDATE,
     SCHEMA_MI_AIRLINE_CURRENT,
     SCHEMA_MI_AIRPORT_CURRENT,
+    SCHEMA_MI_CODE_RESOLUTION,
+    SCHEMA_MI_CODE_RESOLUTION_CANDIDATE,
     SCHEMA_MI_CODE_RESOLUTION_CODE,
     SCHEMA_MI_CODE_RESOLUTION_CODE_CANDIDATE,
     SCHEMA_SRC_SCHEDULE_SNAPSHOT_CALENDAR,
@@ -132,6 +136,62 @@ CodeResolutionCode.candidates = model.Relationship(
 )
 model.define(CodeResolutionCode.candidates(CodeResolutionCodeCandidate)).where(
     CodeResolutionCodeCandidate.resolution == CodeResolutionCode
+)
+
+# --- Code resolution, at row grain (D-0027) ---------------------------------------
+#
+# D-0019 excluded the row-scoped resolution on a suspicion about sync and cold-start cost and
+# gated the exclusion on one measurement. The measurement came back at 0.18 seconds against an
+# 18-second first query, inside the warm-query noise band, so the premise is refuted and the
+# exclusion does not stand. ``CodeResolutionCode`` above remains the grain link semantics read;
+# ``CodeResolution`` adds the provenance grain, which is the one question the code grain cannot
+# answer: which source object, row and field role mentioned a given raw code.
+
+CodeResolution = model.Concept("CodeResolution", identify_by={"resolution_id": String})
+
+_row_resolution_scalars = scalar_properties(
+    CodeResolution, SCHEMA_MI_CODE_RESOLUTION, exclude=("resolution_id",)
+)
+model.define(CodeResolution.new(resolution_id=MI_CODE_RESOLUTION.resolution_id))
+bind_scalars(
+    CodeResolution,
+    MI_CODE_RESOLUTION,
+    {"resolution_id": MI_CODE_RESOLUTION.resolution_id},
+    _row_resolution_scalars,
+)
+
+CodeResolutionCandidate = model.Concept(
+    "CodeResolutionCandidate",
+    identify_by={"resolution": CodeResolution, "candidate_id": String},
+)
+
+_row_candidate_scalars = scalar_properties(
+    CodeResolutionCandidate,
+    SCHEMA_MI_CODE_RESOLUTION_CANDIDATE,
+    exclude=("resolution_id", "candidate_id"),
+)
+_row_candidate_key = {
+    "resolution": CodeResolution.lookup(
+        resolution_id=MI_CODE_RESOLUTION_CANDIDATE.resolution_id
+    ),
+    "candidate_id": MI_CODE_RESOLUTION_CANDIDATE.candidate_id,
+}
+model.define(CodeResolutionCandidate.new(**_row_candidate_key))
+bind_scalars(
+    CodeResolutionCandidate,
+    MI_CODE_RESOLUTION_CANDIDATE,
+    _row_candidate_key,
+    _row_candidate_scalars,
+)
+
+# Same reasoning as the code-grain relationship: zero, one or many candidates are all legal and
+# only a cardinality-one EXACT resolution ever creates a link, so this carries no functional
+# dependency.
+CodeResolution.candidates = model.Relationship(
+    f"{CodeResolution:resolution} has row candidate {CodeResolutionCandidate:candidate}"
+)
+model.define(CodeResolution.candidates(CodeResolutionCandidate)).where(
+    CodeResolutionCandidate.resolution == CodeResolution
 )
 
 # --- SnapshotDate (SC-01) ---------------------------------------------------------

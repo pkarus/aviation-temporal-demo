@@ -61,7 +61,7 @@ def independent_ordered_row_hash(table: str, metadata: dict[str, object], csv_co
 
 
 def test_import_contract_and_cli_help() -> None:
-    assert sum(len(fields) for fields in gen.FIELDS.values()) == 195
+    assert sum(len(fields) for fields in gen.FIELDS.values()) == 204
     assert tuple(gen.FIELDS) == gen.TABLE_ORDER
     completed = subprocess.run(
         [str(gen.ROOT / ".venv" / "bin" / "python"), str(gen.ROOT / "data" / "generate_synthetic_data.py"), "--help"],
@@ -199,7 +199,7 @@ def test_smoke_package_semantics_and_headers(tmp_path: Path) -> None:
 
 def test_demo_exact_budgets_and_isolation(tmp_path: Path) -> None:
     manifest = gen.generate("demo", tmp_path)
-    assert manifest["validation"]["total_rows"] == 145_054
+    assert manifest["validation"]["total_rows"] == 182_039
     assert {table: value["rows"] for table, value in manifest["tables"].items()} == gen.EXPECTED_COUNTS["demo"]
     assert manifest["validation"]["schedule_result_validation"]["q05_adjacent_counts"] == [7, 5, 9, 14]
     assert manifest["validation"]["ownership_sha256"]

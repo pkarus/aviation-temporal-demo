@@ -155,8 +155,8 @@ def test_render_leaves_no_unsubstituted_placeholder():
 # frozen manifest integrity
 # ---------------------------------------------------------------------------
 def test_expected_answers_is_the_frozen_v111_manifest(expected_doc):
-    assert expected_doc["schema_version"] == "1.1.1"
-    assert expected_doc["manifest_id"] == "aviation-temporal-spec03-us-synthetic-v1.1.1"
+    assert expected_doc["schema_version"] == "1.2.0"
+    assert expected_doc["manifest_id"] == "aviation-temporal-spec03-us-synthetic-v1.2.0"
     assert expected_doc["status"] == "FROZEN_BEFORE_DATA_AND_QUERY_IMPLEMENTATION"
 
 
