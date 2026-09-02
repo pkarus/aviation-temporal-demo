@@ -323,6 +323,78 @@ def test_hard_test_coverage_is_fully_accounted_for(live_run, expected_doc):
     assert declared == accounted, declared ^ accounted
 
 
+def test_label_exclusion_is_scoped_per_row_not_per_column(expected_doc):
+    """REVIEW-D0018 P12: the five derived Q05 event ids must NOT be excluded."""
+    q5 = next(q for q in expected_doc["questions"] if q["question_id"] == "Q05")
+    rows = next(rs for rs in q5["result_sets"]
+                if rs["result_set_id"] == "Q05-CANONICAL")["rows"]
+    declared = [r for r in rows if "event_id" in ro.label_columns_for_row("Q05", r)]
+    derived = [r for r in rows if "event_id" not in ro.label_columns_for_row("Q05", r)]
+    assert len(declared) == 30 and len(derived) == 5
+    assert {r["event_class"] for r in derived} == {
+        "CANDIDATE_UNIQUE", "AMBIGUOUS_CANDIDATE_GROUP", "AMBIGUOUS_GROUP_MEMBER"}
+    # row_id stays excluded on every row, derived or not
+    assert all("row_id" in ro.label_columns_for_row("Q05", r) for r in rows)
+
+
+def test_compare_flags_a_derived_event_id_diff_as_semantic():
+    """Unit form of the P12 regression: no Snowflake needed."""
+    schema = [{"name": "row_id", "type": "VARCHAR"},
+              {"name": "event_id", "type": "VARCHAR"},
+              {"name": "event_class", "type": "VARCHAR"}]
+    labels = ["row_id", "event_id"]
+    declared_row = {"row_id": "Q05-R001", "event_id": "SYN-ADD-20260810-300",
+                    "event_class": "EXACT_ADDITION"}
+    derived_row = {"row_id": "Q05-R006", "event_id": "SYN-CAND-20260817-01",
+                   "event_class": "CANDIDATE_UNIQUE"}
+    # perturbing a DECLARED mnemonic: strict fail, semantic pass (by design)
+    bad_declared = dict(declared_row, event_id="SYN-ADD-20260810-XXX")
+    out = ro.compare([declared_row], [bad_declared], schema, labels, "Q05")
+    assert out["verdict"] == "FAIL" and out["semantic_verdict"] == "PASS"
+    # perturbing a DERIVED id: strict fail AND semantic fail
+    bad_derived = dict(derived_row, event_id="SYN-CAND-20260817-1")
+    out = ro.compare([derived_row], [bad_derived], schema, labels, "Q05")
+    assert out["verdict"] == "FAIL" and out["semantic_verdict"] == "FAIL"
+
+
+@live
+def test_derived_q05_event_ids_are_under_semantic_test(expected_doc):
+    """Live P12 regression: drop the SYN-CAND ordinal padding in the rendered
+    SQL only (never on disk) and require BOTH verdicts to fail."""
+    original_render = ro.render
+    padded = ("LPAD(ROW_NUMBER() OVER (PARTITION BY s.comparison_date "
+              "ORDER BY s.signature_token)::VARCHAR, 2, '0')")
+    unpadded = ("ROW_NUMBER() OVER (PARTITION BY s.comparison_date "
+                "ORDER BY s.signature_token)::VARCHAR")
+
+    def perturbed_render(name, params):
+        sql = original_render(name, params)
+        if name != ro.SQL_FILES["Q05"]:
+            return sql
+        # scope the perturbation to the SYN-CAND block so group_id (which is not
+        # a label column) is untouched and event_id is the ONLY differing cell
+        head, sep, tail = sql.partition("'SYN-AMB-'")
+        assert sep, "q05 SQL no longer contains the SYN-AMB block"
+        assert padded in head, "q05 SYN-CAND padding expression drifted"
+        return head.replace(padded, unpadded) + sep + tail
+
+    q5 = next(q for q in expected_doc["questions"] if q["question_id"] == "Q05")
+    rs = next(r for r in q5["result_sets"] if r["result_set_id"] == "Q05-CANONICAL")
+    ro.render = perturbed_render
+    try:
+        rec = ro.execute_result_set(q5, rs)
+    finally:
+        ro.render = original_render
+
+    cmp_ = rec["comparison"]
+    changed = {c for d in cmp_["diffs"] if d["kind"] == "CELL_MISMATCH" for c in d["cells"]}
+    assert changed == {"event_id"}, f"perturbation was not isolated to event_id: {changed}"
+    assert cmp_["verdict"] == "FAIL"
+    assert cmp_["semantic_verdict"] == "FAIL", (
+        "a format regression in the DERIVED SYN-CAND id must fail the semantic "
+        "verdict; the per-column exclusion used to report PASS here (REVIEW-D0018 P12)")
+
+
 @live
 def test_run_is_all_green(live_run):
     assert live_run["all_green"], json.dumps(

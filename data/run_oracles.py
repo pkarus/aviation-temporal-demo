@@ -53,19 +53,36 @@ ROLE = "RAI_DEMO_AVIATION_TEMPORAL"
 # the source fixtures: it is neither positional (Q05 and Q07 interleave the
 # v1.0 and D-0010 repair ranges) nor derivable from any documented rule.
 #
-# Q05 ``event_id`` for exact and unpaired rows is likewise a hand-authored
-# mnemonic (``SYN-CHG-20260810-BASE-SEATS``, ``SYN-UNPAIR-ADD-20260831``);
-# ATTRIBUTE_AUTHORITY.md DV-34/DV-35/DV-36 define SHA-256 identities, not these
-# strings, and the mnemonics follow no consistent generative rule. Because the
-# frozen ``order_by`` sorts on ``event_id``, the oracle has to be told them in
-# order to reproduce the declared row order at all; ``data/oracles/
-# q05_event_labels.sql`` therefore carries them as a declared label table keyed
-# on the *independently computed* semantic identity of each event. Candidate,
-# ambiguous-group and member event ids, and every ``group_id``, ARE derived.
+# Q05 ``event_id`` for the 22 exact and 8 unpaired rows is likewise a
+# hand-authored mnemonic (``SYN-CHG-20260810-BASE-SEATS``,
+# ``SYN-UNPAIR-ADD-20260831``); ATTRIBUTE_AUTHORITY.md DV-34/DV-35/DV-36 define
+# SHA-256 identities, not these strings, and the mnemonics follow no consistent
+# generative rule. Because the frozen ``order_by`` sorts on ``event_id``, the
+# oracle has to be told them in order to reproduce the declared row order at
+# all; ``data/oracles/q05_event_labels.sql`` therefore carries them as a
+# declared label table keyed on the *independently computed* semantic identity
+# of each event.
 #
-# These columns are compared too, but they are additionally reported as
-# ``label_columns`` so a reader can see exactly which part of the verdict is
-# independent and which part is a declared label.
+# The remaining five Q05 ``event_id`` values (one CANDIDATE_UNIQUE, one
+# AMBIGUOUS_CANDIDATE_GROUP, three AMBIGUOUS_GROUP_MEMBER) and every
+# ``group_id`` are computed, but only their *content* is derived: the string
+# templates ``SYN-CAND-<YYYYMMDD>-NN`` / ``SYN-AMB-<YYYYMMDD>-NN`` /
+# ``<group_id>-M<k>``, the two-digit zero padding, the ``NN`` ordinal rule and
+# the REMOVED-before-ADDED ``-Mk`` member ordering were all adopted from the
+# frozen manifest. See the header of q05_event_labels.sql.
+#
+# The exclusion is therefore scoped PER ROW, not per column: for a Q05 row whose
+# expected event_class is EXACT_* or UNPAIRED_* the ``event_id`` cell is a
+# declared label and is excluded from ``semantic_verdict``; for the five derived
+# rows it is NOT excluded, so a format regression in the computed ids fails the
+# semantic verdict as well as the strict one. (Reviewer REVIEW-D0018 case P12
+# showed the previous per-column exclusion reported semantic PASS for exactly
+# that regression; ``test_derived_q05_event_ids_are_under_semantic_test`` pins
+# the repair.)
+#
+# Every label column is still compared under the strict ``verdict``; they are
+# additionally reported as ``label_columns`` so a reader can see which part of
+# the verdict is independent and which part is a declared label.
 LABEL_COLUMNS = {
     "Q01": ["row_id"],
     "Q02": ["row_id"],
@@ -76,6 +93,27 @@ LABEL_COLUMNS = {
     "Q07": ["row_id"],
     "Q08": ["row_id"],
 }
+
+# Q05 event classes whose event_id is a declared manifest mnemonic. Any other
+# class carries a computed id that must stay under the semantic verdict.
+Q05_DECLARED_LABEL_CLASSES = (
+    "EXACT_KEY_PRESERVING_MODIFICATION",
+    "EXACT_ADDITION",
+    "EXACT_REMOVAL",
+    "UNPAIRED_ADDITION",
+    "UNPAIRED_REMOVAL",
+)
+
+
+def label_columns_for_row(question_id: str, expected_row: dict[str, Any] | None,
+                          declared: list[str] | None = None) -> set[str]:
+    """Which columns of THIS row are declared labels rather than derived values."""
+    cols = set(LABEL_COLUMNS[question_id] if declared is None else declared)
+    if question_id == "Q05" and "event_id" in cols:
+        event_class = (expected_row or {}).get("event_class") or ""
+        if event_class not in Q05_DECLARED_LABEL_CLASSES:
+            cols.discard("event_id")
+    return cols
 
 # Result sets whose row_id sequence is exactly positional under the declared
 # order_by. For these the oracle assigns row_id itself; for the rest the label
@@ -312,7 +350,15 @@ def canonical_row(raw: dict[str, Any], schema: list[dict[str, Any]]) -> dict[str
     return row
 
 
-def compare(expected: list[dict], actual: list[dict], schema, label_cols) -> dict[str, Any]:
+def compare(expected: list[dict], actual: list[dict], schema, label_cols,
+            question_id: str | None = None) -> dict[str, Any]:
+    """Complete ordered typed comparison.
+
+    ``label_cols`` are the columns that MAY be declared manifest labels. The
+    exclusion from ``semantic_verdict`` is resolved per row via
+    ``label_columns_for_row`` so that a Q05 row carrying a computed event_id is
+    still held to it. ``verdict`` (the gate) never excludes anything.
+    """
     diffs = []
     for idx in range(max(len(expected), len(actual))):
         e = expected[idx] if idx < len(expected) else None
@@ -327,12 +373,15 @@ def compare(expected: list[dict], actual: list[dict], schema, label_cols) -> dic
                 for k in list(e) + [x for x in a if x not in e]
                 if e.get(k) != a.get(k)}
         if cell:
+            row_labels = (label_columns_for_row(question_id, e, label_cols)
+                          if question_id else set(label_cols))
             diffs.append({"position": idx, "kind": "CELL_MISMATCH",
                           "row_id_expected": e.get("row_id"), "row_id_actual": a.get("row_id"),
-                          "cells": cell, "expected": e, "actual": a})
+                          "cells": cell, "expected": e, "actual": a,
+                          "label_columns_for_this_row": sorted(row_labels),
+                          "semantic": bool([c for c in cell if c not in row_labels])})
     semantic_diffs = [d for d in diffs
-                      if d["kind"] != "CELL_MISMATCH"
-                      or any(c not in label_cols for c in d["cells"])]
+                      if d["kind"] != "CELL_MISMATCH" or d["semantic"]]
     dup_expected = len({r.get("row_id") for r in expected}) != len(expected)
     dup_actual = len({r.get("row_id") for r in actual}) != len(actual)
     return {
@@ -376,6 +425,15 @@ def execute_result_set(question: dict, rs: dict) -> dict[str, Any]:
         "expected_cardinality": rs["expected_cardinality"],
         "order_by": question["order_by"],
         "label_columns": label_cols,
+        # Per-row resolution of the label exclusion, so the disclosure is exact
+        # rather than "the whole event_id column is excluded".
+        "declared_label_cells": sum(len(label_columns_for_row(qid, r)) for r in expected_rows),
+        "derived_cells": sum(len(r) - len(label_columns_for_row(qid, r)) for r in expected_rows),
+        "rows_with_declared_event_id": sum(
+            1 for r in expected_rows if "event_id" in label_columns_for_row(qid, r)),
+        "rows_with_derived_event_id": sum(
+            1 for r in expected_rows
+            if "event_id" in r and "event_id" not in label_columns_for_row(qid, r)),
     }
 
     # 1. typed parameter validation, before any query executes
@@ -387,7 +445,7 @@ def execute_result_set(question: dict, rs: dict) -> dict[str, Any]:
             "query_executed": False,
             "actual_rows": [],
         })
-        record["comparison"] = compare(expected_rows, [], schema, label_cols)
+        record["comparison"] = compare(expected_rows, [], schema, label_cols, qid)
         record["status_match"] = (rs["invocation_status"] == "PARAMETER_ERROR"
                                   and rs.get("error_code") == error_code)
         record["elapsed_seconds"] = round(time.time() - started, 3)
@@ -409,7 +467,7 @@ def execute_result_set(question: dict, rs: dict) -> dict[str, Any]:
             "query_executed": False,
             "actual_rows": [],
         })
-        record["comparison"] = compare(expected_rows, [], schema, label_cols)
+        record["comparison"] = compare(expected_rows, [], schema, label_cols, qid)
         record["status_match"] = (rs["invocation_status"] == gate and rs.get("error_code") == gate)
         record["elapsed_seconds"] = round(time.time() - started, 3)
         record["verdict"] = ("PASS" if record["status_match"]
@@ -453,7 +511,7 @@ def execute_result_set(question: dict, rs: dict) -> dict[str, Any]:
         "actual_result_hash": result_hash(actual_rows),
         "expected_result_hash": result_hash(expected_rows),
     })
-    record["comparison"] = compare(expected_rows, actual_rows, schema, label_cols)
+    record["comparison"] = compare(expected_rows, actual_rows, schema, label_cols, qid)
     record["status_match"] = (rs["invocation_status"] == actual_status
                               and rs.get("error_code") == actual_error)
     record["elapsed_seconds"] = round(time.time() - started, 3)

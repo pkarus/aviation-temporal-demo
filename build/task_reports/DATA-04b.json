@@ -2,8 +2,8 @@
   "task_id": "DATA-04b",
   "title": "Independent raw-SOURCE SQL oracles for the eight golden questions",
   "status": "GREEN",
-  "generated_at": "2026-09-02T08:35:15.022192+00:00",
-  "summary": "Twenty-four independent SQL oracles execute live against PK_AVIATION_TEMPORAL.SOURCE and reproduce all 24 frozen result sets in EXPECTED_ANSWERS.yaml as complete, ordered, typed sequences: 198 expected golden-question rows plus every deliberate empty and typed-error case. Seven contract truth tables are additionally recomputed from raw SOURCE and match (33 of the 55 truth-table rows; the remaining 22 belong to the four tables listed in evidence.contract_truth_tables_not_oracled). The three declared cross-question preservation hashes verify, the Q05 exact/candidate/ambiguous/unpaired closure verifies, and four adversarial temporal probes (40 live checks) pass. No expectation was edited. The oracles read raw SOURCE only: they never reference MODEL_INPUT, data/model_input/ or data/build_model_input.py, and every Snowflake statement is a SELECT run through 'snow sql -f' under -c rai --role RAI_DEMO_AVIATION_TEMPORAL, so no object was created, altered or dropped.",
+  "generated_at": "2026-09-02T09:02:41.427802+00:00",
+  "summary": "Twenty-four independent SQL oracles execute live against PK_AVIATION_TEMPORAL.SOURCE and reproduce all 24 frozen result sets in EXPECTED_ANSWERS.yaml as complete typed sequences over 198 expected golden-question rows, plus every deliberate empty and typed-error case, with zero cell diffs. Seven contract truth tables (33 rows) are additionally recomputed from raw SOURCE and match; four adversarial temporal probes run 40 live checks; the three declared cross-question preservation hashes and the Q05 exact/candidate/ambiguous/unpaired closure verify. No expectation was edited. SCOPE OF THE 'INDEPENDENT' CLAIM, stated up front rather than only in the open issues: the FACTS are recomputed, the DISPLAY LABELS are declared and cross-checked for exhaustiveness. row_id is a manifest label on all 198 rows (derived positionally for 155 of them, supplied for the 43 Q05/Q07 rows whose ranges interleave). For Q05 the 30 exact and unpaired event_id mnemonics are supplied, and because the frozen order_by sorts on event_id the declared ROW SEQUENCE for Q05 is supplied rather than independently verified -- reviewer REVIEW-D0018 proved it could not have been verified from any derived column. Q05 row ORDER is therefore not an independent result; Q05 row CONTENT and the row-to-content pairing are. Every other result set is ordered by derived columns alone and its sequence IS independently reproduced. See disclosure.q05_cell_accounting for the exact numbers.",
   "independence": {
     "reads": [
       "PK_AVIATION_TEMPORAL.SOURCE (10 tables, 145,054 rows)"
@@ -89,7 +89,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 5.222
+        "declared_label_cells": 1,
+        "derived_cells": 16,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 3.433
       },
       {
         "result_set_id": "Q01-BEFORE-FIRST",
@@ -118,7 +122,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 3.336
+        "declared_label_cells": 1,
+        "derived_cells": 16,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 3.634
       },
       {
         "result_set_id": "Q01-UNKNOWN-GAP",
@@ -147,7 +155,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 2.922
+        "declared_label_cells": 1,
+        "derived_cells": 16,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 3.553
       },
       {
         "result_set_id": "Q01-EOL-BOUNDARY",
@@ -176,7 +188,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 2.876
+        "declared_label_cells": 1,
+        "derived_cells": 16,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 5.147
       },
       {
         "result_set_id": "Q01-INVALID-AIRCRAFT-ID",
@@ -205,6 +221,10 @@
         "label_columns": [
           "row_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -233,7 +253,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 2.341
+        "declared_label_cells": 2,
+        "derived_cells": 18,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 2.541
       },
       {
         "result_set_id": "Q02-NO-SPELLS",
@@ -261,7 +285,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 2.357
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 2.371
       },
       {
         "result_set_id": "Q03-CANONICAL",
@@ -291,7 +319,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 3.188
+        "declared_label_cells": 132,
+        "derived_cells": 528,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 3.137
       },
       {
         "result_set_id": "Q04-CANONICAL",
@@ -319,7 +351,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 4.662
+        "declared_label_cells": 4,
+        "derived_cells": 44,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 2.546
       },
       {
         "result_set_id": "Q05-CANONICAL",
@@ -350,7 +386,11 @@
           "row_id",
           "event_id"
         ],
-        "elapsed_seconds": 8.537
+        "declared_label_cells": 65,
+        "derived_cells": 495,
+        "rows_with_declared_event_id": 30,
+        "rows_with_derived_event_id": 5,
+        "elapsed_seconds": 6.631
       },
       {
         "result_set_id": "Q05-INELIGIBLE-ENDPOINT",
@@ -381,6 +421,10 @@
           "row_id",
           "event_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -411,7 +455,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 2.644
+        "declared_label_cells": 2,
+        "derived_cells": 16,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 2.669
       },
       {
         "result_set_id": "Q06-INCOMPLETE-ENDPOINT",
@@ -441,6 +489,10 @@
         "label_columns": [
           "row_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -471,6 +523,10 @@
         "label_columns": [
           "row_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -501,6 +557,10 @@
         "label_columns": [
           "row_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -531,7 +591,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 3.24
+        "declared_label_cells": 3,
+        "derived_cells": 45,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 4.879
       },
       {
         "result_set_id": "Q07-OPERATING",
@@ -561,7 +625,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 2.925
+        "declared_label_cells": 2,
+        "derived_cells": 30,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 3.045
       },
       {
         "result_set_id": "Q07-KNOWLEDGE-END-EMPTY",
@@ -591,7 +659,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 2.902
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 2.985
       },
       {
         "result_set_id": "Q07-MISSING-KNOWLEDGE-DATE",
@@ -621,6 +693,10 @@
         "label_columns": [
           "row_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -651,6 +727,10 @@
         "label_columns": [
           "row_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -681,6 +761,10 @@
         "label_columns": [
           "row_id"
         ],
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -710,7 +794,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 4.449
+        "declared_label_cells": 3,
+        "derived_cells": 45,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 4.833
       },
       {
         "result_set_id": "Q08-ANOMALIES",
@@ -739,7 +827,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 6.535
+        "declared_label_cells": 11,
+        "derived_cells": 165,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 4.546
       },
       {
         "result_set_id": "Q08-NOT-FOUND",
@@ -768,7 +860,11 @@
         "label_columns": [
           "row_id"
         ],
-        "elapsed_seconds": 6.495
+        "declared_label_cells": 0,
+        "derived_cells": 0,
+        "rows_with_declared_event_id": 0,
+        "rows_with_derived_event_id": 0,
+        "elapsed_seconds": 7.836
       }
     ],
     "totals": {
@@ -779,7 +875,9 @@
       "actual_rows_total": 198,
       "truth_table_rows_reproduced": 33,
       "probe_checks": 40,
-      "result_hash_equal_for_every_nonempty_set": true
+      "result_hash_equal_for_every_nonempty_set": true,
+      "declared_label_cells_total": 228,
+      "derived_cells_total": 1450
     },
     "declared_hash_checks": [
       {
@@ -1134,7 +1232,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.274
+        "elapsed_seconds": 2.223
       },
       {
         "truth_table_id": "TT-UTC-OFFSETS",
@@ -1156,7 +1254,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.11
+        "elapsed_seconds": 2.064
       },
       {
         "truth_table_id": "TT-CABIN-QUALITY",
@@ -1177,7 +1275,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.009
+        "elapsed_seconds": 2.089
       },
       {
         "truth_table_id": "TT-CODE-RESOLUTION",
@@ -1198,7 +1296,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 4.209
+        "elapsed_seconds": 2.166
       },
       {
         "truth_table_id": "TT-SENTINELS",
@@ -1221,7 +1319,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 4.24
+        "elapsed_seconds": 2.258
       },
       {
         "truth_table_id": "TT-MIXED-ENGINE-LIMIT",
@@ -1242,7 +1340,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.078
+        "elapsed_seconds": 2.038
       },
       {
         "truth_table_id": "TT-PLAN-ACTUAL-DIVERSION",
@@ -1264,7 +1362,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.131
+        "elapsed_seconds": 4.16
       }
     ],
     "contract_truth_tables_not_oracled": {
@@ -1361,16 +1459,20 @@
     {
       "id": "DATA-04b-OI-1",
       "severity": "medium",
-      "title": "Q05 event_id for exact and unpaired rows is not independently derivable",
-      "detail": "EXPECTED_ANSWERS.yaml carries hand-authored mnemonic event ids for the 22 exact and 8 unpaired Q05 rows (SYN-CHG-20260810-BASE-SEATS, SYN-CHG-20260831-CAP-700-TERMINAL, SYN-UNPAIR-ADD-20260831, ...). ATTRIBUTE_AUTHORITY.md DV-34/DV-35/DV-36/DV-37 define SHA-256 identities, not these strings, and the mnemonics follow no consistent rule: SYN-SK-BASE_100 becomes 'BASE' but SYN-SK-PHY_BASE_700 becomes 'CAP-700'; SYN-SK-ADD_300 is '300' as an addition but 'ADD300' as a modification; the two 2026-08-31 UNPAIR rows carry no suffix while their MKT siblings do. Because the frozen order_by sorts on event_id, no implementation can reproduce the declared row order without being told them. The oracle therefore carries them in data/oracles/q05_event_labels.sql as a declared label table keyed on the independently computed semantic identity (comparison_date, event_class, schedule_key, field_name); any event the oracle computes that is absent from the table gets a visible 'UNLABELLED|...' id, so the table cannot mask an extra, missing or misclassified event. Candidate, ambiguous-group and member event ids and every group_id ARE derived (SYN-CAND-<date>-NN, SYN-AMB-<date>-NN[-Mk]).",
-      "proposed_decision_log_entry": "Either publish a deterministic derivation rule for Q05 event_id, or record it explicitly as a presentation label that conformance checks compare through a declared map. MODEL-01/QUERY-UC2 will hit exactly the same wall.",
-      "impact_on_business_result": "none; no semantic column depends on it"
+      "title": "Manifest/contract conflict: Q05 event_id contradicts DV-34..37 and is load-bearing as a sort key",
+      "detail": "EXPECTED_ANSWERS.yaml populates Q05 event_id with hand-authored mnemonics (SYN-CHG-20260810-BASE-SEATS, SYN-CHG-20260831-CAP-700-TERMINAL, SYN-UNPAIR-ADD-20260831, ...) for the 22 exact and 8 unpaired rows. This is not merely a non-derivable presentation column, which was the original under-stated diagnosis. It is a manifest/contract conflict: the values contradict the contract's own definition of that identity (ATTRIBUTE_AUTHORITY.md DV-34/35/36/37 are SHA-256), AND the manifest then makes the column load-bearing as the Q05 sort key. NON-DERIVABILITY, proven twice. (1) Strings: enumerating all 30 mnemonics, the best of seven candidate generating functions fits 15 of 30, and three contradictions are irreducible -- most sharply, on 2026-08-31 under one event_class and one field_name the manifest maps SYN-SK-BASE_100 to 'BASE' but SYN-SK-PHY_BASE_700 to 'CAP-700', with a 'CAP' token that appears nowhere in the key. (2) Order: on 2026-08-31 the EXACT_ADDITION block orders [MKT_ENTRY_714, UNPAIR_NEW] while the UNPAIRED_ADDITION block orders the same two keys inverted, so no total order on schedule_key or any per-key attribute reproduces both, and the declared member_side / member_schedule_key tiebreakers yield the wrong order. Generator fault was refuted independently: no SOURCE table carries a label column, SCHEDULE_KEY_READABLE is 'SYN-READABLE|<key>|<publish_date>', the four amendment objects are MODEL_INPUT contracts keyed on DV-34..37, and data/SYNTHETIC_DATA_SPEC.md never contracts a mnemonic. TREATMENT: data/oracles/q05_event_labels.sql carries the 30 strings as a declared label table keyed on the independently computed semantic identity (comparison_date, event_class, schedule_key, field_name). That key is collision-free over the five declared-label classes, all of which have a non-null schedule_key; it is NOT unique over all 35 rows -- the three AMBIGUOUS_GROUP_MEMBER rows collide 3-way on ('2026-08-24','AMBIGUOUS_GROUP_MEMBER',NULL,''), which is harmless because SQL equality never matches NULL so those rows cannot join the table at all. comparison_date and schedule_key are load-bearing; event_class and field_name are individually redundant today but both are kept, because that redundancy is what turns a misclassified event into an UNLABELLED id instead of silently re-attaching a valid-looking label. The key includes comparison_date, so the table labels Q05-CANONICAL only; any other parameterisation renders every event UNLABELLED, which is fail-loud and intended. The UNLABELLED string is a diagnostic aid, not the detector: with the fallback degraded, extra, misclassified and misattributed events are still caught by cardinality plus the fourteen derived columns. The other five event_id values and every group_id are computed, but only their CONTENT is derived: the templates SYN-CAND-<YYYYMMDD>-NN / SYN-AMB-<YYYYMMDD>-NN / <group_id>-M<k> and the two-digit padding appear nowhere outside EXPECTED_ANSWERS.yaml; the NN ordinal rule is entirely unconstrained by evidence (this universe has exactly one candidate and one group, so NN is always '01'); and the REMOVED-before-ADDED -Mk ordering was fitted to the manifest, since the natural alternative (schedule_key, side) produces a different, failing answer. Those five are nevertheless held to the semantic verdict.",
+      "proposed_decision_log_entry": "Record the manifest/contract conflict on Q05 event_id, that manifest presentation values win over ATTRIBUTE_AUTHORITY DV-34..37 for this column specifically, that D-0010/D-0011 supersession was considered and rejected on blast-radius and demo-legibility grounds, and that order_by supersession is the recorded rollback. REVIEW-D0018 supplies a ready 'Review:' field.",
+      "impact_on_business_result": "none; no semantic column depends on it and the strict gate never excludes it",
+      "review": "REVIEW-D0018 -- UPHELD WITH CHANGES (build/task_reports/REVIEW-D0018.md)",
+      "supersession_considered": "This is the same species of internal inconsistency that D-0010 and D-0011 resolved by reviewed manifest supersession, and a strict reading of that precedent would demand supersession here too. Rejected for now on two grounds: it would change 30 event_id values, the declared row sequence and the Q05 result hash, a far larger blast radius than D-0010/D-0011; and replacing legible mnemonics with SHA-256 digests would make the customer-facing Q05 output unreadable in a demo whose whole point is legible temporal reconciliation.",
+      "rollback": "Reviewed manifest supersession replacing Q05's order_by with a derivable key, for example (comparison_date, event_class rank, schedule_key, field_name, member_side, member_schedule_key), demoting event_id to a non-ordering presentation column. That changes the declared row sequence but no row's content.",
+      "binding_on_query_uc2": "Keep exactly one copy of the label map, in the shared conformance harness, and out of the PyRel model body. The RAI query should compute the same 14 derived columns plus the semantic identity tuple and either emit a DV-34..37 identity or leave event_id unpopulated; the harness applies the label map to both sides. Compare Q05 as an order-free join on the semantic identity for the semantic verdict and check the declared sequence separately as an explicitly labelled presentation assertion."
     },
     {
       "id": "DATA-04b-OI-2",
       "severity": "low",
       "title": "row_id is a manifest label, not a computable value",
-      "detail": "row_id is positional under the declared order_by for Q02, Q03, Q04, Q06 and Q08 (the oracle derives it, row_id_source=DERIVED_POSITIONAL), but Q05 and Q07 interleave the v1.0 range with the D-0010/D-0011 repair range (Q05-R001, R002, R003, R020, R021... and Q07-R002, R005, R001), so no rule recovers it. For those the oracle takes the label positionally from the frozen manifest and marks row_id_source=DECLARED_MANIFEST_LABEL_POSITIONAL. A cardinality mismatch makes the labels '<<UNLABELLED-nnn>>' so the fallback can never hide a wrong row count.",
+      "detail": "row_id is positional under the declared order_by for Q02, Q03, Q04, Q06 and Q08 (the oracle derives it, row_id_source=DERIVED_POSITIONAL), but Q05 and Q07 interleave the v1.0 range with the D-0010/D-0011 repair range (Q05-R001, R002, R003, R020, R021... and Q07-R002, R005, R001), so no rule recovers it. For those the oracle takes the label positionally from the frozen manifest and marks row_id_source=DECLARED_MANIFEST_LABEL_POSITIONAL. A cardinality mismatch makes the labels '<<UNLABELLED-nnn>>' so the fallback can never hide a wrong row count. REVIEW-D0018 quantified the effect: 43 of the 198 golden rows (Q05's 35 and Q07's 5, plus the single-row Q01 sets that are trivially positional) carry a supplied row_id; the remaining rows derive it. See disclosure.row_id_disclosure.",
       "impact_on_business_result": "none"
     },
     {
@@ -1393,5 +1495,71 @@
     "pytest_full_suite_executed_times": 1,
     "deterministic_across_reruns": true,
     "note": "Consecutive --all runs produced byte-identical per-result-set hashes."
+  },
+  "disclosure": {
+    "source": "REVIEW-D0018 axis 5, re-verified by DATA-04b against EXPECTED_ANSWERS.yaml",
+    "q05_cell_accounting": {
+      "rows": 35,
+      "columns": 16,
+      "total_cells": 560,
+      "independently_derived_from_raw_source": 490,
+      "content_derived_template_adopted": 5,
+      "supplied_from_the_frozen_manifest": 65,
+      "supplied_breakdown": {
+        "row_id": 35,
+        "event_id_exact_and_unpaired": 30
+      },
+      "arithmetic_note": "490 + 65 = 555, not 560. The five missing cells are the CANDIDATE_UNIQUE / AMBIGUOUS_CANDIDATE_GROUP / AMBIGUOUS_GROUP_MEMBER event_id values, which are a third category: computed content inside a string template adopted from the manifest. The reviewer's 88.4 percent figure is 495/560 and counts those five as derived; the reviewer's table counts them separately at 490. Both are defensible; the three-way split above is stated so the two numbers cannot be read as contradicting each other. Strictly derived 490/560 = 87.5 percent; derived-or-computed 495/560 = 88.4 percent.",
+      "independently_verified_for_q05": [
+        "which 35 events exist and their 7/5/9/14 split across the four adjacent eligible pairs",
+        "every event_class, exactness and confidence",
+        "every schedule_key, related_schedule_key, member_side and member_schedule_key",
+        "every field_name, old_value and new_value",
+        "crosses_snapshot_gap",
+        "the candidate / ambiguous / unpaired partition, group membership and the exact_presence_partner_closure rule",
+        "the eligibility gate and the Q05-INELIGIBLE-ENDPOINT ENDPOINT_MISSING outcome"
+      ],
+      "not_independently_verified_for_q05": [
+        "the event_id string for the 30 exact and unpaired rows",
+        "the row_id string for all 35 rows",
+        "the declared row sequence, which is circular: the sort key is event_id and event_id is supplied. REVIEW-D0018 axis 1b proves it is not a function of any derived column -- on 2026-08-31 the EXACT_ADDITION block orders [MKT_ENTRY_714, UNPAIR_NEW] while the UNPAIRED_ADDITION block orders the same two keys inverted, and the declared member_side / member_schedule_key tiebreakers give the wrong order."
+      ]
+    },
+    "row_id_disclosure": {
+      "derived_positional_rows": 155,
+      "declared_label_rows": 43,
+      "note": "Q05 (35 rows) and Q07 (3+2 rows) interleave the v1.0 and D-0010/D-0011 repair ranges, so their row_id sequence is not recoverable by any rule."
+    },
+    "unlabelled_fallback_role": "The 'UNLABELLED|...' event_id is a DIAGNOSTIC AID, not the detector. REVIEW-D0018 cases P15/P16/P17 degraded the fallback to a plausible string and extra, misclassified and misattributed events were still caught, by cardinality plus the fourteen derived columns.",
+    "ordering_independence_by_question": {
+      "Q01": "INDEPENDENT (ordered by derived columns only)",
+      "Q02": "INDEPENDENT (ordered by derived columns only)",
+      "Q03": "INDEPENDENT (ordered by derived columns only)",
+      "Q04": "INDEPENDENT (ordered by derived columns only)",
+      "Q05": "SUPPLIED (sort key event_id is a declared label)",
+      "Q06": "INDEPENDENT (ordered by derived columns only)",
+      "Q07": "INDEPENDENT (ordered by derived columns only)",
+      "Q08": "INDEPENDENT (ordered by derived columns only)"
+    }
+  },
+  "independent_review": {
+    "review_id": "REVIEW-D0018",
+    "report": "build/task_reports/REVIEW-D0018.md",
+    "verdict": "UPHELD WITH CHANGES",
+    "mutation_resistance": "17 injected defects, 17 loud strict failures; no silent pass constructible",
+    "repairs_applied_by_DATA-04b": [
+      "P12 reporting defect fixed: the semantic-verdict label exclusion is now scoped PER ROW, so the five derived Q05 event ids are under test. Guarded by test_compare_flags_a_derived_event_id_diff_as_semantic (unit, proven non-vacuous: the pre-repair path returns semantic PASS for the same input) and by the live test_derived_q05_event_ids_are_under_semantic_test, which perturbs only the SYN-CAND ordinal padding in the rendered SQL and requires both verdicts to fail.",
+      "The 'candidate/ambiguous/member ids ARE derived' claim is restated as content-derived with manifest-adopted templates, an evidence-unconstrained NN ordinal and a fitted -Mk ordering.",
+      "The semantic-key uniqueness claim is stated precisely: collision-free over the five declared-label classes with non-null schedule_key, with the harmless 3-way AMBIGUOUS_GROUP_MEMBER NULL collision named explicitly.",
+      "The headline 'complete, ordered, typed sequences' is softened and quantified in disclosure.q05_cell_accounting."
+    ],
+    "dissent": [
+      "Minor arithmetic: the review's 490-derived / 65-supplied split does not partition 560; the five template-adopted ids are the remainder, and the review's own 88.4 percent counts them as derived. Recorded as a three-way split rather than repeating either number alone.",
+      "The review's required change 4 asks DATA-04b to 'correct' a uniqueness claim of 'unique across the 35 rows'. That phrasing was never committed to any DATA-04b file; the precise statement has been added rather than a wrong one corrected."
+    ],
+    "not_actioned_here": [
+      "DEMO_QUESTIONS.md Q05 'independently recomputed' wording -- owned by the orchestrator, explicitly out of DATA-04b's exclusive files.",
+      "REVIEW-D0018 axis 6 binding for QUERY-UC2 (one copy of the label map, in the shared conformance harness, never in the PyRel model) -- a QUERY-UC2 constraint, recorded here so it is not lost."
+    ]
   }
 }

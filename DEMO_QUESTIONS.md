@@ -209,8 +209,9 @@ installed-version live equality test adds demonstrable value.
   bounded claim covers exactly the 35 v1.1 rows. Under D-0018 that claim is qualified: the event set,
   classification, keys, field deltas, gap flags and the candidate/ambiguous/unpaired closure are
   independently recomputed, but `event_id` and `row_id` are supplied manifest labels and the declared
-  row sequence therefore is not independently verified. 490 of Q05-CANONICAL's 560 cells are
-  recomputed; 65 are supplied.
+  row sequence therefore is not independently verified. Of Q05-CANONICAL's 560 cells, 490 are
+  strictly derived, 5 are `event_id` values whose content is derived on a manifest-adopted string
+  template, and 65 are supplied (35 `row_id` plus 30 declared `event_id` mnemonics).
 - **Snowflake differentiation:** deterministic snapshot control, lineage, SQL reconciliation, and RAI
   rules execute over the same Snowflake-resident data.
 - **Limitation:** without a stable amendment ID, non-overlapping shifts may remain unpaired and

@@ -731,3 +731,28 @@ entry with a new entry rather than editing its historical conclusion.
   to a derivable key under a new reviewed decision. That changes the declared sequence and the Q05
   result hash but no row's content, and the semantic verdict is already order-free.
 - **Status:** accepted.
+
+### D-0018 arithmetic correction (appended 2026-09-02, entry above left intact)
+
+The `Decision` field above states "490 are independently recomputed and 65 are supplied". Those two
+figures do not partition 560; they sum to 555. DATA-04b verified the cells directly and the true
+split is three-way, not two-way:
+
+- **490 strictly derived** — the 14 columns that are neither `row_id` nor `event_id`, recomputed from
+  raw `SOURCE` with no manifest input.
+- **5 template-adopted `event_id`** — the candidate, group and member ids whose *content* is derived
+  but whose string templates `SYN-CAND-<YYYYMMDD>-NN`, `SYN-AMB-<YYYYMMDD>-NN` and `<group_id>-M<k>`,
+  two-digit padding, unconstrained `NN` ordinal rule and fitted `REMOVED`-before-`ADDED` `-Mk`
+  ordering were all adopted from the manifest.
+- **65 supplied** — 35 `row_id` plus the 30 declared `event_id` mnemonics.
+
+490 + 5 + 65 = 560. Strictly derived is 87.5 percent; derived-or-computed is 88.4 percent. The
+reviewer's report carries both 490 and 88.4 percent (which is 495/560) in different places, which is
+the source of the error; quoting the two-way split in customer-facing material would read as a
+contradiction. Use the three-way split. Nothing about the decision, the evidence, the rollback or the
+QUERY-UC2 binding changes.
+
+Separately, DATA-04b records a point of dissent worth preserving: the review's third required
+correction described "unique across all 35 rows" as a claim to be fixed, but that phrasing appears in
+no DATA-04b artifact. The precise uniqueness statement was added, not corrected. REDTEAM-01 should not
+cite it as a defect that shipped.
