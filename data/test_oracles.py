@@ -395,6 +395,188 @@ def test_derived_q05_event_ids_are_under_semantic_test(expected_doc):
         "verdict; the per-column exclusion used to report PASS here (REVIEW-D0018 P12)")
 
 
+# ---------------------------------------------------------------------------
+# D-0021 / REVIEW-D0021 repairs
+# ---------------------------------------------------------------------------
+def test_q08_segment_id_is_disclosed_as_manifest_adopted():
+    """R2: segment_id must not be counted as independently derived."""
+    assert ro.TEMPLATE_ADOPTED_COLUMNS["Q08"] == ["segment_id"]
+    # ... and must NOT be label-excluded from the semantic verdict
+    assert "segment_id" not in ro.LABEL_COLUMNS["Q08"]
+    assert ro.template_adopted_columns_for_row("Q08", {"segment_id": "SYN-ANOM-01"}) == {"segment_id"}
+
+
+def test_q08_segment_id_templates_appear_in_no_specification():
+    """The premise of the R2 disclosure, re-verified rather than trusted."""
+    specs = ["SOURCE_CONTRACT.md", "ATTRIBUTE_AUTHORITY.md", "DEMO_QUESTIONS.md",
+             "SEMANTIC_DECISIONS.md", os.path.join("data", "SYNTHETIC_DATA_SPEC.md")]
+    for name in specs:
+        body = open(os.path.join(REPO_ROOT, name)).read()
+        assert "SYN-ANOM-" not in body, f"{name} unexpectedly defines SYN-ANOM-"
+        assert "SYN-ROT-" not in body, f"{name} unexpectedly defines SYN-ROT-"
+    manifest = open(ro.EXPECTED_PATH).read()
+    assert "SYN-ANOM-" in manifest and "SYN-ROT-" in manifest
+
+
+@pytest.mark.parametrize("qid,rsids,total,supplied,template,derived", [
+    ("Q05", ["Q05-CANONICAL"], 560, 65, 5, 490),
+    ("Q08", ["Q08-CANONICAL", "Q08-ANOMALIES"], 224, 14, 14, 196),
+])
+def test_declared_cell_accounting(expected_doc, qid, rsids, total, supplied, template, derived):
+    q = next(x for x in expected_doc["questions"] if x["question_id"] == qid)
+    schema = q["output_schema"]
+    rows = [ro.canonical_row(r, schema)
+            for rs in q["result_sets"] if rs["result_set_id"] in rsids for r in rs["rows"]]
+    s = sum(len(ro.label_columns_for_row(qid, r)) for r in rows)
+    t = sum(len(ro.template_adopted_columns_for_row(qid, r)) for r in rows)
+    c = sum(len(r) for r in rows)
+    assert (c, s, t, c - s - t) == (total, supplied, template, derived)
+
+
+def test_template_adopted_columns_stay_under_the_semantic_verdict():
+    """Disclosure must not weaken the check: a segment_id regression fails BOTH."""
+    schema = [{"name": "row_id", "type": "VARCHAR"},
+              {"name": "segment_id", "type": "VARCHAR"},
+              {"name": "flight_id", "type": "NUMBER(38,0)"}]
+    row = {"row_id": "Q08-R004", "segment_id": "SYN-ANOM-01", "flight_id": 8101}
+    bad = dict(row, segment_id="SYN-ANOM-1")
+    out = ro.compare([row], [bad], schema, ro.LABEL_COLUMNS["Q08"], "Q08")
+    assert out["verdict"] == "FAIL" and out["semantic_verdict"] == "FAIL"
+
+
+def test_diversion_endpoint_conflict_follows_dv25_rank_eight():
+    """R3: DV-25 is the ordering authority; diversion sits after continuity."""
+    sql = open(os.path.join(ORACLE_DIR, "q08_actual_rotation_enriched.sql")).read()
+    body = sql.split("CASE", 1)[1]
+    order = [c for c in [
+        "'SELF_LOOP'", "'CYCLE'", "'MISSING_TARGET'", "'DIFFERENT_AIRCRAFT'",
+        "'OUTSIDE_SELECTED_DAY'", "'BACKWARD_TIME'", "'BROKEN_CONTINUITY'",
+        "'DIVERSION_ENDPOINT_CONFLICT'", "'CANCELLED'", "'MISSING_TIME'",
+        "'UNKNOWN_OR_INVALID_CANCELLATION_FLAG'"] if c in body]
+    positions = [body.index(c) for c in order]
+    assert positions == sorted(positions), f"CASE arms are out of DV-25 order: {order}"
+    assert (body.index("'BROKEN_CONTINUITY'")
+            < body.index("'DIVERSION_ENDPOINT_CONFLICT'")), "diversion must rank after continuity"
+
+
+# The DV-25 rotation anomaly order: ATTRIBUTE_AUTHORITY.md:338
+# ("self/cycle/missing/different/day/time/continuity/diversion-conflict/cancel/
+# missing-time"), repeated in SOURCE_CONTRACT.md:363-366, plus DV-52's eleventh
+# class. Both ship in commit 15d8f35, before EXPECTED_ANSWERS.yaml existed.
+DV25_ANOMALY_ORDER = [
+    "SELF_LOOP", "CYCLE", "MISSING_TARGET", "DIFFERENT_AIRCRAFT",
+    "OUTSIDE_SELECTED_DAY", "BACKWARD_TIME", "BROKEN_CONTINUITY",
+    "DIVERSION_ENDPOINT_CONFLICT", "CANCELLED", "MISSING_TIME",
+    "UNKNOWN_OR_INVALID_CANCELLATION_FLAG",
+]
+
+
+def _q08_anomaly_class_order(expected_doc):
+    """Anomaly classes in declared SYN-ANOM-<NN> segment_id order."""
+    q8 = next(q for q in expected_doc["questions"] if q["question_id"] == "Q08")
+    rows = next(rs for rs in q8["result_sets"]
+                if rs["result_set_id"] == "Q08-ANOMALIES")["rows"]
+    return [r["anomaly_code"] for r in sorted(rows, key=lambda r: r["segment_id"])]
+
+
+def _oracle_case_arm_order():
+    """Anomaly classes in the order their CASE arms appear in the Q08 oracle."""
+    body = open(os.path.join(
+        ORACLE_DIR, "q08_actual_rotation_enriched.sql")).read().split("CASE", 1)[1]
+    found = [(body.index(f"'{c}'"), c) for c in DV25_ANOMALY_ORDER if f"'{c}'" in body]
+    return [c for _, c in sorted(found)]
+
+
+def test_frozen_manifest_anomaly_precedence_array_is_self_inconsistent(expected_doc):
+    """PIN the D-0021 divergence so it cannot silently resolve.
+
+    The frozen manifest disagrees with itself about rotation anomaly precedence:
+
+      * scope.rotation_anomaly_support.anomaly_precedence (EXPECTED_ANSWERS.yaml:199)
+        ranks DIVERSION_ENDPOINT_CONFLICT sixth;
+      * the Q08-ANOMALIES rows (:1501-1511) assign the classes to the
+        SYN-ANOM-01..11 ordinals in DV-25 order, i.e. diversion eighth.
+
+    The array is unexercised metadata -- every anomaly fixture has exactly one
+    applicable class -- which is why the inconsistency survived the freeze.
+    D-0021 resolves it in favour of the rows and the contract. This oracle
+    originally implemented the array verbatim; R3 moved it to DV-25.
+
+    If this test fails, do NOT just update the constants. Work out which of the
+    three legs moved and re-open D-0021.
+    """
+    array = expected_doc["scope"]["rotation_anomaly_support"]["anomaly_precedence"]
+    rows = _q08_anomaly_class_order(expected_doc)
+
+    # Leg 1: the frozen ROWS are the authority and they equal DV-25.
+    assert rows == DV25_ANOMALY_ORDER, (
+        "Q08-ANOMALIES no longer assigns anomaly classes to the SYN-ANOM ordinals in DV-25 "
+        f"order. Rows now say {rows}. The frozen expected rows changed; D-0021's resolution "
+        "rested on them, so re-open it.")
+
+    # Leg 2: the ARRAY still contradicts the rows, on exactly three classes.
+    assert array != rows, (
+        "EXPECTED_ANSWERS.yaml scope.rotation_anomaly_support.anomaly_precedence now AGREES "
+        "with the Q08-ANOMALIES rows. Someone has 'fixed' the frozen manifest. That is a "
+        "semantic change to a frozen contract and requires reviewed supersession, not a silent "
+        "edit -- and D-0021's whole rationale (contract and rows outrank one unexercised "
+        "metadata field) needs restating. Do not simply delete this assertion.")
+    divergent = [(i + 1, rows[i], array[i]) for i in range(len(rows)) if rows[i] != array[i]]
+    assert [d[0] for d in divergent] == [6, 7, 8], (
+        f"the manifest self-inconsistency moved to different positions: {divergent}")
+    assert {d[1] for d in divergent} == {
+        "BACKWARD_TIME", "BROKEN_CONTINUITY", "DIVERSION_ENDPOINT_CONFLICT"}, divergent
+    assert array.index("DIVERSION_ENDPOINT_CONFLICT") == 5, "array should still rank it 6th"
+
+    # Leg 3: the implementation follows the ROWS (DV-25), not the array.
+    assert _oracle_case_arm_order() == rows, (
+        "the Q08 oracle no longer classifies in the frozen-row / DV-25 order. R3 requires the "
+        f"rows order {rows}, oracle has {_oracle_case_arm_order()}.")
+    assert _oracle_case_arm_order() != array
+
+    # And the divergence must stay documented where an implementer will see it.
+    sql = open(os.path.join(ORACLE_DIR, "q08_actual_rotation_enriched.sql")).read()
+    for token in ("KNOWN CONFLICT", "D-0021", "DV-25", "anomaly_precedence"):
+        assert token in sql, f"the Q08 oracle header no longer documents {token}"
+
+
+def test_fixture_class_to_flight_assignment_corroborates_dv25(expected_doc):
+    """The load-bearing corroboration: class-to-flight_id assignment.
+
+    The SYN-ANOM ordinals are assigned by ascending flight_id, so the numbering
+    only tracks the fixture author's flight-id choices rather than independently
+    establishing the order. What does carry weight is WHICH flight the author
+    gave each class: 8107 BACKWARD_TIME, 8108 BROKEN_CONTINUITY, 8109 DIVERSION
+    -- DV-25's order, against the anomaly_precedence array.
+    """
+    q8 = next(q for q in expected_doc["questions"] if q["question_id"] == "Q08")
+    rows = next(rs for rs in q8["result_sets"]
+                if rs["result_set_id"] == "Q08-ANOMALIES")["rows"]
+    by_flight = {r["flight_id"]: r["anomaly_code"] for r in rows}
+    assert by_flight[8107] == "BACKWARD_TIME"
+    assert by_flight[8108] == "BROKEN_CONTINUITY"
+    assert by_flight[8109] == "DIVERSION_ENDPOINT_CONFLICT"
+    # ordinals really are flight_id order, which is why they are only corroboration
+    ordered = sorted(rows, key=lambda r: r["segment_id"])
+    assert [r["flight_id"] for r in ordered] == sorted(r["flight_id"] for r in rows)
+
+
+@live
+def test_q08_result_sets_still_match_after_the_dv25_rank_change(live_run):
+    for rsid in ("Q08-CANONICAL", "Q08-ANOMALIES", "Q08-NOT-FOUND"):
+        rec = next(r for r in live_run["result_sets"] if r["result_set_id"] == rsid)
+        assert rec["verdict"] == "PASS", rec
+
+
+@live
+def test_live_cell_accounting_partitions_every_result_set(live_run):
+    for rec in live_run["result_sets"]:
+        if not rec.get("total_cells"):
+            continue
+        assert (rec["supplied_label_cells"] + rec["template_adopted_cells"]
+                + rec["strictly_derived_cells"] == rec["total_cells"]), rec
+
+
 @live
 def test_run_is_all_green(live_run):
     assert live_run["all_green"], json.dumps(

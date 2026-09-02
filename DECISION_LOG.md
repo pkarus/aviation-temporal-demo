@@ -825,3 +825,179 @@ cite it as a defect that shipped.
 - **Rollback:** each is a localized SQL branch with its own status token; reverting one does not
   disturb the others.
 - **Status:** accepted provisionally.
+
+---
+
+## D-0021 — Rotation anomaly precedence is contract-derived, and three latent divergences it exposed
+
+- **Date:** 2026-09-02
+- **Trigger:** DATA-04a disclosed that it had derived rotation anomaly precedence from the frozen Q08
+  manifest rather than from the contract, stating that `CYCLE` outranking `BACKWARD_TIME` was "the only
+  ordering under which 8103 is suppressed and Q08-ANOMALIES has exactly 11 rows". Implementation fitted
+  to a frozen answer is the D-0018 failure class, so it was sent for independent adversarial review
+  before QUERY-ROT could inherit it.
+- **Question:** Is the shipped precedence circular, and if not, what actually determines it?
+- **Review:** Independent reviewer `REVIEW-D0021`, which did not author the implementation, returned
+  **DERIVABLE — no circularity**, while rejecting the authoring agent's stated justification on two
+  counts. Full report at `build/task_reports/REVIEW-D0021.md`.
+  - **The premise was false.** The contract does order the anomaly classes, in two places, in commit
+    `15d8f35` — 34 minutes *before* `EXPECTED_ANSWERS.yaml` existed. `ATTRIBUTE_AUTHORITY.md:338`
+    DV-25 enumerates "self/cycle/missing/different/day/time/continuity/diversion-conflict/cancel/
+    missing-time", and `SOURCE_CONTRACT.md:363-366` repeats it in prose. The manifest's
+    `SYN-ANOM-01..11` numbering reproduces that enumeration exactly across all ten shared classes, so
+    the manifest was written from the contract and not the reverse.
+  - **The supporting claim was also false.** Pairing `BACKWARD_TIME > CYCLE` with a component-gated
+    rather than class-gated suppression yields byte-identical 11-row output. The row count therefore
+    discriminates neither degree of freedom; the agent fitted against a check that cannot fail. The
+    real discriminators are DV-25, the subsumption argument that any timed cycle must contain a
+    backward-time link so the consequence cannot outrank its cause, and `DEMO_QUESTIONS.md:312`, which
+    independently and fully determines 8103's fate: "emit one CYCLE output row per cycle component at
+    its minimum flight_id".
+  - **The independent oracle genuinely corroborates**, and this was checked rather than assumed:
+    commit `9eec511` predates `e4b7db0`, reads `SOURCE` only, and declares the identical ordering and
+    the identical class-gated suppression.
+  - **Circularity is zero cells.** Of Q08's 224 cells, 196 are strictly derived, 14 are supplied
+    `row_id`, and 14 are manifest-adopted `segment_id`. No cell's value is set by the precedence; it
+    fixes only whether a twelfth row exists.
+- **Decision:** The shipped classification logic and 8103's suppression are correct and unchanged. The
+  *justification* is replaced with the contract citation, and the false "only ordering" claim is
+  deleted from `data/model_input/60_actual_flight.sql` and from the DATA-04a report. DV-25 is hereby
+  the single ordering authority for rotation anomaly classes.
+- **Consequent decisions on the three undeclared divergences:**
+  - **`DIVERSION_ENDPOINT_CONFLICT` rank.** Three artifacts currently place it three ways: DV-25 eighth,
+    the oracle sixth, and `MODEL_INPUT` hoisted above all link classes. Zero fixture coverage, so no
+    result moves either way. It is pinned to **DV-25's eighth position** in both artifacts, because R1
+    has just established DV-25 as the ordering authority and it would be incoherent to cite the
+    contract for one class and override it for another. QUERY-ROT is bound to the same. Rollback: if a
+    later fixture shows the endpoint conflict is a property of the flight rather than the link and must
+    outrank link classes, supersede this and align all three artifacts again; the change is a single
+    rank constant in each.
+  - **Cycle detection scope.** `MODEL_INPUT` detects globally; the oracle detects within selected
+    `(aircraft, AF-06)`. The two diverge on any cross-aircraft or cross-day cycle. Unexercised by the
+    shipped fixtures.
+  - **Self-loop treatment.** `MODEL_INPUT` treats a self-loop as a cycle component, so 8101 carries
+    `is_cycle_representative=TRUE`; the oracle does not. Unexercised by the shipped fixtures.
+  - Both of the last two are declared here as D-0020-style ambiguities with visible status columns and
+    are **implemented but unexercised**. REDTEAM-01 must treat them as unverified, and must not accept
+    "the two independent artifacts agree" as covering them: the artifacts agree on the shipped fixtures
+    and diverge outside them.
+- **`segment_id` reclassification.** The templates `SYN-ANOM-<NN>` and `SYN-ROT-...` appear in no spec
+  document. They are manifest-adopted, exactly the D-0018 class, and `segment_id` is Q08's declared
+  primary sort key. They were being counted as independently derived. Q08's honest split is 196
+  strictly derived, 14 supplied `row_id`, 14 manifest-adopted `segment_id`.
+- **Cross-reference:** D-0020 A5 `TARGET_NOT_OPERATED` exists in `MODEL_INPUT` but has no oracle
+  branch, so a QUERY-ROT conformance harness will diverge the first time a rotation target is
+  cancelled. Recorded against A5.
+- **QUERY-ROT binding:** inherit the ordering from the contract citation, not from either
+  implementation; expose the anomaly set order-free with the precedence collapsed into one readable
+  ordered list; apply cycle deduplication at presentation only; and keep the `segment_id` templates out
+  of the PyRel model, per the D-0018 QUERY-UC2 binding.
+- **Confidence:** high that there is no circularity, which is established by commit provenance and by
+  two independent discriminators. High that the shipped behaviour is right. Medium on the three
+  divergences, which are decided but unexercised by data.
+- **Status:** accepted.
+
+### D-0021 correction: the frozen manifest is internally inconsistent, and its rows back DV-25
+
+Appended 2026-09-02; the entry above is left intact.
+
+DATA-04b correctly objected that D-0021 justified the `DIVERSION_ENDPOINT_CONFLICT` rank against DV-25
+without acknowledging that `EXPECTED_ANSWERS.yaml:199`
+`scope.rotation_anomaly_support.anomaly_precedence` explicitly declares a different order, placing
+`DIVERSION_ENDPOINT_CONFLICT` sixth, `BACKWARD_TIME` seventh and `BROKEN_CONTINUITY` eighth. Its
+rank-six placement was therefore not a free third choice, as `REVIEW-D0021` framed it; it was copied
+from a field of the frozen manifest. The objection is upheld and the review's axis-4 framing is wrong
+on that point.
+
+The conflict is resolvable, and the resolution favours DV-25 more strongly than the original entry
+argued. `EXPECTED_ANSWERS.yaml:1501-1511` assigns anomaly classes to `segment_id` ordinals
+`SYN-ANOM-01..11` in this order: `SELF_LOOP`, `CYCLE`, `MISSING_TARGET`, `DIFFERENT_AIRCRAFT`,
+`OUTSIDE_SELECTED_DAY`, `BACKWARD_TIME`, `BROKEN_CONTINUITY`, `DIVERSION_ENDPOINT_CONFLICT`,
+`CANCELLED`, `MISSING_TIME`, `UNKNOWN_OR_INVALID_CANCELLATION_FLAG`. That is exactly DV-25's
+enumeration, and it contradicts the manifest's own `anomaly_precedence` array on the relative order of
+those three classes.
+
+So the frozen manifest disagrees with itself: its expected rows follow DV-25 while its declared
+precedence array does not. The array is unexercised metadata — every anomaly fixture has exactly one
+applicable class, so no expected row moves under either ordering, which is why the inconsistency
+survived the freeze undetected.
+
+- **The R3 pin to DV-25's eighth position stands**, now on better evidence: it agrees with the frozen
+  manifest's *rows* and with the contract, against a single unexercised frozen metadata field.
+- The `anomaly_precedence` array at `EXPECTED_ANSWERS.yaml:199` is recorded as a **known internal
+  inconsistency in frozen metadata, unexercised by any expected row.** It is not edited. REDTEAM-01
+  will grep for it, find both artifacts deliberately disagreeing with it, and must find this trail;
+  that is the purpose of this note.
+- DATA-04b's second objection is also upheld: the `SYN-ANOM-01..11` ordinals track ascending
+  `flight_id`, so the numbering corroborates DV-25 rather than independently establishing it. What
+  does carry weight is that the fixture author assigned `BACKWARD_TIME` to 8107, `BROKEN_CONTINUITY`
+  to 8108 and `DIVERSION_ENDPOINT_CONFLICT` to 8109 — a class-to-flight assignment that aligns with
+  DV-25 and contradicts the array. The load-bearing arguments remain DV-25's pre-manifest commit
+  provenance, the subsumption argument, and `DEMO_QUESTIONS.md:312`.
+
+**Q08 ordering exposure, corrected.** The entry above and the earlier disclosure treated Q08 as not
+order-independent. That is too blunt. DATA-04b verified that sorting either Q08 result set by the
+derived columns `(row_kind, flight_id, leg_order)` reproduces the declared sequence exactly, because
+`SYN-ANOM-<NN>` is zero-padded and assigned by ascending `flight_id`, and `Q08-CANONICAL` is a single
+segment ordered by `leg_order`. Q08's correct classification is therefore **sort-key string
+template-adopted, sequence derived**, which is materially weaker exposure than Q05, whose sequence
+`REVIEW-D0018` proved is not a function of any derived column. Six of the eight questions are
+order-independent outright; Q08 is order-derivable with an adopted key string; only Q05 has a supplied
+sequence.
+
+**`segment_id` verdict treatment.** DATA-04b kept `segment_id` under both the strict and the semantic
+verdict rather than excluding it from the semantic one as Q05's 30 mnemonics are, on the grounds that
+`segment_id` is computed rather than looked up. That is the stronger choice and is accepted: full
+disclosure without weakening the check.
+
+---
+
+## D-0022 — A cycle is a property of the reconstructed per-aircraft chain
+
+- **Date:** 2026-09-02
+- **Trigger:** The D-0021 remediation surfaced that the two implementations the demo presents as
+  independent corroboration diverge on cycle semantics, and that one of the two divergences is live
+  rather than latent. DATA-04a declared them as A8 and A9 rather than resolving them.
+- **The divergences:**
+  - **A8, latent.** `MODEL_INPUT` detects cycles globally; the independent oracle detects them within
+    the selected `(aircraft, AF-06)` scope. Because `CYCLE` outranks both `DIFFERENT_AIRCRAFT` and
+    `OUTSIDE_SELECTED_DAY`, a cross-aircraft or cross-day two-leg cycle classifies differently in each.
+    Zero such rows in the shipped fixtures.
+  - **A9, live.** `MODEL_INPUT` treats a self-loop as a cycle component, so 8101 carries
+    `cycle_component_id=8101` and `is_cycle_representative=TRUE`; the oracle does not. The
+    `anomaly_code` agrees (`SELF_LOOP`) so `Q08-ANOMALIES` cannot detect it, but a consumer counting
+    cycle components gets 2 from `MODEL_INPUT` and 1 from the oracle **today**.
+- **Question:** Declare both as differences, or resolve them to one semantics?
+- **Reasoning:** Declaring a live disagreement between the two artifacts is not acceptable here,
+  because "an independent SQL oracle reproduces the RAI answer" is a claim the demo actively makes.
+  A difference the fixtures happen not to expose is a latent liability; a difference they do expose is
+  a defect in one of them. Both resolve the same way, and the same principle settles both:
+  - Q08 asks to reconstruct **one aircraft's** rotation for **one date**. The chain being
+    reconstructed is per aircraft, per day, so a cycle is a property of that chain and must be
+    detected within it. A link to a different aircraft is not a cycle that happens to cross aircraft;
+    it is a `DIFFERENT_AIRCRAFT` anomaly, which is also the diagnosis an operator can act on. Global
+    detection lets an incidental mutual reference between two aircraft mask the anomaly that matters.
+  - DV-25 ranks `SELF_LOOP` above `CYCLE` precisely to separate them. If the taxonomy treats the two
+    as distinct classes, a self-loop is not additionally a cycle component; counting it as one
+    double-reports a single defect under two structural headings.
+- **Decision:** Align `MODEL_INPUT` to the oracle on both. Cycle detection is scoped to the selected
+  `(aircraft, AF-06)`. A self-loop is its own class and is not a cycle component, so it receives no
+  `cycle_component_id` and is not a cycle representative. Retain a separate auditable boolean if the
+  self-loop needs to remain queryable as a degenerate structural case; do not express it through the
+  cycle-component columns.
+- **Expected movement:** none in any frozen result set. A8 has no qualifying rows. A9 changes only
+  `cycle_component_id` and `is_cycle_representative` for 8101, neither of which appears in the Q08
+  output schema. The 8102/8103 cycle is same-aircraft and same-day, so it remains `CYCLE` under the
+  scoped rule and 8103 remains suppressed, preserving `Q08-ANOMALIES` at 11 rows. DATA-04a must prove
+  this rather than assume it, by comparing the `ROTATION_LINK_VALIDATION` fingerprint before and after
+  and re-running the oracle comparison.
+- **Confidence:** high on the principle, which follows from what Q08 asks and from DV-25 keeping the
+  classes disjoint. Medium on A8's practical consequences, since no fixture exercises it; it is
+  decided rather than tested, and REDTEAM-01 should treat it as such.
+- **Rollback:** both are localized. A8 is the partition clause on the cycle CTEs; A9 is whether the
+  self-loop row enters the component set. Reverting either restores the prior behaviour without
+  touching classification.
+- **Note against the review:** `REVIEW-D0021` recommended aligning `MODEL_INPUT` to the oracle for A8
+  and this decision agrees, but on a stated principle rather than on which artifact happened to be
+  written first.
+- **Status:** accepted; DATA-04a to implement and prove zero movement.

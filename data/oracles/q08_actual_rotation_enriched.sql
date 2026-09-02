@@ -14,11 +14,33 @@
 -- A link is accepted only when the target exists, is a different flight, has
 -- the same aircraft and the same AF-06, departs no earlier than the current
 -- actual arrival, and departs from the current actual arrival airport.
--- Every failure stays visible as a typed anomaly, in the frozen precedence
--- SELF_LOOP, CYCLE, MISSING_TARGET, DIFFERENT_AIRCRAFT, OUTSIDE_SELECTED_DAY,
--- DIVERSION_ENDPOINT_CONFLICT, BACKWARD_TIME, BROKEN_CONTINUITY, CANCELLED,
--- MISSING_TIME, UNKNOWN_OR_INVALID_CANCELLATION_FLAG. Exactly one CYCLE row is
--- emitted per cycle component, anchored at its minimum flight_id.
+-- Every failure stays visible as a typed anomaly. Exactly one CYCLE row is
+-- emitted per cycle component, anchored at its minimum flight_id
+-- (DEMO_QUESTIONS.md:312, class-gated on CYCLE).
+--
+-- ANOMALY PRECEDENCE -- authority is ATTRIBUTE_AUTHORITY.md:338 DV-25, per
+-- D-0021. DV-25 enumerates "self / cycle / missing / different / day / time /
+-- continuity / diversion-conflict / cancel / missing-time" and
+-- SOURCE_CONTRACT.md:363-366 repeats it in prose; both ship in commit 15d8f35,
+-- 34 minutes before EXPECTED_ANSWERS.yaml existed. DV-52 appends the eleventh
+-- class. The order implemented below is therefore:
+--   1 SELF_LOOP                 2 CYCLE                 3 MISSING_TARGET
+--   4 DIFFERENT_AIRCRAFT        5 OUTSIDE_SELECTED_DAY  6 BACKWARD_TIME
+--   7 BROKEN_CONTINUITY         8 DIVERSION_ENDPOINT_CONFLICT
+--   9 CANCELLED                10 MISSING_TIME
+--  11 UNKNOWN_OR_INVALID_CANCELLATION_FLAG
+--
+-- KNOWN CONFLICT, resolved by D-0021 in favour of DV-25. The frozen manifest
+-- field EXPECTED_ANSWERS.yaml:199
+-- (scope.rotation_anomaly_support.anomaly_precedence) declares a DIFFERENT
+-- order, placing DIVERSION_ENDPOINT_CONFLICT sixth and pushing BACKWARD_TIME to
+-- seventh and BROKEN_CONTINUITY to eighth. This oracle originally implemented
+-- that manifest array verbatim. D-0021 makes DV-25 the single ordering
+-- authority, so ranks 6-8 now follow DV-25 and deliberately diverge from that
+-- manifest field. No expected row moves: the three classes are pairwise
+-- uncontested in SYN-ROT/SYN-ANOM, and flight 8109's link to 8106 satisfies
+-- every acceptance condition, so DIVERSION_ENDPOINT_CONFLICT is its sole match
+-- at either rank. Rollback is a single reordering of the CASE arms below.
 --
 -- Enrichment joins the independent daily type/engine assignments at AF-06;
 -- AF-17 remains actual-source descriptive evidence and only sets
@@ -102,12 +124,15 @@ classified AS (
                  AND l.target_aircraft_id IS DISTINCT FROM l.aircraft_id                 THEN 'DIFFERENT_AIRCRAFT'
             WHEN l.target_flight_id IS NOT NULL
                  AND l.target_departure_date IS DISTINCT FROM l.flight_departure_date    THEN 'OUTSIDE_SELECTED_DAY'
-            WHEN l.diverted_airport_code IS NOT NULL
-                 AND l.diverted_airport_code IS DISTINCT FROM l.arrival_airport_code     THEN 'DIVERSION_ENDPOINT_CONFLICT'
+            -- DV-25 ranks 6, 7, 8 (D-0021). See the header: the frozen manifest
+            -- field anomaly_precedence orders these three differently and DV-25
+            -- wins. Uncontested by every shipped fixture.
             WHEN l.target_flight_id IS NOT NULL
                  AND l.target_departure_utc < l.actual_gate_arrival_time_utc             THEN 'BACKWARD_TIME'
             WHEN l.target_flight_id IS NOT NULL
                  AND l.target_origin IS DISTINCT FROM l.arrival_airport_code             THEN 'BROKEN_CONTINUITY'
+            WHEN l.diverted_airport_code IS NOT NULL
+                 AND l.diverted_airport_code IS DISTINCT FROM l.arrival_airport_code     THEN 'DIVERSION_ENDPOINT_CONFLICT'
             WHEN l.cancel_flag                                                           THEN 'CANCELLED'
             WHEN l.missing_time                                                          THEN 'MISSING_TIME'
             WHEN l.cancel_flag_invalid                                                   THEN 'UNKNOWN_OR_INVALID_CANCELLATION_FLAG'

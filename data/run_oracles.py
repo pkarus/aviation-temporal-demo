@@ -94,6 +94,50 @@ LABEL_COLUMNS = {
     "Q08": ["row_id"],
 }
 
+# ---------------------------------------------------------------------------
+# Manifest-adopted string templates (the D-0018 "template-adopted" class)
+# ---------------------------------------------------------------------------
+# These columns are COMPUTED by the oracle -- the ordinals and the grouping are
+# derived from raw SOURCE -- but the string template they are poured into was
+# adopted from EXPECTED_ANSWERS.yaml, because it appears in no specification
+# document. They are therefore neither "supplied" nor "strictly derived", and
+# reporting them as derived would over-claim.
+#
+# Unlike LABEL_COLUMNS these are NOT excluded from the semantic verdict. Their
+# content is computed, so a regression in them is a real defect and must fail
+# loudly on both verdicts. This is deliberately stricter than the D-0018
+# treatment of supplied labels, and stricter than REVIEW-D0021 R2 asked for:
+# R2 required disclosure, and disclosure is satisfied without also weakening the
+# check.
+#
+#   Q05 event_id on the 5 candidate/ambiguous/member rows -- templates
+#       SYN-CAND-<YYYYMMDD>-NN / SYN-AMB-<YYYYMMDD>-NN / <group_id>-M<k>.
+#   Q08 segment_id on all 14 rows -- templates SYN-ANOM-<NN> and
+#       SYN-ROT-<aircraft_id>-<YYYYMMDD>-<NN>. Neither string occurs in
+#       SOURCE_CONTRACT.md, ATTRIBUTE_AUTHORITY.md, DEMO_QUESTIONS.md or
+#       data/SYNTHETIC_DATA_SPEC.md (REVIEW-D0021 axis 3 / finding U4). The
+#       two-digit padding, the ROW_NUMBER() OVER (ORDER BY flight_id) anomaly
+#       ordinal and the ORDER BY root_id segment ordinal were all adopted.
+TEMPLATE_ADOPTED_COLUMNS = {
+    "Q01": [], "Q02": [], "Q03": [], "Q04": [],
+    "Q05": ["event_id"],
+    "Q06": [], "Q07": [],
+    "Q08": ["segment_id"],
+}
+
+
+def template_adopted_columns_for_row(question_id: str,
+                                     expected_row: dict[str, Any] | None) -> set[str]:
+    """Manifest-adopted templates present on THIS row (never label-excluded)."""
+    cols = {c for c in TEMPLATE_ADOPTED_COLUMNS.get(question_id, [])
+            if expected_row is None or c in expected_row}
+    if question_id == "Q05":
+        # event_id is template-adopted only where it is NOT a supplied mnemonic
+        if "event_id" in label_columns_for_row(question_id, expected_row):
+            cols.discard("event_id")
+    return cols
+
+
 # Q05 event classes whose event_id is a declared manifest mnemonic. Any other
 # class carries a computed id that must stay under the semantic verdict.
 Q05_DECLARED_LABEL_CLASSES = (
@@ -425,10 +469,18 @@ def execute_result_set(question: dict, rs: dict) -> dict[str, Any]:
         "expected_cardinality": rs["expected_cardinality"],
         "order_by": question["order_by"],
         "label_columns": label_cols,
-        # Per-row resolution of the label exclusion, so the disclosure is exact
-        # rather than "the whole event_id column is excluded".
-        "declared_label_cells": sum(len(label_columns_for_row(qid, r)) for r in expected_rows),
-        "derived_cells": sum(len(r) - len(label_columns_for_row(qid, r)) for r in expected_rows),
+        "template_adopted_columns": TEMPLATE_ADOPTED_COLUMNS.get(qid, []),
+        # Three-way cell accounting, resolved PER ROW so the disclosure is exact.
+        #   supplied         -- value taken from the frozen manifest
+        #   template_adopted -- content computed, string template adopted
+        #   strictly_derived -- computed end to end from raw SOURCE
+        "supplied_label_cells": sum(len(label_columns_for_row(qid, r)) for r in expected_rows),
+        "template_adopted_cells": sum(
+            len(template_adopted_columns_for_row(qid, r)) for r in expected_rows),
+        "strictly_derived_cells": sum(
+            len(r) - len(label_columns_for_row(qid, r))
+            - len(template_adopted_columns_for_row(qid, r)) for r in expected_rows),
+        "total_cells": sum(len(r) for r in expected_rows),
         "rows_with_declared_event_id": sum(
             1 for r in expected_rows if "event_id" in label_columns_for_row(qid, r)),
         "rows_with_derived_event_id": sum(
@@ -817,6 +869,11 @@ def main() -> int:
                          "expected_rows": r.get("comparison", {}).get("expected_rows"),
                          "actual_rows": r.get("comparison", {}).get("actual_rows"),
                          "actual_result_hash": r.get("actual_result_hash"),
+                         "total_cells": r.get("total_cells"),
+                         "supplied_label_cells": r.get("supplied_label_cells"),
+                         "template_adopted_cells": r.get("template_adopted_cells"),
+                         "strictly_derived_cells": r.get("strictly_derived_cells"),
+                         "row_id_source": r.get("row_id_source"),
                          "elapsed_seconds": r.get("elapsed_seconds")} for r in records],
         "declared_hash_checks": hashes,
         "q05_cross_question_closure": closure,

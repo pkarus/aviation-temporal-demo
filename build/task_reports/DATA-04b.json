@@ -2,8 +2,8 @@
   "task_id": "DATA-04b",
   "title": "Independent raw-SOURCE SQL oracles for the eight golden questions",
   "status": "GREEN",
-  "generated_at": "2026-09-02T09:02:41.427802+00:00",
-  "summary": "Twenty-four independent SQL oracles execute live against PK_AVIATION_TEMPORAL.SOURCE and reproduce all 24 frozen result sets in EXPECTED_ANSWERS.yaml as complete typed sequences over 198 expected golden-question rows, plus every deliberate empty and typed-error case, with zero cell diffs. Seven contract truth tables (33 rows) are additionally recomputed from raw SOURCE and match; four adversarial temporal probes run 40 live checks; the three declared cross-question preservation hashes and the Q05 exact/candidate/ambiguous/unpaired closure verify. No expectation was edited. SCOPE OF THE 'INDEPENDENT' CLAIM, stated up front rather than only in the open issues: the FACTS are recomputed, the DISPLAY LABELS are declared and cross-checked for exhaustiveness. row_id is a manifest label on all 198 rows (derived positionally for 155 of them, supplied for the 43 Q05/Q07 rows whose ranges interleave). For Q05 the 30 exact and unpaired event_id mnemonics are supplied, and because the frozen order_by sorts on event_id the declared ROW SEQUENCE for Q05 is supplied rather than independently verified -- reviewer REVIEW-D0018 proved it could not have been verified from any derived column. Q05 row ORDER is therefore not an independent result; Q05 row CONTENT and the row-to-content pairing are. Every other result set is ordered by derived columns alone and its sequence IS independently reproduced. See disclosure.q05_cell_accounting for the exact numbers.",
+  "generated_at": "2026-09-02T09:41:49.210599+00:00",
+  "summary": "Twenty-four independent SQL oracles execute live against PK_AVIATION_TEMPORAL.SOURCE and reproduce all 24 frozen result sets in EXPECTED_ANSWERS.yaml as complete typed sequences over 198 expected golden-question rows, plus every deliberate empty and typed-error case, with zero cell diffs. Seven contract truth tables (33 rows) are additionally recomputed from raw SOURCE and match; four adversarial temporal probes run 40 live checks; the three declared cross-question preservation hashes and the Q05 exact/candidate/ambiguous/unpaired closure verify. No expectation was edited. SCOPE OF THE 'INDEPENDENT' CLAIM, stated up front rather than only in the open issues: the FACTS are recomputed, the DISPLAY LABELS are declared or template-adopted and cross-checked for exhaustiveness. Of 1,678 compared cells, 1,431 are strictly derived from raw SOURCE, 228 are supplied manifest row_id / Q05 event_id labels, and 19 are computed values inside manifest-adopted string templates (5 Q05 event_id, 14 Q08 segment_id). ORDERING: six of the eight questions are ordering-independent outright. Q05's declared ROW SEQUENCE is supplied, not verified, because its sort key event_id is a declared label -- REVIEW-D0018 proved it could not have been verified from any derived column. Q08's primary sort key segment_id is a manifest-adopted template, but it is order-isomorphic to the derived flight_id, so Q08's sequence IS independently reproducible even though its sort-key string is adopted. See disclosure.q05_cell_accounting, disclosure.q08_cell_accounting and disclosure.ordering_independence_by_question for the exact numbers.",
   "independence": {
     "reads": [
       "PK_AVIATION_TEMPORAL.SOURCE (10 tables, 145,054 rows)"
@@ -89,11 +89,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 1,
-        "derived_cells": 16,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 3.433
+        "template_adopted_columns": [],
+        "total_cells": 17,
+        "supplied_label_cells": 1,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 16,
+        "elapsed_seconds": 5.725
       },
       {
         "result_set_id": "Q01-BEFORE-FIRST",
@@ -122,11 +123,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 1,
-        "derived_cells": 16,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 3.634
+        "template_adopted_columns": [],
+        "total_cells": 17,
+        "supplied_label_cells": 1,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 16,
+        "elapsed_seconds": 5.019
       },
       {
         "result_set_id": "Q01-UNKNOWN-GAP",
@@ -155,11 +157,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 1,
-        "derived_cells": 16,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 3.553
+        "template_adopted_columns": [],
+        "total_cells": 17,
+        "supplied_label_cells": 1,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 16,
+        "elapsed_seconds": 3.43
       },
       {
         "result_set_id": "Q01-EOL-BOUNDARY",
@@ -188,11 +191,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 1,
-        "derived_cells": 16,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 5.147
+        "template_adopted_columns": [],
+        "total_cells": 17,
+        "supplied_label_cells": 1,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 16,
+        "elapsed_seconds": 3.017
       },
       {
         "result_set_id": "Q01-INVALID-AIRCRAFT-ID",
@@ -221,10 +225,11 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -253,11 +258,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 2,
-        "derived_cells": 18,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 2.541
+        "template_adopted_columns": [],
+        "total_cells": 20,
+        "supplied_label_cells": 2,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 18,
+        "elapsed_seconds": 2.397
       },
       {
         "result_set_id": "Q02-NO-SPELLS",
@@ -285,11 +291,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 2.371
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
+        "elapsed_seconds": 2.35
       },
       {
         "result_set_id": "Q03-CANONICAL",
@@ -319,11 +326,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 132,
-        "derived_cells": 528,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 3.137
+        "template_adopted_columns": [],
+        "total_cells": 660,
+        "supplied_label_cells": 132,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 528,
+        "elapsed_seconds": 3.178
       },
       {
         "result_set_id": "Q04-CANONICAL",
@@ -351,11 +359,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 4,
-        "derived_cells": 44,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 2.546
+        "template_adopted_columns": [],
+        "total_cells": 48,
+        "supplied_label_cells": 4,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 44,
+        "elapsed_seconds": 2.559
       },
       {
         "result_set_id": "Q05-CANONICAL",
@@ -386,11 +395,14 @@
           "row_id",
           "event_id"
         ],
-        "declared_label_cells": 65,
-        "derived_cells": 495,
-        "rows_with_declared_event_id": 30,
-        "rows_with_derived_event_id": 5,
-        "elapsed_seconds": 6.631
+        "template_adopted_columns": [
+          "event_id"
+        ],
+        "total_cells": 560,
+        "supplied_label_cells": 65,
+        "template_adopted_cells": 5,
+        "strictly_derived_cells": 490,
+        "elapsed_seconds": 6.808
       },
       {
         "result_set_id": "Q05-INELIGIBLE-ENDPOINT",
@@ -421,10 +433,13 @@
           "row_id",
           "event_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [
+          "event_id"
+        ],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -455,11 +470,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 2,
-        "derived_cells": 16,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 2.669
+        "template_adopted_columns": [],
+        "total_cells": 18,
+        "supplied_label_cells": 2,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 16,
+        "elapsed_seconds": 4.695
       },
       {
         "result_set_id": "Q06-INCOMPLETE-ENDPOINT",
@@ -489,10 +505,11 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -523,10 +540,11 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -557,10 +575,11 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -591,11 +610,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 3,
-        "derived_cells": 45,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 4.879
+        "template_adopted_columns": [],
+        "total_cells": 48,
+        "supplied_label_cells": 3,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 45,
+        "elapsed_seconds": 2.844
       },
       {
         "result_set_id": "Q07-OPERATING",
@@ -625,11 +645,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 2,
-        "derived_cells": 30,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 3.045
+        "template_adopted_columns": [],
+        "total_cells": 32,
+        "supplied_label_cells": 2,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 30,
+        "elapsed_seconds": 3.017
       },
       {
         "result_set_id": "Q07-KNOWLEDGE-END-EMPTY",
@@ -659,11 +680,12 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 2.985
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
+        "elapsed_seconds": 2.906
       },
       {
         "result_set_id": "Q07-MISSING-KNOWLEDGE-DATE",
@@ -693,10 +715,11 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -727,10 +750,11 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -761,10 +785,11 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
+        "template_adopted_columns": [],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
         "elapsed_seconds": 0.0
       },
       {
@@ -794,11 +819,14 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 3,
-        "derived_cells": 45,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 4.833
+        "template_adopted_columns": [
+          "segment_id"
+        ],
+        "total_cells": 48,
+        "supplied_label_cells": 3,
+        "template_adopted_cells": 3,
+        "strictly_derived_cells": 42,
+        "elapsed_seconds": 4.383
       },
       {
         "result_set_id": "Q08-ANOMALIES",
@@ -827,11 +855,14 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 11,
-        "derived_cells": 165,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 4.546
+        "template_adopted_columns": [
+          "segment_id"
+        ],
+        "total_cells": 176,
+        "supplied_label_cells": 11,
+        "template_adopted_cells": 11,
+        "strictly_derived_cells": 154,
+        "elapsed_seconds": 5.247
       },
       {
         "result_set_id": "Q08-NOT-FOUND",
@@ -860,11 +891,14 @@
         "label_columns": [
           "row_id"
         ],
-        "declared_label_cells": 0,
-        "derived_cells": 0,
-        "rows_with_declared_event_id": 0,
-        "rows_with_derived_event_id": 0,
-        "elapsed_seconds": 7.836
+        "template_adopted_columns": [
+          "segment_id"
+        ],
+        "total_cells": 0,
+        "supplied_label_cells": 0,
+        "template_adopted_cells": 0,
+        "strictly_derived_cells": 0,
+        "elapsed_seconds": 7.304
       }
     ],
     "totals": {
@@ -876,8 +910,12 @@
       "truth_table_rows_reproduced": 33,
       "probe_checks": 40,
       "result_hash_equal_for_every_nonempty_set": true,
-      "declared_label_cells_total": 228,
-      "derived_cells_total": 1450
+      "total_cells": 1678,
+      "supplied_label_cells_total": 228,
+      "template_adopted_cells_total": 19,
+      "strictly_derived_cells_total": 1431,
+      "pytest_tests": 52,
+      "pytest_tests_offline": 39
     },
     "declared_hash_checks": [
       {
@@ -1232,7 +1270,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.223
+        "elapsed_seconds": 2.165
       },
       {
         "truth_table_id": "TT-UTC-OFFSETS",
@@ -1254,7 +1292,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.064
+        "elapsed_seconds": 2.077
       },
       {
         "truth_table_id": "TT-CABIN-QUALITY",
@@ -1275,7 +1313,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.089
+        "elapsed_seconds": 2.079
       },
       {
         "truth_table_id": "TT-CODE-RESOLUTION",
@@ -1296,7 +1334,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.166
+        "elapsed_seconds": 4.131
       },
       {
         "truth_table_id": "TT-SENTINELS",
@@ -1319,7 +1357,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.258
+        "elapsed_seconds": 4.954
       },
       {
         "truth_table_id": "TT-MIXED-ENGINE-LIMIT",
@@ -1340,7 +1378,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 2.038
+        "elapsed_seconds": 2.02
       },
       {
         "truth_table_id": "TT-PLAN-ACTUAL-DIVERSION",
@@ -1362,7 +1400,7 @@
           "semantic_verdict": "PASS"
         },
         "verdict": "PASS",
-        "elapsed_seconds": 4.16
+        "elapsed_seconds": 2.145
       }
     ],
     "contract_truth_tables_not_oracled": {
@@ -1425,33 +1463,33 @@
   },
   "mismatches": [],
   "timings_seconds": {
-    "run_oracles_all_wallclock": 93.173,
-    "pytest_full_suite_wallclock": 97.9,
+    "run_oracles_all_wallclock": 97.034,
+    "pytest_full_suite_wallclock": 103.4,
     "per_result_set": {
-      "Q01-CANONICAL": 5.222,
-      "Q01-BEFORE-FIRST": 3.336,
-      "Q01-UNKNOWN-GAP": 2.922,
-      "Q01-EOL-BOUNDARY": 2.876,
+      "Q01-CANONICAL": 5.725,
+      "Q01-BEFORE-FIRST": 5.019,
+      "Q01-UNKNOWN-GAP": 3.43,
+      "Q01-EOL-BOUNDARY": 3.017,
       "Q01-INVALID-AIRCRAFT-ID": 0.0,
-      "Q02-CANONICAL": 2.341,
-      "Q02-NO-SPELLS": 2.357,
-      "Q03-CANONICAL": 3.188,
-      "Q04-CANONICAL": 4.662,
-      "Q05-CANONICAL": 8.537,
+      "Q02-CANONICAL": 2.397,
+      "Q02-NO-SPELLS": 2.35,
+      "Q03-CANONICAL": 3.178,
+      "Q04-CANONICAL": 2.559,
+      "Q05-CANONICAL": 6.808,
       "Q05-INELIGIBLE-ENDPOINT": 0.0,
-      "Q06-CANONICAL": 2.644,
+      "Q06-CANONICAL": 4.695,
       "Q06-INCOMPLETE-ENDPOINT": 0.0,
       "Q06-MISSING-CARRIER-ROLE": 0.0,
       "Q06-INVALID-DATE": 0.0,
-      "Q07-MARKETING": 3.24,
-      "Q07-OPERATING": 2.925,
-      "Q07-KNOWLEDGE-END-EMPTY": 2.902,
+      "Q07-MARKETING": 2.844,
+      "Q07-OPERATING": 3.017,
+      "Q07-KNOWLEDGE-END-EMPTY": 2.906,
       "Q07-MISSING-KNOWLEDGE-DATE": 0.0,
       "Q07-MISSING-OPERATING-DATE": 0.0,
       "Q07-MISSING-CARRIER-ROLE": 0.0,
-      "Q08-CANONICAL": 4.449,
-      "Q08-ANOMALIES": 6.535,
-      "Q08-NOT-FOUND": 6.495
+      "Q08-CANONICAL": 4.383,
+      "Q08-ANOMALIES": 5.247,
+      "Q08-NOT-FOUND": 7.304
     },
     "slowest_result_set": "Q05-CANONICAL"
   },
@@ -1488,6 +1526,45 @@
       "title": "Four contract truth tables are deliberately not oracled here",
       "detail": "TT-SNAPSHOT-COMPLETENESS, TT-US-CLOCK-AUTHORITY, TT-PASSENGER-UNION and TT-FULFILLMENT are not recomputed row-for-row; see evidence.contract_truth_tables_not_oracled for the per-table reason. Their substantive temporal behaviour is still proved live by the probes and by the seven truth tables that are oracled.",
       "impact_on_business_result": "none; no Q01-Q08 result set depends on them"
+    },
+    {
+      "id": "DATA-04b-OI-5",
+      "severity": "medium",
+      "decision": "D-0021",
+      "title": "Cycle detection scope diverges from MODEL_INPUT: selected (aircraft, AF-06) vs global",
+      "detail": "data/oracles/q08_actual_rotation_enriched.sql builds its link graph over selected_leg only, so cycles are detected within one aircraft and one AF-06 local departure date. data/model_input/60_actual_flight.sql builds edges over all 3,900 AIRCRAFT_FLIGHT rows and detects globally. Because CYCLE outranks DIFFERENT_AIRCRAFT and OUTSIDE_SELECTED_DAY under DV-25, a two-leg cycle spanning two aircraft or two days would classify as CYCLE in MODEL_INPUT and as DIFFERENT_AIRCRAFT or OUTSIDE_SELECTED_DAY in this oracle. Verified zero such rows in the shipped fixtures (the only cycle-participating legs are 8102/8103 within aircraft 1099 on 2026-08-31), so no expected row is affected and both artifacts pass.",
+      "status": "IMPLEMENTED BUT UNEXERCISED -- declared in D-0021. REDTEAM-01 must not read 'the two independent artifacts agree' as covering cross-aircraft or cross-day cycles: they agree on the shipped fixtures and diverge outside them.",
+      "not_fixed_because": "Explicitly instructed not to change oracle classification logic beyond the R3 rank. REVIEW-D0021 axis 6 item 6 recommends QUERY-ROT adopt the selected-day scope, i.e. align MODEL_INPUT to this oracle rather than the reverse; that is a DATA-04a / QUERY-ROT decision, not mine.",
+      "impact_on_business_result": "none for the frozen fixtures"
+    },
+    {
+      "id": "DATA-04b-OI-6",
+      "severity": "low",
+      "decision": "D-0021",
+      "title": "Self-loops are not cycle components in this oracle; they are in MODEL_INPUT",
+      "detail": "The oracle excludes self-edges from graph_edge (next_flight_id <> flight_id), so flight 8101 has no cycle component. MODEL_INPUT assigns 8101 cycle_component_id=8101 with is_cycle_representative=TRUE. The emitted rotation_anomaly_class agrees on both sides (SELF_LOOP, which outranks CYCLE under DV-25), and no Q08 output column exposes the component, so no expected cell differs. But any consumer counting cycle components gets 2 from MODEL_INPUT and 1 from this oracle.",
+      "status": "IMPLEMENTED BUT UNEXERCISED -- declared in D-0021. Not covered by the Q08 comparison, because segment_id/anomaly_code agree while the component columns are not in the declared output schema at all.",
+      "impact_on_business_result": "none; no Q01-Q08 output column carries the component id"
+    },
+    {
+      "id": "DATA-04b-OI-7",
+      "severity": "low",
+      "decision": "D-0020 A5 / D-0021 R5",
+      "title": "MODEL_INPUT can emit TARGET_NOT_OPERATED; this oracle has no such branch",
+      "detail": "MODEL_INPUT's rotation classifier includes a TARGET_NOT_OPERATED class that is outside the eleven-class vocabulary this oracle implements (DV-25's ten plus DV-52's invalid-flag class). Zero rows today. A QUERY-ROT-versus-oracle conformance harness will diverge the first time a rotation target is cancelled. Either the class is added to the oracle vocabulary or it is fenced behind an explicit 'beyond the frozen vocabulary' flag.",
+      "status": "Recorded, not fixed -- adding a classification branch is outside the instruction to change no classification logic beyond the R3 rank.",
+      "impact_on_business_result": "none today"
+    },
+    {
+      "id": "DATA-04b-OI-8",
+      "severity": "low",
+      "decision": "D-0021",
+      "title": "The frozen manifest is self-inconsistent about rotation anomaly precedence; DV-25 and the frozen rows win over one unexercised metadata field",
+      "detail": "EXPECTED_ANSWERS.yaml:199 scope.rotation_anomaly_support.anomaly_precedence declares DIVERSION_ENDPOINT_CONFLICT sixth, pushing BACKWARD_TIME to seventh and BROKEN_CONTINUITY to eighth. This oracle originally implemented that array verbatim, which is where its rank 6 came from; REVIEW-D0021 axis 4 does not cite the field and framed the placement as an unexplained third implementation choice. That framing is wrong and the orchestrator has recorded the correction against the review. The resolution, however, goes against DATA-04b's expectation, on evidence neither the reviewer nor DATA-04b cited: THE FROZEN MANIFEST DISAGREES WITH ITSELF. EXPECTED_ANSWERS.yaml:1501-1511 assigns the anomaly classes to the SYN-ANOM-01..11 ordinals as SELF_LOOP, CYCLE, MISSING_TARGET, DIFFERENT_AIRCRAFT, OUTSIDE_SELECTED_DAY, BACKWARD_TIME, BROKEN_CONTINUITY, DIVERSION_ENDPOINT_CONFLICT, CANCELLED, MISSING_TIME, UNKNOWN_OR_INVALID_CANCELLATION_FLAG -- exactly DV-25, and contradicting the manifest's own array on precisely the three classes at issue. Verified live by DATA-04b: the divergence is a 3-cycle rotation at positions 6/7/8 and nowhere else. The array is unexercised metadata, because every anomaly fixture has exactly one applicable class, which is why the inconsistency survived the freeze. R3 therefore stands on better footing than when it was requested: rank 8 agrees with the frozen manifest's ROWS and with ATTRIBUTE_AUTHORITY DV-25, and disagrees only with a single unexercised frozen metadata field.",
+      "impact_on_business_result": "none; zero fixture coverage and zero rows moved, verified live",
+      "status": "RESOLVED -- upheld and re-based on stronger evidence than either the reviewer or DATA-04b originally cited. Pinned by test.",
+      "load_bearing_corroboration": "The SYN-ANOM ordinals are assigned by ascending flight_id, so the numbering only tracks the fixture author's flight-id choices and corroborates DV-25 rather than independently establishing it (DATA-04b's second objection, upheld). What carries weight is WHICH flight the author assigned each class: 8107 BACKWARD_TIME, 8108 BROKEN_CONTINUITY, 8109 DIVERSION_ENDPOINT_CONFLICT -- DV-25's order, against the array. Pinned by test_fixture_class_to_flight_assignment_corroborates_dv25.",
+      "pinned_by": "test_frozen_manifest_anomaly_precedence_array_is_self_inconsistent asserts all three legs: the frozen rows still equal DV-25, the array still contradicts them at exactly positions 6/7/8 on exactly those three classes, and the oracle CASE arms follow the rows rather than the array. Proven non-vacuous: each of the three failure modes -- array silently 'fixed' to agree, frozen rows changed, oracle reverted to array order -- was injected in memory and each fires with a distinct actionable message, including an explicit instruction not to delete the assertion. So the divergence cannot silently resolve."
     }
   ],
   "reruns": {
@@ -1523,7 +1600,8 @@
         "the event_id string for the 30 exact and unpaired rows",
         "the row_id string for all 35 rows",
         "the declared row sequence, which is circular: the sort key is event_id and event_id is supplied. REVIEW-D0018 axis 1b proves it is not a function of any derived column -- on 2026-08-31 the EXACT_ADDITION block orders [MKT_ENTRY_714, UNPAIR_NEW] while the UNPAIRED_ADDITION block orders the same two keys inverted, and the declared member_side / member_schedule_key tiebreakers give the wrong order."
-      ]
+      ],
+      "comparison_to_q08": "Same 87.5 percent strictly-derived shape: Q05 490/560, Q08 196/224. Q05's residue is 65 supplied + 5 template-adopted; Q08's is 14 supplied + 14 template-adopted."
     },
     "row_id_disclosure": {
       "derived_positional_rows": 155,
@@ -1536,30 +1614,84 @@
       "Q02": "INDEPENDENT (ordered by derived columns only)",
       "Q03": "INDEPENDENT (ordered by derived columns only)",
       "Q04": "INDEPENDENT (ordered by derived columns only)",
-      "Q05": "SUPPLIED (sort key event_id is a declared label)",
+      "Q05": "SUPPLIED -- the sort key event_id is a declared label and the sequence is provably not a function of any derived column (REVIEW-D0018 axis 1b)",
       "Q06": "INDEPENDENT (ordered by derived columns only)",
-      "Q07": "INDEPENDENT (ordered by derived columns only)",
-      "Q08": "INDEPENDENT (ordered by derived columns only)"
+      "Q07": "INDEPENDENT (ordered by derived columns only; row_id is supplied but is not a sort key)",
+      "Q08": "SORT-KEY STRING TEMPLATE-ADOPTED, SEQUENCE DERIVED -- segment_id is the declared primary sort key and its template is manifest-adopted, but it is order-isomorphic to the derived flight_id, so the declared sequence is independently reproducible",
+      "summary": "6 of 8 questions are ordering-independent outright. Q08's sequence is reproducible but its sort-key string is adopted. Q05's order is supplied and could not have been verified."
+    },
+    "q08_cell_accounting": {
+      "source": "REVIEW-D0021 axis 3 / D-0021, re-verified by DATA-04b against EXPECTED_ANSWERS.yaml",
+      "rows": 14,
+      "columns": 16,
+      "total_cells": 224,
+      "strictly_derived": 196,
+      "supplied_from_the_frozen_manifest": 14,
+      "template_adopted": 14,
+      "supplied_breakdown": {
+        "row_id": 14
+      },
+      "template_adopted_breakdown": {
+        "segment_id": 14
+      },
+      "templates": [
+        "SYN-ANOM-<NN>",
+        "SYN-ROT-<aircraft_id>-<YYYYMMDD>-<NN>"
+      ],
+      "why_adopted": "Neither template occurs in SOURCE_CONTRACT.md, ATTRIBUTE_AUTHORITY.md, DEMO_QUESTIONS.md, SEMANTIC_DECISIONS.md or data/SYNTHETIC_DATA_SPEC.md -- only in EXPECTED_ANSWERS.yaml. The two-digit padding, the ROW_NUMBER() OVER (ORDER BY flight_id) anomaly ordinal and the ORDER BY root_id segment ordinal were adopted with them. Re-verified by test_q08_segment_id_templates_appear_in_no_specification.",
+      "previously_misreported_as": "independently derived (REVIEW-D0021 finding U4); now disclosed",
+      "kept_under_both_verdicts": "segment_id content is COMPUTED, so unlike Q05's 30 supplied mnemonics it is NOT excluded from the semantic verdict. A format regression fails both verdicts (test_template_adopted_columns_stay_under_the_semantic_verdict).",
+      "ordering_exposure_is_weaker_than_q05": "segment_id is Q08's declared primary sort key, but unlike Q05 the declared row SEQUENCE is still independently reproducible: SYN-ANOM-<NN> is zero-padded and assigned by ascending flight_id, so lexicographic segment_id order is identical to numeric flight_id order, and Q08-CANONICAL is a single segment ordered by leg_order. Verified directly: sorting either Q08 result set by the derived columns (row_kind, flight_id, leg_order) reproduces the declared sequence exactly. Q05 has no such property -- REVIEW-D0018 axis 1b proved its sequence is not a function of any derived column. So Q08's sort-key STRING is template-adopted while its ORDER is derived; Q05's order is genuinely supplied."
+    },
+    "template_adopted_total": {
+      "cells": 19,
+      "breakdown": {
+        "Q05 event_id (candidate/ambiguous/member)": 5,
+        "Q08 segment_id": 14
+      },
+      "treatment": "reported as manifest-adopted, held to BOTH the strict and the semantic verdict"
     }
   },
-  "independent_review": {
-    "review_id": "REVIEW-D0018",
-    "report": "build/task_reports/REVIEW-D0018.md",
-    "verdict": "UPHELD WITH CHANGES",
-    "mutation_resistance": "17 injected defects, 17 loud strict failures; no silent pass constructible",
-    "repairs_applied_by_DATA-04b": [
-      "P12 reporting defect fixed: the semantic-verdict label exclusion is now scoped PER ROW, so the five derived Q05 event ids are under test. Guarded by test_compare_flags_a_derived_event_id_diff_as_semantic (unit, proven non-vacuous: the pre-repair path returns semantic PASS for the same input) and by the live test_derived_q05_event_ids_are_under_semantic_test, which perturbs only the SYN-CAND ordinal padding in the rendered SQL and requires both verdicts to fail.",
-      "The 'candidate/ambiguous/member ids ARE derived' claim is restated as content-derived with manifest-adopted templates, an evidence-unconstrained NN ordinal and a fitted -Mk ordering.",
-      "The semantic-key uniqueness claim is stated precisely: collision-free over the five declared-label classes with non-null schedule_key, with the harmless 3-way AMBIGUOUS_GROUP_MEMBER NULL collision named explicitly.",
-      "The headline 'complete, ordered, typed sequences' is softened and quantified in disclosure.q05_cell_accounting."
-    ],
-    "dissent": [
-      "Minor arithmetic: the review's 490-derived / 65-supplied split does not partition 560; the five template-adopted ids are the remainder, and the review's own 88.4 percent counts them as derived. Recorded as a three-way split rather than repeating either number alone.",
-      "The review's required change 4 asks DATA-04b to 'correct' a uniqueness claim of 'unique across the 35 rows'. That phrasing was never committed to any DATA-04b file; the precise statement has been added rather than a wrong one corrected."
-    ],
-    "not_actioned_here": [
-      "DEMO_QUESTIONS.md Q05 'independently recomputed' wording -- owned by the orchestrator, explicitly out of DATA-04b's exclusive files.",
-      "REVIEW-D0018 axis 6 binding for QUERY-UC2 (one copy of the label map, in the shared conformance harness, never in the PyRel model) -- a QUERY-UC2 constraint, recorded here so it is not lost."
-    ]
-  }
+  "independent_review": [
+    {
+      "review_id": "REVIEW-D0018",
+      "report": "build/task_reports/REVIEW-D0018.md",
+      "verdict": "UPHELD WITH CHANGES",
+      "mutation_resistance": "17 injected defects, 17 loud strict failures; no silent pass constructible",
+      "repairs_applied_by_DATA-04b": [
+        "P12 reporting defect fixed: the semantic-verdict label exclusion is now scoped PER ROW, so the five derived Q05 event ids are under test. Guarded by test_compare_flags_a_derived_event_id_diff_as_semantic (unit, proven non-vacuous: the pre-repair path returns semantic PASS for the same input) and by the live test_derived_q05_event_ids_are_under_semantic_test, which perturbs only the SYN-CAND ordinal padding in the rendered SQL and requires both verdicts to fail.",
+        "The 'candidate/ambiguous/member ids ARE derived' claim is restated as content-derived with manifest-adopted templates, an evidence-unconstrained NN ordinal and a fitted -Mk ordering.",
+        "The semantic-key uniqueness claim is stated precisely: collision-free over the five declared-label classes with non-null schedule_key, with the harmless 3-way AMBIGUOUS_GROUP_MEMBER NULL collision named explicitly.",
+        "The headline 'complete, ordered, typed sequences' is softened and quantified in disclosure.q05_cell_accounting."
+      ],
+      "dissent": [
+        "Minor arithmetic: the review's 490-derived / 65-supplied split does not partition 560; the five template-adopted ids are the remainder, and the review's own 88.4 percent counts them as derived. Recorded as a three-way split rather than repeating either number alone.",
+        "The review's required change 4 asks DATA-04b to 'correct' a uniqueness claim of 'unique across the 35 rows'. That phrasing was never committed to any DATA-04b file; the precise statement has been added rather than a wrong one corrected."
+      ],
+      "not_actioned_here": [
+        "DEMO_QUESTIONS.md Q05 'independently recomputed' wording -- owned by the orchestrator, explicitly out of DATA-04b's exclusive files.",
+        "REVIEW-D0018 axis 6 binding for QUERY-UC2 (one copy of the label map, in the shared conformance harness, never in the PyRel model) -- a QUERY-UC2 constraint, recorded here so it is not lost."
+      ]
+    },
+    {
+      "review_id": "REVIEW-D0021",
+      "report": "build/task_reports/REVIEW-D0021.md",
+      "decision": "D-0021",
+      "verdict": "DERIVABLE -- no circularity in the rotation anomaly precedence",
+      "corroboration_of_this_oracle": "The reviewer checked commit provenance rather than assuming it: 9eec511 (this oracle) predates e4b7db0 (MODEL_INPUT) by 35 minutes, the oracle reads SOURCE only, and it independently declared the identical anomaly ordering and the identical class-gated CYCLE representative suppression. Corroboration is one-way (DATA-04a could have read the oracle) but that is the useful direction.",
+      "repairs_applied_by_DATA-04b": [
+        "R2: segment_id is now disclosed as a manifest-adopted template via TEMPLATE_ADOPTED_COLUMNS, and the Q08 three-way split 196 strictly derived / 14 supplied row_id / 14 template-adopted segment_id is recorded and machine-checked. Pinned by test_q08_segment_id_is_disclosed_as_manifest_adopted, test_declared_cell_accounting and test_q08_segment_id_templates_appear_in_no_specification (which re-greps the five spec documents rather than trusting the finding).",
+        "R3: DIVERSION_ENDPOINT_CONFLICT moved from rank 6 to DV-25's rank 8, after BROKEN_CONTINUITY. Zero rows moved, exactly as predicted: flight 8109's link to 8106 satisfies every acceptance condition so the conflict is its sole match at either rank. Pinned by test_diversion_endpoint_conflict_follows_dv25_rank_eight.",
+        "R4: the two implemented-but-unexercised divergences from MODEL_INPUT are recorded as DATA-04b-OI-5 and DATA-04b-OI-6 so REDTEAM-01 cannot read 'the two independent artifacts agree' as covering them.",
+        "R5 cross-reference: TARGET_NOT_OPERATED has no oracle branch; recorded as DATA-04b-OI-7.",
+        "Final item: pinned the manifest self-inconsistency with test_frozen_manifest_anomaly_precedence_array_is_self_inconsistent and test_fixture_class_to_flight_assignment_corroborates_dv25, both proven to fire under every failure mode, so a later silent 'fix' to the frozen file cannot make the divergence vanish."
+      ],
+      "deliberate_strengthening": "R2 asked for segment_id to be reported and kept under the strict verdict 'as Q05 does'. Q05's 30 supplied mnemonics are excluded from the SEMANTIC verdict because their values are looked up. segment_id is computed, so it is kept under BOTH verdicts -- the same treatment this task already gives Q05's 5 computed ids after the D-0018 P12 repair. Disclosure is fully satisfied without weakening the check. Guarded by test_template_adopted_columns_stay_under_the_semantic_verdict.",
+      "dissent": [
+        "REVIEW-D0021 axis 4 presents the oracle's rank-6 placement of DIVERSION_ENDPOINT_CONFLICT as one of 'three artifacts, three placements', implying a free or arbitrary choice. It was neither: it was copied verbatim from the frozen manifest's own field EXPECTED_ANSWERS.yaml:199 scope.rotation_anomaly_support.anomaly_precedence, which declares SELF_LOOP, CYCLE, MISSING_TARGET, DIFFERENT_AIRCRAFT, OUTSIDE_SELECTED_DAY, DIVERSION_ENDPOINT_CONFLICT, BACKWARD_TIME, BROKEN_CONTINUITY, CANCELLED, MISSING_TIME, UNKNOWN_OR_INVALID_CANCELLATION_FLAG. The review never cites that field. The correct framing is therefore a MANIFEST/CONTRACT CONFLICT of exactly the D-0018 species -- the frozen manifest ranks the class 6th, ATTRIBUTE_AUTHORITY DV-25 ranks it 8th, and they also disagree on the resulting positions of BACKWARD_TIME and BROKEN_CONTINUITY -- not an unexplained third implementation choice. See DATA-04b-OI-8.",
+        "Axis 1's supporting claim that 'the frozen SYN-ANOM-01..11 numbering reproduces the DV-25 enumeration exactly' is correct as stated but is weaker evidence than it reads: SYN-ANOM ordinals are assigned by ascending flight_id, so they record the fixture author's flight-id assignment order, which happens to follow DV-25. It corroborates DV-25; it is not independent of it."
+      ],
+      "dissent_outcome": "Both DATA-04b objections upheld. Objection 1 (rank 6 came from the frozen manifest field, not a free choice) was independently verified by the orchestrator against EXPECTED_ANSWERS.yaml:199 and the correction recorded against the review; but the resolution went the other way, because the manifest's own Q08-ANOMALIES rows follow DV-25 and contradict its array. Objection 2 (the SYN-ANOM numbering corroborates DV-25 rather than establishing it, since the ordinals track flight_id) upheld and now in the decision log. Three DATA-04b positions accepted as argued: segment_id stays under both verdicts, Q08 is classified SORT-KEY STRING TEMPLATE-ADOPTED / SEQUENCE DERIVED, and OI-5/6/7 are carried as declared divergences with QUERY-ROT to be bound to one cycle scope explicitly."
+    }
+  ]
 }
