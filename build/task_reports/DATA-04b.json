@@ -2,7 +2,7 @@
   "task_id": "DATA-04b",
   "title": "Independent raw-SOURCE SQL oracles for the eight golden questions",
   "status": "GREEN",
-  "generated_at": "2026-09-02T09:41:49.210599+00:00",
+  "generated_at": "2026-09-02T10:24:55.406346+00:00",
   "summary": "Twenty-four independent SQL oracles execute live against PK_AVIATION_TEMPORAL.SOURCE and reproduce all 24 frozen result sets in EXPECTED_ANSWERS.yaml as complete typed sequences over 198 expected golden-question rows, plus every deliberate empty and typed-error case, with zero cell diffs. Seven contract truth tables (33 rows) are additionally recomputed from raw SOURCE and match; four adversarial temporal probes run 40 live checks; the three declared cross-question preservation hashes and the Q05 exact/candidate/ambiguous/unpaired closure verify. No expectation was edited. SCOPE OF THE 'INDEPENDENT' CLAIM, stated up front rather than only in the open issues: the FACTS are recomputed, the DISPLAY LABELS are declared or template-adopted and cross-checked for exhaustiveness. Of 1,678 compared cells, 1,431 are strictly derived from raw SOURCE, 228 are supplied manifest row_id / Q05 event_id labels, and 19 are computed values inside manifest-adopted string templates (5 Q05 event_id, 14 Q08 segment_id). ORDERING: six of the eight questions are ordering-independent outright. Q05's declared ROW SEQUENCE is supplied, not verified, because its sort key event_id is a declared label -- REVIEW-D0018 proved it could not have been verified from any derived column. Q08's primary sort key segment_id is a manifest-adopted template, but it is order-isomorphic to the derived flight_id, so Q08's sequence IS independently reproducible even though its sort-key string is adopted. See disclosure.q05_cell_accounting, disclosure.q08_cell_accounting and disclosure.ordering_independence_by_question for the exact numbers.",
   "independence": {
     "reads": [
@@ -94,7 +94,7 @@
         "supplied_label_cells": 1,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 16,
-        "elapsed_seconds": 5.725
+        "elapsed_seconds": 4.843
       },
       {
         "result_set_id": "Q01-BEFORE-FIRST",
@@ -128,7 +128,7 @@
         "supplied_label_cells": 1,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 16,
-        "elapsed_seconds": 5.019
+        "elapsed_seconds": 3.941
       },
       {
         "result_set_id": "Q01-UNKNOWN-GAP",
@@ -162,7 +162,7 @@
         "supplied_label_cells": 1,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 16,
-        "elapsed_seconds": 3.43
+        "elapsed_seconds": 2.947
       },
       {
         "result_set_id": "Q01-EOL-BOUNDARY",
@@ -196,7 +196,7 @@
         "supplied_label_cells": 1,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 16,
-        "elapsed_seconds": 3.017
+        "elapsed_seconds": 3.851
       },
       {
         "result_set_id": "Q01-INVALID-AIRCRAFT-ID",
@@ -263,7 +263,7 @@
         "supplied_label_cells": 2,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 18,
-        "elapsed_seconds": 2.397
+        "elapsed_seconds": 2.353
       },
       {
         "result_set_id": "Q02-NO-SPELLS",
@@ -296,7 +296,7 @@
         "supplied_label_cells": 0,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 0,
-        "elapsed_seconds": 2.35
+        "elapsed_seconds": 2.395
       },
       {
         "result_set_id": "Q03-CANONICAL",
@@ -331,7 +331,7 @@
         "supplied_label_cells": 132,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 528,
-        "elapsed_seconds": 3.178
+        "elapsed_seconds": 3.604
       },
       {
         "result_set_id": "Q04-CANONICAL",
@@ -364,7 +364,7 @@
         "supplied_label_cells": 4,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 44,
-        "elapsed_seconds": 2.559
+        "elapsed_seconds": 2.507
       },
       {
         "result_set_id": "Q05-CANONICAL",
@@ -402,7 +402,7 @@
         "supplied_label_cells": 65,
         "template_adopted_cells": 5,
         "strictly_derived_cells": 490,
-        "elapsed_seconds": 6.808
+        "elapsed_seconds": 9.024
       },
       {
         "result_set_id": "Q05-INELIGIBLE-ENDPOINT",
@@ -475,7 +475,7 @@
         "supplied_label_cells": 2,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 16,
-        "elapsed_seconds": 4.695
+        "elapsed_seconds": 2.58
       },
       {
         "result_set_id": "Q06-INCOMPLETE-ENDPOINT",
@@ -615,7 +615,7 @@
         "supplied_label_cells": 3,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 45,
-        "elapsed_seconds": 2.844
+        "elapsed_seconds": 2.964
       },
       {
         "result_set_id": "Q07-OPERATING",
@@ -650,7 +650,7 @@
         "supplied_label_cells": 2,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 30,
-        "elapsed_seconds": 3.017
+        "elapsed_seconds": 2.982
       },
       {
         "result_set_id": "Q07-KNOWLEDGE-END-EMPTY",
@@ -685,7 +685,7 @@
         "supplied_label_cells": 0,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 0,
-        "elapsed_seconds": 2.906
+        "elapsed_seconds": 2.891
       },
       {
         "result_set_id": "Q07-MISSING-KNOWLEDGE-DATE",
@@ -826,7 +826,7 @@
         "supplied_label_cells": 3,
         "template_adopted_cells": 3,
         "strictly_derived_cells": 42,
-        "elapsed_seconds": 4.383
+        "elapsed_seconds": 4.281
       },
       {
         "result_set_id": "Q08-ANOMALIES",
@@ -862,7 +862,7 @@
         "supplied_label_cells": 11,
         "template_adopted_cells": 11,
         "strictly_derived_cells": 154,
-        "elapsed_seconds": 5.247
+        "elapsed_seconds": 6.372
       },
       {
         "result_set_id": "Q08-NOT-FOUND",
@@ -898,7 +898,7 @@
         "supplied_label_cells": 0,
         "template_adopted_cells": 0,
         "strictly_derived_cells": 0,
-        "elapsed_seconds": 7.304
+        "elapsed_seconds": 6.16
       }
     ],
     "totals": {
@@ -914,8 +914,8 @@
       "supplied_label_cells_total": 228,
       "template_adopted_cells_total": 19,
       "strictly_derived_cells_total": 1431,
-      "pytest_tests": 52,
-      "pytest_tests_offline": 39
+      "pytest_tests": 62,
+      "pytest_tests_offline": 45
     },
     "declared_hash_checks": [
       {
@@ -1459,37 +1459,89 @@
       "HT-47": "every catalog_id and typed parameter set is invoked by --all",
       "HT-48": "Q01-INVALID-AIRCRAFT-ID, Q06-INVALID-DATE, Q06-MISSING-CARRIER-ROLE, Q07-MISSING-* , TT-MIXED-ENGINE-LIMIT",
       "HT-49": "Q05 exact/candidate/ambiguous/unpaired labels, q05 closure, Q08 plan vs actual fields"
+    },
+    "run_verdict_semantics": {
+      "invocation": {
+        "all": true,
+        "questions": [],
+        "result_sets": [],
+        "skip_probes": false,
+        "complete_run": true,
+        "note": "A complete run is --all without --skip-probes and checks everything. all_green on a partial invocation means only that everything SELECTED passed; read summary.check_groups for what was skipped."
+      },
+      "check_groups": [
+        {
+          "name": "declared_preservation_hashes",
+          "status": "PASS",
+          "mandatory_on_complete_run": true,
+          "skip_reason": null,
+          "detail": {
+            "checks": 3
+          }
+        },
+        {
+          "name": "q05_cross_question_closure",
+          "status": "PASS",
+          "mandatory_on_complete_run": true,
+          "skip_reason": null,
+          "detail": null
+        },
+        {
+          "name": "adversarial_probes",
+          "status": "PASS",
+          "mandatory_on_complete_run": true,
+          "skip_reason": null,
+          "detail": {
+            "probes": 4,
+            "checks": 40
+          }
+        },
+        {
+          "name": "contract_truth_tables",
+          "status": "PASS",
+          "mandatory_on_complete_run": true,
+          "skip_reason": null,
+          "detail": {
+            "truth_tables": 7
+          }
+        }
+      ],
+      "checks_failed": [],
+      "checks_skipped": [],
+      "mandatory_checks_skipped_on_complete_run": [],
+      "all_green": true,
+      "rules": "Any FAIL is red on every invocation. A check group is SKIPPED only when its inputs were not computed in that invocation, is always printed with its reason and counted, and is tolerated on a PARTIAL invocation only. On a COMPLETE run (--all without --skip-probes) a skipped mandatory group is itself a failure. Implemented in the pure function evaluate_run()."
     }
   },
   "mismatches": [],
   "timings_seconds": {
-    "run_oracles_all_wallclock": 97.034,
-    "pytest_full_suite_wallclock": 103.4,
+    "run_oracles_all_wallclock": 92.372,
+    "pytest_full_suite_wallclock": 234.87,
     "per_result_set": {
-      "Q01-CANONICAL": 5.725,
-      "Q01-BEFORE-FIRST": 5.019,
-      "Q01-UNKNOWN-GAP": 3.43,
-      "Q01-EOL-BOUNDARY": 3.017,
+      "Q01-CANONICAL": 4.843,
+      "Q01-BEFORE-FIRST": 3.941,
+      "Q01-UNKNOWN-GAP": 2.947,
+      "Q01-EOL-BOUNDARY": 3.851,
       "Q01-INVALID-AIRCRAFT-ID": 0.0,
-      "Q02-CANONICAL": 2.397,
-      "Q02-NO-SPELLS": 2.35,
-      "Q03-CANONICAL": 3.178,
-      "Q04-CANONICAL": 2.559,
-      "Q05-CANONICAL": 6.808,
+      "Q02-CANONICAL": 2.353,
+      "Q02-NO-SPELLS": 2.395,
+      "Q03-CANONICAL": 3.604,
+      "Q04-CANONICAL": 2.507,
+      "Q05-CANONICAL": 9.024,
       "Q05-INELIGIBLE-ENDPOINT": 0.0,
-      "Q06-CANONICAL": 4.695,
+      "Q06-CANONICAL": 2.58,
       "Q06-INCOMPLETE-ENDPOINT": 0.0,
       "Q06-MISSING-CARRIER-ROLE": 0.0,
       "Q06-INVALID-DATE": 0.0,
-      "Q07-MARKETING": 2.844,
-      "Q07-OPERATING": 3.017,
-      "Q07-KNOWLEDGE-END-EMPTY": 2.906,
+      "Q07-MARKETING": 2.964,
+      "Q07-OPERATING": 2.982,
+      "Q07-KNOWLEDGE-END-EMPTY": 2.891,
       "Q07-MISSING-KNOWLEDGE-DATE": 0.0,
       "Q07-MISSING-OPERATING-DATE": 0.0,
       "Q07-MISSING-CARRIER-ROLE": 0.0,
-      "Q08-CANONICAL": 4.383,
-      "Q08-ANOMALIES": 5.247,
-      "Q08-NOT-FOUND": 7.304
+      "Q08-CANONICAL": 4.281,
+      "Q08-ANOMALIES": 6.372,
+      "Q08-NOT-FOUND": 6.16
     },
     "slowest_result_set": "Q05-CANONICAL"
   },
@@ -1565,6 +1617,30 @@
       "status": "RESOLVED -- upheld and re-based on stronger evidence than either the reviewer or DATA-04b originally cited. Pinned by test.",
       "load_bearing_corroboration": "The SYN-ANOM ordinals are assigned by ascending flight_id, so the numbering only tracks the fixture author's flight-id choices and corroborates DV-25 rather than independently establishing it (DATA-04b's second objection, upheld). What carries weight is WHICH flight the author assigned each class: 8107 BACKWARD_TIME, 8108 BROKEN_CONTINUITY, 8109 DIVERSION_ENDPOINT_CONFLICT -- DV-25's order, against the array. Pinned by test_fixture_class_to_flight_assignment_corroborates_dv25.",
       "pinned_by": "test_frozen_manifest_anomaly_precedence_array_is_self_inconsistent asserts all three legs: the frozen rows still equal DV-25, the array still contradicts them at exactly positions 6/7/8 on exactly those three classes, and the oracle CASE arms follow the rows rather than the array. Proven non-vacuous: each of the three failure modes -- array silently 'fixed' to agree, frozen rows changed, oracle reverted to array order -- was injected in memory and each fires with a distinct actionable message, including an explicit instruction not to delete the assertion. So the divergence cannot silently resolve."
+    },
+    {
+      "id": "DATA-04b-OI-9",
+      "severity": "medium",
+      "status": "FIXED in this task; pinned by six tests",
+      "title": "Harness defect: cross-cutting checks with uncomputed inputs reported a hard FAIL on partial invocations, and --skip-probes passed vacuously",
+      "found_by": "DATA-04a, while running this Q08 oracle as a control; reproduced independently by the orchestrator. Not found by DATA-04b's own gates, which only ever exercised --all.",
+      "detail": "Three distinct defects in run_oracles.py main(), of which only the first was reported. (1) verify_q05_closure ran unconditionally but is computed from the live Q05-CANONICAL rows, so any selection excluding Q05 -- for example --question Q08 -- produced 'FAIL q05 cross-question closure' and drove all_green to False and the exit code to 1, on a fully supported invocation whose answers were all correct. (2) LATENT AND MASKED BY THE FIRST: under --skip-probes the probe and truth-table lists were set to [], and the all_green expression used all(... for x in []) which is vacuously True. Once defect 1 was fixed, --skip-probes would have reported all_green=True having run zero of the 40 probe checks and zero of the 7 truth tables -- 'zero failures because we did not look', the exact failure mode this task had been careful to avoid everywhere else. It only stayed hidden because the spurious closure FAIL kept those runs red for the wrong reason. (3) all_green on a partial selection was indistinguishable in the summary from a full pass, so a green partial run could be quoted as a green demo.",
+      "why_it_mattered": "A check that cries wolf on a routine partial run trains readers to discount FAIL lines, which destroys the value of every other check in the suite. GATE-01's prep_demo.py has to verify individual questions, so a spurious non-zero exit from --question Q0n would either fail the gate or teach the gate to mask it.",
+      "fix": "Every cross-cutting check is now a check group with an explicit status of PASS, FAIL or SKIPPED. A group is SKIPPED only when its inputs were not computed in this invocation; the skip is always printed with its reason and always counted in summary.checks_skipped and summary.check_groups -- never silently passed and never omitted. The verdict rules are extracted into the pure function evaluate_run(): any FAIL is red on every invocation; a skip is tolerated on a PARTIAL invocation only; and on a COMPLETE run (--all without --skip-probes) a skipped mandatory group is itself a failure, so --all cannot be weakened by declining to look. The summary now carries invocation.complete_run and the console prints 'complete run' or 'PARTIAL selection' on the totals line. verify_q05_closure still returns a hard FAIL when Q05 WAS selected but produced no rows, which is a genuine upstream break rather than a missing input.",
+      "distinction_preserved": "SKIPPED means 'inputs absent from this invocation'. FAIL means 'evaluated and wrong', and also covers 'selected but produced nothing'. The two are never conflated: no code path turns a FAIL into a SKIP.",
+      "pinned_by": [
+        "test_partial_run_tolerates_a_skipped_check",
+        "test_complete_run_refuses_a_skipped_mandatory_check (--all cannot be weakened)",
+        "test_a_failed_check_is_always_hard (parameterised over partial and complete)",
+        "test_a_failed_result_set_is_always_hard",
+        "test_skipped_is_never_silently_passed",
+        "test_partial_selection_excluding_q05_exits_zero_with_closure_skipped (live, exit code + stdout)",
+        "test_skip_probes_reports_skipped_groups_rather_than_passing_them_silently (live, defect 2)",
+        "test_a_broken_closure_on_a_full_run_still_exits_non_zero (live, injects a closure FAIL)",
+        "test_complete_run_exits_zero_and_skips_nothing (live, asserts checks_skipped == [])"
+      ],
+      "impact_on_business_result": "none; no answer, oracle or expected row was involved. The reported results were correct throughout -- only the run verdict was wrong.",
+      "process_note": "This is the loop working: another agent exercised the oracle through an invocation DATA-04b's own gates never used. DATA-04b had reported GREEN on the strength of --all alone, which was true but incomplete -- all_green=False on a supported invocation is not green. Lesson recorded: gate every supported invocation shape, not just the happy one."
     }
   ],
   "reruns": {
@@ -1693,5 +1769,40 @@
       ],
       "dissent_outcome": "Both DATA-04b objections upheld. Objection 1 (rank 6 came from the frozen manifest field, not a free choice) was independently verified by the orchestrator against EXPECTED_ANSWERS.yaml:199 and the correction recorded against the review; but the resolution went the other way, because the manifest's own Q08-ANOMALIES rows follow DV-25 and contradict its array. Objection 2 (the SYN-ANOM numbering corroborates DV-25 rather than establishing it, since the ordinals track flight_id) upheld and now in the decision log. Three DATA-04b positions accepted as argued: segment_id stays under both verdicts, Q08 is classified SORT-KEY STRING TEMPLATE-ADOPTED / SEQUENCE DERIVED, and OI-5/6/7 are carried as declared divergences with QUERY-ROT to be bound to one cycle scope explicitly."
     }
-  ]
+  ],
+  "gate_evidence": {
+    "verified_at": "2026-09-02T10:24:55.406346+00:00",
+    "invocations": [
+      {
+        "command": "DATA04B_SKIP_LIVE=1 .venv/bin/pytest data/test_oracles.py -q",
+        "exit_code": 0,
+        "result": "45 passed, 17 skipped",
+        "wallclock_seconds": 0.15
+      },
+      {
+        "command": ".venv/bin/pytest data/test_oracles.py -q",
+        "exit_code": 0,
+        "result": "62 passed",
+        "wallclock_seconds": 234.87
+      },
+      {
+        "command": ".venv/bin/python data/run_oracles.py --question Q08",
+        "exit_code": 0,
+        "result": "3 passed, 0 failed, 1 check group skipped, all_green=True, PARTIAL selection",
+        "skipped": [
+          "q05_cross_question_closure"
+        ],
+        "was_the_reported_defect": true,
+        "wallclock_seconds": 46.286
+      },
+      {
+        "command": ".venv/bin/python data/run_oracles.py --all",
+        "exit_code": 0,
+        "result": "24 passed, 0 failed, 0 check groups skipped, all_green=True, complete run",
+        "fail_lines": 0,
+        "skip_lines": 0,
+        "wallclock_seconds": 92.372
+      }
+    ]
+  }
 }

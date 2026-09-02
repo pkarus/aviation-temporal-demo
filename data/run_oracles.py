@@ -606,6 +606,15 @@ def verify_declared_hashes(doc: dict) -> list[dict[str, Any]]:
 
 
 def verify_q05_closure(doc: dict, q05_rows: list[dict] | None) -> dict[str, Any]:
+    """Cross-question closure over the live Q05-CANONICAL rows.
+
+    Only call this when Q05-CANONICAL was actually in the selection. When it was
+    not, the check has no inputs and must be reported SKIPPED by the caller, not
+    FAIL -- a check that cries wolf on a routine partial run teaches readers to
+    ignore FAIL lines. When Q05-CANONICAL *was* selected but produced no rows,
+    that is a genuine FAIL: the closure could not be evaluated because something
+    upstream broke.
+    """
     closure = doc["cross_question_event_closure"]
     out: dict[str, Any] = {"checks": []}
 
@@ -613,7 +622,9 @@ def verify_q05_closure(doc: dict, q05_rows: list[dict] | None) -> dict[str, Any]
         out["checks"].append({"name": name, "verdict": "PASS" if ok else "FAIL", "detail": detail})
 
     if q05_rows is None:
-        add("q05_closure", False, "Q05-CANONICAL did not execute")
+        add("q05_closure", False,
+            "Q05-CANONICAL was in the selection but produced no rows, so the closure could not "
+            "be evaluated")
         out["verdict"] = "FAIL"
         return out
 
@@ -753,6 +764,34 @@ HARD_TEST_EVIDENCE = {
 }
 
 
+def evaluate_run(result_set_failures: int, check_groups: list[dict[str, Any]],
+                 complete_run: bool) -> dict[str, Any]:
+    """Decide the run verdict from the result sets and the check groups.
+
+    The rules, in one place so they can be tested without Snowflake:
+
+    * Any FAIL -- in a result set or in a check group -- makes the run red.
+    * A check group is SKIPPED only when its inputs were not computed in this
+      invocation. On a PARTIAL invocation a skip is reported and counted but
+      does not make the run red: a check that cries wolf on a routine partial
+      run teaches readers to ignore FAIL lines.
+    * On a COMPLETE run (--all without --skip-probes) nothing mandatory may be
+      skipped. A mandatory group skipped there is itself a failure, so --all can
+      never be weakened by declining to look.
+    """
+    failed = [g["name"] for g in check_groups if g["status"] == "FAIL"]
+    skipped = [g["name"] for g in check_groups if g["status"] == "SKIPPED"]
+    mandatory_skipped = ([g["name"] for g in check_groups
+                          if g["status"] == "SKIPPED" and g["mandatory_on_complete_run"]]
+                         if complete_run else [])
+    return {
+        "checks_failed": failed,
+        "checks_skipped": skipped,
+        "mandatory_checks_skipped_on_complete_run": mandatory_skipped,
+        "all_green": (result_set_failures == 0 and not failed and not mandatory_skipped),
+    }
+
+
 def run_truth_tables(doc: dict) -> list[dict[str, Any]]:
     out = []
     by_id = {t["truth_table_id"]: t for t in doc["contract_truth_tables"]}
@@ -845,21 +884,75 @@ def main() -> int:
             with open(os.path.join(OUTPUT_DIR, f"{rsid}.json"), "w") as fh:
                 json.dump(rec, fh, indent=2, sort_keys=False)
 
+    # ---------------------------------------------------------------------
+    # Cross-cutting checks.
+    #
+    # Every check group carries an explicit status of PASS, FAIL or SKIPPED.
+    # A group is SKIPPED only when its inputs were not computed in THIS
+    # invocation; a skip is always printed with its reason and always counted in
+    # the summary, never silently passed and never omitted. A complete run
+    # (--all without --skip-probes) may not skip anything: a mandatory group
+    # that is skipped there is itself a failure, so a partial invocation can
+    # never be mistaken for a full pass.
+    # ---------------------------------------------------------------------
+    complete_run = bool(args.all) and not args.skip_probes
+    check_groups: list[dict[str, Any]] = []
+
+    def record_group(name: str, status: str, mandatory: bool = True,
+                     skip_reason: str | None = None, detail: Any = None) -> dict[str, Any]:
+        group = {"name": name, "status": status, "mandatory_on_complete_run": mandatory,
+                 "skip_reason": skip_reason, "detail": detail}
+        check_groups.append(group)
+        return group
+
+    # Declared manifest preservation hashes: parsed from EXPECTED_ANSWERS.yaml
+    # alone, so they are selection-independent and can never be skipped.
     hashes = verify_declared_hashes(doc)
     for c in hashes:
         print(f"{c['verdict']:<5} hash {c['name']}")
+    record_group("declared_preservation_hashes",
+                 "FAIL" if any(c["verdict"] != "PASS" for c in hashes) else "PASS",
+                 detail={"checks": len(hashes)})
 
+    # Q05 cross-question closure: needs the live Q05-CANONICAL rows.
     q05 = next((r for r in records if r["result_set_id"] == "Q05-CANONICAL"), None)
-    closure = verify_q05_closure(doc, q05.get("actual_rows") if q05 and q05.get("query_executed") else None)
-    print(f"{closure['verdict']:<5} q05 cross-question closure")
+    if q05 is None:
+        closure = {"verdict": "SKIPPED", "checks": [],
+                   "skip_reason": "Q05-CANONICAL is not in this selection; the closure is computed "
+                                  "from its live rows"}
+        print(f"{'SKIP':<5} q05 cross-question closure ({closure['skip_reason'].split(';')[0]})")
+        record_group("q05_cross_question_closure", "SKIPPED", skip_reason=closure["skip_reason"])
+    else:
+        rows = q05.get("actual_rows") if q05.get("query_executed") else None
+        closure = verify_q05_closure(doc, rows)
+        print(f"{closure['verdict']:<5} q05 cross-question closure")
+        record_group("q05_cross_question_closure", closure["verdict"])
 
-    probes = [] if args.skip_probes else run_probes()
-    for p in probes:
-        print(f"{p['verdict']:<5} probe {p['probe']}")
+    skip_probes_reason = "--skip-probes was passed on the command line"
+    if args.skip_probes:
+        probes = []
+        print(f"{'SKIP':<5} adversarial probes ({skip_probes_reason})")
+        record_group("adversarial_probes", "SKIPPED", skip_reason=skip_probes_reason)
+    else:
+        probes = run_probes()
+        for p in probes:
+            print(f"{p['verdict']:<5} probe {p['probe']}")
+        record_group("adversarial_probes",
+                     "FAIL" if any(p["verdict"] != "PASS" for p in probes) else "PASS",
+                     detail={"probes": len(probes),
+                             "checks": sum(len(p["rows"]) for p in probes)})
 
-    truth_tables = [] if args.skip_probes else run_truth_tables(doc)
-    for t in truth_tables:
-        print(f"{t['verdict']:<5} truth-table {t['truth_table_id']}")
+    if args.skip_probes:
+        truth_tables = []
+        print(f"{'SKIP':<5} contract truth tables ({skip_probes_reason})")
+        record_group("contract_truth_tables", "SKIPPED", skip_reason=skip_probes_reason)
+    else:
+        truth_tables = run_truth_tables(doc)
+        for t in truth_tables:
+            print(f"{t['verdict']:<5} truth-table {t['truth_table_id']}")
+        record_group("contract_truth_tables",
+                     "FAIL" if any(t["verdict"] != "PASS" for t in truth_tables) else "PASS",
+                     detail={"truth_tables": len(truth_tables)})
 
     summary = {
         "generated_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
@@ -887,11 +980,21 @@ def main() -> int:
     failures = [r for r in records if r["verdict"] != "PASS"]
     summary["passed"] = len(records) - len(failures)
     summary["failed"] = len(failures)
-    summary["all_green"] = (not failures
-                            and all(c["verdict"] == "PASS" for c in hashes)
-                            and closure["verdict"] == "PASS"
-                            and all(p["verdict"] == "PASS" for p in probes)
-                            and all(t["verdict"] == "PASS" for t in truth_tables))
+
+    verdict = evaluate_run(len(failures), check_groups, complete_run)
+    failed_groups = verdict["checks_failed"]
+    skipped_groups = verdict["checks_skipped"]
+    mandatory_skipped_on_complete_run = verdict["mandatory_checks_skipped_on_complete_run"]
+    summary["invocation"] = {
+        "all": bool(args.all), "questions": sorted(wanted_q),
+        "result_sets": sorted(wanted_rs), "skip_probes": bool(args.skip_probes),
+        "complete_run": complete_run,
+        "note": ("A complete run is --all without --skip-probes and checks everything. "
+                 "all_green on a partial invocation means only that everything SELECTED passed; "
+                 "read summary.check_groups for what was skipped."),
+    }
+    summary["check_groups"] = check_groups
+    summary.update(verdict)
     with open(os.path.join(OUTPUT_DIR, "_summary.json"), "w") as fh:
         json.dump(summary, fh, indent=2)
     with open(os.path.join(OUTPUT_DIR, "_probes.json"), "w") as fh:
@@ -899,8 +1002,17 @@ def main() -> int:
     with open(os.path.join(OUTPUT_DIR, "_truth_tables.json"), "w") as fh:
         json.dump(truth_tables, fh, indent=2)
 
+    scope = "complete run" if complete_run else "PARTIAL selection"
     print(f"\n{summary['passed']} passed, {summary['failed']} failed, "
-          f"all_green={summary['all_green']}, {summary['total_seconds']}s")
+          f"{len(skipped_groups)} check group(s) skipped, "
+          f"all_green={summary['all_green']}, {scope}, {summary['total_seconds']}s")
+    if skipped_groups:
+        for g in check_groups:
+            if g["status"] == "SKIPPED":
+                print(f"  skipped: {g['name']} -- {g['skip_reason']}")
+    if mandatory_skipped_on_complete_run:
+        print(f"  ERROR: a complete run skipped mandatory checks: "
+              f"{mandatory_skipped_on_complete_run}")
     if args.report:
         os.makedirs(os.path.dirname(args.report), exist_ok=True)
         with open(args.report, "w") as fh:

@@ -577,6 +577,129 @@ def test_live_cell_accounting_partitions_every_result_set(live_run):
                 + rec["strictly_derived_cells"] == rec["total_cells"]), rec
 
 
+# ---------------------------------------------------------------------------
+# Run-verdict semantics: skipped is not passed, and --all is not weakened
+# ---------------------------------------------------------------------------
+def _group(name, status, mandatory=True):
+    return {"name": name, "status": status, "mandatory_on_complete_run": mandatory,
+            "skip_reason": None, "detail": None}
+
+
+def test_partial_run_tolerates_a_skipped_check():
+    v = ro.evaluate_run(0, [_group("q05_cross_question_closure", "SKIPPED")], complete_run=False)
+    assert v["all_green"] is True
+    assert v["checks_skipped"] == ["q05_cross_question_closure"]
+    assert v["mandatory_checks_skipped_on_complete_run"] == []
+
+
+def test_complete_run_refuses_a_skipped_mandatory_check():
+    """--all must not be weakened by declining to look."""
+    v = ro.evaluate_run(0, [_group("adversarial_probes", "SKIPPED")], complete_run=True)
+    assert v["all_green"] is False
+    assert v["mandatory_checks_skipped_on_complete_run"] == ["adversarial_probes"]
+
+
+@pytest.mark.parametrize("complete", [False, True])
+def test_a_failed_check_is_always_hard(complete):
+    """A genuine FAIL is red on every invocation, partial or complete."""
+    v = ro.evaluate_run(0, [_group("q05_cross_question_closure", "FAIL")], complete_run=complete)
+    assert v["all_green"] is False
+    assert v["checks_failed"] == ["q05_cross_question_closure"]
+
+
+def test_a_failed_result_set_is_always_hard():
+    v = ro.evaluate_run(1, [_group("q05_cross_question_closure", "PASS")], complete_run=False)
+    assert v["all_green"] is False
+
+
+def test_skipped_is_never_silently_passed():
+    """A skip must be visible in the summary, not absent from it."""
+    v = ro.evaluate_run(0, [_group("adversarial_probes", "SKIPPED"),
+                            _group("contract_truth_tables", "SKIPPED")], complete_run=False)
+    assert sorted(v["checks_skipped"]) == ["adversarial_probes", "contract_truth_tables"]
+    assert "adversarial_probes" not in v["checks_failed"]
+
+
+def _invoke(*argv, cwd=REPO_ROOT):
+    import subprocess
+    proc = subprocess.run(
+        [os.path.join(REPO_ROOT, ".venv", "bin", "python"),
+         os.path.join(REPO_ROOT, "data", "run_oracles.py"), *argv],
+        capture_output=True, text=True, cwd=cwd)
+    with open(os.path.join(ro.OUTPUT_DIR, "_summary.json")) as fh:
+        return proc, json.load(fh)
+
+
+@live
+def test_partial_selection_excluding_q05_exits_zero_with_closure_skipped():
+    """The reported defect: --question Q08 must not report a spurious FAIL."""
+    proc, summary = _invoke("--result-set", "Q08-CANONICAL", "--skip-probes")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "FAIL" not in proc.stdout, proc.stdout
+    assert "SKIP  q05 cross-question closure" in proc.stdout
+    assert summary["all_green"] is True
+    assert summary["invocation"]["complete_run"] is False
+    assert "q05_cross_question_closure" in summary["checks_skipped"]
+    # and it is reported, not omitted
+    names = {g["name"] for g in summary["check_groups"]}
+    assert "q05_cross_question_closure" in names
+    group = next(g for g in summary["check_groups"]
+                 if g["name"] == "q05_cross_question_closure")
+    assert group["status"] == "SKIPPED" and group["skip_reason"]
+
+
+@live
+def test_skip_probes_reports_skipped_groups_rather_than_passing_them_silently():
+    """The latent second defect: --skip-probes used to pass 0 probes vacuously."""
+    proc, summary = _invoke("--result-set", "Q08-CANONICAL", "--skip-probes")
+    assert proc.returncode == 0
+    assert set(summary["checks_skipped"]) >= {"adversarial_probes", "contract_truth_tables"}
+    for name in ("adversarial_probes", "contract_truth_tables"):
+        g = next(x for x in summary["check_groups"] if x["name"] == name)
+        assert g["status"] == "SKIPPED" and "--skip-probes" in g["skip_reason"]
+
+
+@live
+def test_a_broken_closure_on_a_full_run_still_exits_non_zero(monkeypatch):
+    """--all must stay mandatory: break the closure and require a hard failure.
+
+    Runs in-process against a Q05-including selection so the FAIL path is the
+    real one, and separately asserts the complete-run rule via evaluate_run.
+    """
+    import sys
+    original = ro.verify_q05_closure
+
+    def broken(doc, rows):
+        out = original(doc, rows)
+        out["verdict"] = "FAIL"
+        out["checks"].append({"name": "injected_defect", "verdict": "FAIL",
+                              "detail": "deliberately broken closure"})
+        return out
+
+    monkeypatch.setattr(ro, "verify_q05_closure", broken)
+    monkeypatch.setattr(sys, "argv",
+                        ["run_oracles.py", "--result-set", "Q05-CANONICAL", "--skip-probes"])
+    rc = ro.main()
+    assert rc != 0, "a broken Q05 closure must exit non-zero"
+    with open(os.path.join(ro.OUTPUT_DIR, "_summary.json")) as fh:
+        summary = json.load(fh)
+    assert summary["all_green"] is False
+    assert "q05_cross_question_closure" in summary["checks_failed"]
+    # and the complete-run rule independently
+    assert ro.evaluate_run(0, [_group("q05_cross_question_closure", "FAIL")],
+                           complete_run=True)["all_green"] is False
+
+
+@live
+def test_complete_run_exits_zero_and_skips_nothing():
+    proc, summary = _invoke("--all")
+    assert proc.returncode == 0, proc.stdout[-3000:] + proc.stderr[-2000:]
+    assert summary["invocation"]["complete_run"] is True
+    assert summary["checks_skipped"] == [], summary["checks_skipped"]
+    assert summary["all_green"] is True
+    assert len(summary["result_sets"]) == 24
+
+
 @live
 def test_run_is_all_green(live_run):
     assert live_run["all_green"], json.dumps(

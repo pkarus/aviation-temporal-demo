@@ -370,3 +370,20 @@ ORCH-00 ─┬─ SPEC-01 → SPEC-02 → SPEC-03 → DATA-01 → DATA-02 → DA
 - Keep confidential inputs outside the repo and do not externally host the HTML without authorization.
 - If the overnight run cannot pass UC2, preserve the verified UC1 vertical slice and narrow the agent,
   HTML, and claims. Never hide missing functionality.
+
+## Scope reduction, 2026-09-02
+
+The user narrowed the deliverable to the ontology plus the eight RAI queries. `NOTEBOOK-01`,
+`NOTEBOOK-02`, `AGENT-01`, `AGENT-02`, `LAB-01`, `PERF-01`, `HTML-01`, `REDTEAM-01`, `GATE-01` and
+`HANDOFF-01` are descoped and not attempted. Their definitions above are left intact and unedited,
+with dependencies unchanged, so a later session can resume any of them directly.
+
+Retained: `MODEL-01`, `MODEL-02`, `QUERY-UC1`, `QUERY-UC2`, `QUERY-ROT`, `QUERY-INT`, each still bound
+by the success criteria written above. `QUERY-INT` remains the terminal gate for this reduced scope
+and still records cold and warm timings.
+
+The completion protocol in the "Orchestrator contract" section still applies to every retained task.
+In particular, expected answers stay frozen at `SPEC-03`, a failed task stays failed until its own
+criteria rerun green, and no success may rest on an import check, a mock, or a producer assertion
+where live execution is required. See `BRIEF.md` for what this reduction costs relative to the
+original definition of done.

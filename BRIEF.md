@@ -130,3 +130,38 @@ UNIQUE/PK/FK NOT ENFORCED NORELY metadata in place, and CHANGE_TRACKING ON every
 rerun end to end to prove idempotency. One repair was needed: the loader's own DDL test banned the
 substring `_STAGE`, which falsely matched the single scoped internal stage that D-0017 prescribes
 for the PUT/COPY path; the assertion now bans `STAGING` and pins the stage count instead.
+
+## Scope reduction, 2026-09-02
+
+The user narrowed the deliverable mid-run to **the ontology plus the eight RAI queries**. The
+following `TASK_GRAPH.md` tasks are descoped and are NOT attempted:
+
+| Task | Status |
+|---|---|
+| `NOTEBOOK-01` local technical notebook | descoped |
+| `NOTEBOOK-02` Snowsight notebook | descoped |
+| `AGENT-01` Snowflake Intelligence agent | descoped |
+| `AGENT-02` adversarial agent evaluation | descoped |
+| `LAB-01` skill-assisted ontology editing lab | descoped |
+| `HTML-01` self-contained `RUNNING.html` runbook | descoped |
+| `REDTEAM-01` independent attack pass | descoped as a task; its findings against DATA-04 are already recorded in D-0018 and D-0021 |
+| `PERF-01` full performance report | descoped; cold/warm timings are still captured inside `QUERY-INT` |
+| `GATE-01` `prep_demo.py` | descoped |
+| `HANDOFF-01` handoff briefing | descoped |
+
+Retained and still bound by their original success criteria: `MODEL-01`, `MODEL-02`, `QUERY-UC1`,
+`QUERY-UC2`, `QUERY-ROT`, `QUERY-INT`.
+
+**What this costs, stated plainly so nobody is misled later.** The `AGENTS.md` definition of done and
+the `CLAUDE.md` exit definition both require `prep_demo.py` to pass cold and warm over the notebook,
+agent, figures and HTML. Under this reduction that definition is **not met**, and the demo is not
+shippable as a customer-facing 30-minute technical demo: there is no notebook to present from, no
+Snowflake Intelligence access path, and no runbook to narrate. What it will be is the verified
+engineering core — a strict-mode ontology over a hash-verified source layer, answering all eight
+golden questions live against frozen expected answers that an independent SQL oracle already
+reproduces. That is the part that had to be right first, and it is the part that everything descoped
+here would have been built on top of.
+
+The descoped tasks remain fully specified in `TASK_GRAPH.md` with their dependencies intact, so a
+later session can resume any of them without re-deriving anything. Nothing about the retained work
+forecloses them.
