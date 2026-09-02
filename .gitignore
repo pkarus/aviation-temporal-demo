@@ -38,3 +38,8 @@ rai_code/manual/build/
 # Demo-day artifacts that should be regenerated, not committed
 query_results/
 *.log
+
+# Design and reasoning record consumed by later sessions (large generated dumps stay ignored)
+!build/design/
+build/design/*
+!build/design/*.md

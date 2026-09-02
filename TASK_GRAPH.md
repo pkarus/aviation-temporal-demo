@@ -354,6 +354,67 @@ ORCH-00 ─┬─ SPEC-01 → SPEC-02 → SPEC-03 → DATA-01 → DATA-02 → DA
   and artifact provenance are understood; the handoff contains no unverified claims.
 - **Skills:**
 
+## Current orchestration state (2026-09-02, orchestrator restart)
+
+The previous autonomous run ended inside DATA-03 with the loader written but unexecuted. D-0017
+superseded that publication apparatus. This section is the resume point; it is updated in place,
+not appended to, so it always describes now.
+
+### Green and committed
+
+| Task | Evidence |
+|---|---|
+| ORCH-00, INFRA-01/02/03, ENV-01 | role, database, grants and venv verified live |
+| SPEC-01/02/03 | source contract, attribute authority, Neo4j mapping, 8 questions, 24 frozen result sets, parity matrix |
+| DATA-01/02 | deterministic generator, manifest 1.1.0, byte-identical across clean and reordered runs |
+| DATA-03 | 145,054 rows across ten SOURCE tables, change tracking on, counts equal the manifest |
+| PROBE-01 | twelve PyRel uncertainties resolved by live probe, in `build/design/PROBE_RESULTS.md` |
+| DATA-04a | MODEL_INPUT canonical temporal layer built |
+| DATA-04b | independent SQL oracles reproduce all 24 frozen result sets |
+| MODEL-01/02 | 44 concepts, 1292 properties, 170 rules; standalone artifact generated from the package; 93 of 93 gate tests verified green by the orchestrator on its own 21-minute live run |
+| FIDELITY-01 | Neo4j structural audit; found one supplied edge missing and three documents falsely claiming it; all repairs landed |
+
+### In flight
+
+QUERY-UC1 (Q01-Q04), QUERY-UC2 (Q05-Q07), QUERY-ROT (Q08), ENRICH-02 (local generator
+enrichment), and the reference-pattern extraction feeding the notebook, agent, HTML and gate
+phases.
+
+### The open substantive problem
+
+Measured live, the loaded data does not tell the customer's story. `aircraft_state` and
+`aircraft_status` average 1.005 and 1.004 versions per aircraft with only 2 of 999 aircraft ever
+changing, while `aircraft_type` and `engine_type` average 48.034 versions each. The status
+vocabulary across 48,000 events is In Service 47,991, Storage 7, Maintenance 2. Both directions
+contradict the customer document: they describe status as changing repeatedly with aircraft coming
+out of storage back into service, and type changes as rare conversions. Golden question 2 is
+entirely about In Service to Storage to In Service spells and has almost nothing to show; golden
+question 3's ten-year month-end series is nearly flat.
+
+D-0023 through D-0026 accept an additive enrichment that raises state to 8.57 versions, status to
+2.32 with 467 aircraft changing, 439 storage spells, and reduces type and engine to 1.20 and 1.31
+real conversions. No frozen expected value may move; 24 new result sets are added instead.
+
+### Sequencing rule for the enrichment
+
+ENRICH-02 is local only: generator, local tests, loader field count, regenerated CSVs. The
+Snowflake reload, the MODEL_INPUT rebuild, the oracle re-verification and the model count
+re-verification are orchestrator-owned and must not start until the three query agents have
+finished, because they query the live model and a mid-flight reload would make their results
+shift under them. Frozen expectations do not move under the enrichment, so queries authored now
+stay valid afterwards.
+
+### Pending operational actions
+
+- Engine auto-suspend on `aviation_temporal_logic_s` was raised from 5 to 60 minutes to make an
+  iterative build possible against a 631-second cold start. Set it back before handoff:
+  `.venv/bin/rai reasoners alter --type Logic --name aviation_temporal_logic_s --auto-suspend-mins 5`
+- After the enrichment reload, add the 24 new expected result sets (a separate task, since they
+  must be derived from the enriched data).
+- `RouteState.schedules` is declared and correct but evaluates to zero rows: the single non-null
+  `schedule_key` in the current dataset points at a schedule with no route state. The enrichment
+  is the fix.
+
 ## Orchestrator contract
 
 - Dispatch a task only after every dependency is green.
