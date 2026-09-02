@@ -83,7 +83,9 @@ bind_scalars(
 # passed only *vacuously* against the raw lineage - the one coalescing DV-20 key that absorbs
 # two lineage rows has NULL PH-02 on both - so relying on that pass would have been relying on a
 # fixture accident. Binding from the winner makes the functional dependency true by
-# construction, which is what P0-10.3 requires anyway. Non-null on exactly one of 19,996 rows.
+# construction, which is what P0-10.3 requires anyway. Non-null on 7,951 of 19,446 canonical
+# rows after the D-0023 enrichment; it was 1 of 19,996 before, which is why the binding had to
+# be true by construction rather than by fixture accident.
 PassengerFlight.schedule = model.Property(
     f"{PassengerFlight:plan} realises {Schedule:schedule}"
 )

@@ -317,9 +317,11 @@ def bind_scalars(concept, table, key: Mapping[str, Any], mapping: Mapping[str, s
 #   gate asserts per-column non-null counts against SQL, not just row counts, which is the only
 #   check that catches it.
 #
-# D-0019: the row-scoped ``CODE_RESOLUTION`` (546,494 rows), ``CODE_RESOLUTION_CANDIDATE``
-# (424,605) and ``CODE_RESOLUTION_INPUT`` (546,494) are deliberately NOT bound. Link semantics
-# need only the distinct-code projection ``CODE_RESOLUTION_CODE`` (390 rows), and every other
+# D-0027 SUPERSEDES D-0019 here: the row-scoped ``CODE_RESOLUTION`` (784,140 rows),
+# ``CODE_RESOLUTION_CANDIDATE`` (627,424) and ``CODE_RESOLUTION_INPUT`` (784,140) ARE now bound.
+# D-0019 excluded them on a performance premise that measurement refuted: binding all three cost
+# 0.18s on first query and no measurable warm delta. The distinct-code projection
+# ``CODE_RESOLUTION_CODE`` (660 rows) is retained for link semantics, and every other
 # MODEL_INPUT object already carries its own resolved target id plus resolution status. The
 # timed experiment that settled it is recorded in ``build/task_reports/MODEL-01.json``; the
 # tables stay materialized and reachable from SQL.
@@ -2605,7 +2607,9 @@ bind_scalars(
 # passed only *vacuously* against the raw lineage - the one coalescing DV-20 key that absorbs
 # two lineage rows has NULL PH-02 on both - so relying on that pass would have been relying on a
 # fixture accident. Binding from the winner makes the functional dependency true by
-# construction, which is what P0-10.3 requires anyway. Non-null on exactly one of 19,996 rows.
+# construction, which is what P0-10.3 requires anyway. Non-null on 7,951 of 19,446 canonical
+# rows after the D-0023 enrichment; it was 1 of 19,996 before, which is why the binding had to
+# be true by construction rather than by fixture accident.
 PassengerFlight.schedule = model.Property(
     f"{PassengerFlight:plan} realises {Schedule:schedule}"
 )

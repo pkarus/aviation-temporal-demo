@@ -1,13 +1,24 @@
 # NEO4J_FIDELITY_AUDIT - structural fidelity of the RAI ontology to the supplied Neo4j model
 
-Audit task FIDELITY-01. Written 2026-09-02 against `rai_code/aviation_model/` as built and
-`build/design/ontology_inventory.json` (the live `inspect.schema()` dump: 44 concepts, 1,292
-properties, 11 bare relationships, SDK 1.20.1), plus live SELECTs against
-`PK_AVIATION_TEMPORAL.MODEL_INPUT`.
+Audit task FIDELITY-01, written 2026-09-02 against `rai_code/aviation_model/` as built.
+**Revised 2026-09-02 by TRUTH-01**, because the model and the data both moved after the audit was
+written and the audit went on asserting the state it found. Every revision is marked in place and
+every superseded finding keeps its original text, because an audit that quietly rewrites its own
+history is worth less than one that is wrong in a dated, traceable way.
+
+Current baseline: `build/design/ontology_inventory.json` regenerated after D-0027 (the live
+`inspect.schema()` dump: **46 concepts, 1,412 properties, 22 concept relationships, 11 bare
+relationships, 37 declared sources, 805 declared columns, SDK 1.20.1**), plus live SELECTs against
+`PK_AVIATION_TEMPORAL.MODEL_INPUT`. The figures the original audit carried here (44 concepts,
+1,292 properties, 34 sources, 749 columns) were correct when written and were the pre-D-0027
+snapshot recorded in `build/task_reports/MODEL-01.json`. `tests/test_model.py::test_inventory_artifact`
+now pins all of them exactly, so this header cannot silently fall behind again.
 
 Every verdict below is grounded in the built code or the live inventory. Where a repo document
 claims a mapping the code does not implement, that is recorded in section C as a documentation
-defect, not accepted as evidence.
+defect, not accepted as evidence. That rule cuts both ways and it caught this document: finding
+A1 below claimed an edge did not exist after it had been built, and the `FULFILLED` row carried a
+population figure two orders of magnitude stale. Both are corrected in place with their history.
 
 ## Element count
 
@@ -18,15 +29,23 @@ names; `HAS` is used once in each use case).
 |---|---|---|---|
 | IDENTICAL | 8 | 2 | 10 |
 | RENAMED | 0 | 6 | 6 |
-| RESHAPED | 2 | 3 | 5 |
+| RESHAPED | 2 | 4 | 6 |
 | MERGED | 1 | 1 | 2 |
 | SPLIT | 0 | 0 | 0 |
-| MISSING | 0 | 1 | 1 |
+| MISSING | 0 | 0 | 0 |
 | **Total** | **11** | **13** | **24** |
 
-Plus **33 ADDED concepts** with no counterpart in the supplied model (44 built concepts minus the
-11 that carry a supplied label). None of the 33 replaces a supplied element; all are
-implementation controls, lineage, evidence, or a calendar.
+**Revised 2026-09-02 (TRUTH-01).** The table as first written read `RESHAPED | 2 | 3 | 5` and
+`MISSING | 0 | 1 | 1`. The one MISSING edge was `(ROUTE_STATE)-[:SCHEDULES]->(PASSENGER_FLIGHT)`,
+which was subsequently built (see the row in section B and the A1 status note in section 1), so it
+moves to RESHAPED and MISSING goes to zero. **No supplied element is missing from the ontology
+today.** That sentence was not true when this audit was written; it is true now, and the audit
+that found the gap is the reason.
+
+Plus **35 ADDED concepts** with no counterpart in the supplied model (46 built concepts minus the
+11 that carry a supplied label). None of the 35 replaces a supplied element; all are
+implementation controls, lineage, evidence, or a calendar. Originally 33 of 44; D-0027 added
+`CodeResolution` and `CodeResolutionCandidate`.
 
 ## A. Node labels
 
@@ -48,23 +67,24 @@ implementation controls, lineage, evidence, or a calendar.
 
 | Neo4j element | Our concept/relationship | Verdict | Detail |
 |---|---|---|---|
-| `(AIRCRAFT)-[:HAS]->(AIRCRAFT_STATE)` `{valid_from, valid_to}` | `Aircraft.daily_assignments` (multi-valued `Relationship`), inverse of `DailyAssignment.aircraft`; plus `Aircraft.audit_assignments` | MERGED | One relationship serves all four Neo4j edges. **There is no dimension-scoped edge from `Aircraft`.** `Aircraft.daily_assignments` ranges over all four dimensions, so the `HAS` edge is recoverable only as `Aircraft.daily_assignments` filtered by the `AircraftStateDailyAssignment` subtype. The design brief section 2.1 specified `Aircraft.state_assignments`; it was not built (grep returns nothing). Cardinality is right in both directions: `assignment -> Aircraft` is a functional `Property`, `Aircraft -> assignments` is an unconstrained `Relationship`. Edge properties `valid_from`/`valid_to` are `DailyAssignment.valid_from` (an identity component) and `DailyAssignment.valid_to`. The parallel audit edge is ADDED - theirs has no equivalent. |
-| `(AIRCRAFT)-[:CONFORMED]->(AIRCRAFT_TYPE)` `{valid_from, valid_to}` | `DailyAssignment.aircraft_type` (`Property`, reading "conformed to"), inverse `AircraftType.daily_assignments`; subtype `AircraftTypeDailyAssignment` | RESHAPED | The single Neo4j edge became a **two-hop path through an association concept**: `Aircraft -> AircraftTypeDailyAssignment -> AircraftType`. That is the right call for a temporal edge with payload, and the reading verb "conformed to" is preserved. What is lost is the direct `Aircraft -> AircraftType` hop: no `Aircraft.conformed_types` exists, so a customer's one-hop Cypher becomes two hops plus a subtype predicate. `Property` (at most one target) means an unresolved configuration is the absence of a fact, matching their zero-target gap. |
+| `(AIRCRAFT)-[:HAS]->(AIRCRAFT_STATE)` `{valid_from, valid_to}` | `Aircraft.daily_assignments` (multi-valued `Relationship`), inverse of `DailyAssignment.aircraft`; plus `Aircraft.audit_assignments` | MERGED | One physical association concept serves all four Neo4j edges, but four dimension-scoped readings recover them. *Revised 2026-09-02 (TRUTH-01): this cell read "**There is no dimension-scoped edge from `Aircraft`.** ... The design brief section 2.1 specified `Aircraft.state_assignments`; it was not built (grep returns nothing)." That was true when audited and is false now.* `Aircraft.state_assignments`, `.type_assignments`, `.engine_assignments` and `.status_assignments` are built at `rai_code/aviation_model/computed_aircraft.py:109-133`, each a `Relationship` defined by a `dimension ==` filter over `DailyAssignment`, so the `HAS` edge is directly enterable and does not have to be recovered by subtype predicate. The unscoped `Aircraft.daily_assignments`, which ranges over all four dimensions, remains available for the general case. Cardinality is right in both directions: `assignment -> Aircraft` is a functional `Property`, `Aircraft -> assignments` is an unconstrained `Relationship`. Edge properties `valid_from`/`valid_to` are `DailyAssignment.valid_from` (an identity component) and `DailyAssignment.valid_to`. The parallel audit edge is ADDED - theirs has no equivalent. |
+| `(AIRCRAFT)-[:CONFORMED]->(AIRCRAFT_TYPE)` `{valid_from, valid_to}` | `DailyAssignment.aircraft_type` (`Property`, reading "conformed to"), inverse `AircraftType.daily_assignments`; subtype `AircraftTypeDailyAssignment` | RESHAPED | The single Neo4j edge became a **two-hop path through an association concept**: `Aircraft -> AircraftTypeDailyAssignment -> AircraftType`. That is the right call for a temporal edge with payload, and the reading verb "conformed to" is preserved. *Revised 2026-09-02 (TRUTH-01): this cell read "What is lost is the direct `Aircraft -> AircraftType` hop: no `Aircraft.conformed_types` exists, so a customer's one-hop Cypher becomes two hops plus a subtype predicate." The direct hop was subsequently built.* `Aircraft.conformed_to` at `computed_aircraft.py:148-170` reads `Aircraft conformed to AircraftType:aircraft_type from Date:valid_from until Date:valid_to`, carrying both supplied edge properties, so a one-hop Cypher pattern stays one hop; the two-hop path through the assignment remains for the rest of its payload. `Property` (at most one target) means an unresolved configuration is the absence of a fact, matching their zero-target gap. |
 | `(AIRCRAFT)-[:EQUIPPED]->(ENGINE_TYPE)` `{valid_from, valid_to}` | `DailyAssignment.engine_type` (`Property`, "equipped with"), inverse `EngineType.daily_assignments`; subtype `EngineTypeDailyAssignment` | RESHAPED | Same shape as `CONFORMED`. Assignment-level `engine_count` and `mixed_engine_set_complete` are additional payload theirs does not carry on the edge. |
-| `(AIRCRAFT)-[:ASSIGNED]->(AIRCRAFT_STATUS)` `{valid_from, valid_to, start_event, event_source}` | `DailyAssignment.status` (`Property`, "assigned status"); subtype `AircraftStatusDailyAssignment` | RESHAPED | Same two-hop reshape. **Provenance is preserved**: `start_event` and `event_source` are properties on the assignment, which is exactly the "edge carries provenance" case with no modelling loss. One asymmetry: **there is no inverse from `AircraftStatus`** (`AircraftStatus` has zero relationships in the inventory), so "which aircraft were ever in Storage" cannot start from the status node the way it can in Cypher. The join is still expressible from the assignment side. |
+| `(AIRCRAFT)-[:ASSIGNED]->(AIRCRAFT_STATUS)` `{valid_from, valid_to, start_event, event_source}` | `DailyAssignment.status` (`Property`, "assigned status"); subtype `AircraftStatusDailyAssignment` | RESHAPED | Same two-hop reshape. **Provenance is preserved**: `start_event` and `event_source` are properties on the assignment, which is exactly the "edge carries provenance" case with no modelling loss. *Revised 2026-09-02 (TRUTH-01): this cell read "One asymmetry: **there is no inverse from `AircraftStatus`** (`AircraftStatus` has zero relationships in the inventory), so 'which aircraft were ever in Storage' cannot start from the status node the way it can in Cypher." Both halves were fixed.* `Aircraft.assigned_status` at `computed_aircraft.py:156-190` gives the direct one-hop reading with both edge dates, and `AircraftStatus.daily_assignments` at `computed_aircraft.py:192-196` gives the inverse, so "which aircraft were ever in Storage" is now enterable from the status node exactly as in Cypher. `AircraftStatus` has one relationship in the live inventory, not zero. |
 | `(ROUTE)-[:HAS]->(ROUTE_STATE)` `{valid_from, valid_to, effective_date, discontinue_date}` | `RouteState.route` (`Property`, "covers") with `.alt()` inverse `Route.states` ("Route has state") | RENAMED | The Neo4j edge recovered exactly, and this is the model's strongest point. Because the FD points state -> route and `Route.states` is an `.alt()` reading over the same fields, it carries no inverse FD, so many concurrently-open states per route are the default rather than a relaxation. Measured live: 1,339 concurrent open states on `SFO->LAX` at knowledge date 2026-08-31, returned without error. The four edge properties moved to the node (see the `ROUTE_STATE` row). No `unique()` over the `Route` slot and no `Route.current_state`, deliberately. |
 | `(ROUTE)-[:STARTS]->(AIRPORT)` | `Route.origin_airport` (`Property`, "Route starts at Airport:origin_airport") | RENAMED | Verb preserved in the reading. Two same-type slots correctly split into two role-labelled Properties rather than one two-slot Relationship. Bound only where `origin_airport_resolution_status == EXACT`; the raw code stays on `Route.origin_station_code_iata` so a failed resolution still shows. No inverse reading from `Airport`. |
 | `(ROUTE)-[:ENDS]->(AIRPORT)` | `Route.destination_airport` (`Property`, "Route ends at Airport:destination_airport") | RENAMED | As above. |
 | `(AIRLINE)-[:OPERATES]->(ROUTE_STATE)` | `RouteState.operating_airline` (`Property`) with `.alt()` inverse `Airline.operates` | IDENTICAL | Edge type name and direction preserved verbatim in the inverse reading `Airline:operating_airline operates RouteState:state`. Never merged with the marketing role. Exact-resolution-only, raw code retained. |
 | `(AIRLINE)-[:COMMERCIALIZES]->(ROUTE_STATE)` | `RouteState.marketing_airline` (`Property`) with `.alt()` inverse `Airline.commercializes` | IDENTICAL | As above. `RouteState.codeshare_airline` is an ADDED third role with no Neo4j counterpart. |
-| `(ROUTE_STATE)-[:SCHEDULES]->(PASSENGER_FLIGHT)` | **nothing** | **MISSING** | **Not deliberate.** No relationship, property or derived rule connects `RouteState` to `PassengerFlight` anywhere in `rai_code/aviation_model/` or in the generated `rai_code/manual/aviation_temporal.py` (grep for `SCHEDULES` / `schedules(` returns zero hits in both). The nearest surrogate, `PassengerFlight.schedule` ("plan realises Schedule"), points at the **schedule identity, not the schedule version**, so the publish-date temporal pin that is the whole point of their edge is absent. Specified in `build/design/ONTOLOGY_DESIGN.md` section 2.8 as `RouteState.schedules = model.Relationship(...)`, and claimed as built in `NEO4J_RAI_MAPPING.md:108` and `NEO4J_PARITY_MATRIX.md:57`. See section A1. |
-| `(AIRCRAFT_FLIGHT)-[:FULFILLED]->(PASSENGER_FLIGHT)` | `AircraftFlight.fulfils` (`Property`) with `.alt()` inverse `PassengerFlight.fulfilled_by` | RENAMED | Direction preserved. Structurally **better** than the property-graph edge: the FD `leg -> plan` is enforced while the inverse carries no FD, so the stopover case (one plan, two legs) loads without an out-of-band constraint. Also correctly optional in both directions, which their document asks for. Two deviations: (a) `fulfils` is derived from `ExactFulfillment` only, so heuristic and ambiguous candidates never satisfy the edge - stricter than their "partial match by design"; (b) it is populated on **4 of 3,900** aircraft flights live, so the edge exists but is barely exercised. |
+| `(ROUTE_STATE)-[:SCHEDULES]->(PASSENGER_FLIGHT)` | `RouteStateSchedules` / `RouteState.schedules` (multi-valued `Relationship`) with the `.alt()` inverse `PassengerFlight.scheduled_by` | RESHAPED (was MISSING) | **Revised 2026-09-02 (TRUTH-01).** *Original verdict, preserved:* "**MISSING. Not deliberate.** No relationship, property or derived rule connects `RouteState` to `PassengerFlight` anywhere in `rai_code/aviation_model/` or in the generated `rai_code/manual/aviation_temporal.py` (grep for `SCHEDULES` / `schedules(` returns zero hits in both)." That was true on the tree as audited and it is false on the tree today. The edge was built in response to this finding and exists at `rai_code/aviation_model/computed_schedule.py:155-169`, with the generated standalone artifact carrying the same definition in `rai_code/manual/aviation_temporal.py`; the same grep now returns hits in both. RESHAPED rather than IDENTICAL because it is **derived, not loaded**: `model.define(RouteStateSchedules(RouteState, PassengerFlight))` fires on a four-clause conjunction - same `Schedule` identity, passenger publish date inside the state's half-open knowledge interval, passenger operating date inside the state's inclusive operating interval, and the operating date's ISO weekday one the state actually operates. That makes the publish-date pin, which the original finding correctly identified as the point of their edge, structural rather than retyped per query. Live population is **7,950 pairs** over 7,950 distinct passenger flights and 2,000 distinct route states (SQL replica of the rule, run 2026-09-02); see the A1 status note in section 1 for the population history. |
+| `(AIRCRAFT_FLIGHT)-[:FULFILLED]->(PASSENGER_FLIGHT)` | `AircraftFlight.fulfils` (`Property`) with `.alt()` inverse `PassengerFlight.fulfilled_by` | RENAMED | Direction preserved. Structurally **better** than the property-graph edge: the FD `leg -> plan` is enforced while the inverse carries no FD, so the stopover case (one plan, two legs) loads without an out-of-band constraint. Also correctly optional in both directions, which their document asks for. Two deviations: (a) `fulfils` is derived from `ExactFulfillment` only, so heuristic and ambiguous candidates never satisfy the edge - stricter than their "partial match by design"; (b) it is populated on **704 of 3,900** aircraft flights live (18 percent), over 653 distinct canonical passenger flights, so the one-plan-to-many-legs case is genuinely exercised. *Revised 2026-09-02 (TRUTH-01): this cell read "populated on **4 of 3,900** aircraft flights live, so the edge exists but is barely exercised", which was true of the pre-D-0023 fixture and was already contradicted by the A7 status table further down this same file.* |
 | `(AIRCRAFT_FLIGHT)-[:STARTED]->(AIRPORT)` | `AircraftFlight.actual_origin` (`Property`, "leg started at Airport:actual_origin") | RENAMED | Verb preserved. Role-labelled, exact-resolution-only. No inverse from `Airport`. |
 | `(AIRCRAFT_FLIGHT)-[:ENDED]->(AIRPORT)` | `AircraftFlight.actual_destination` (`Property`, "leg ended at Airport:actual_destination") | RENAMED | Verb preserved. `AircraftFlight.diverted_airport` is an ADDED third endpoint role; the diverted airport never repairs `actual_destination`, which is the continuity endpoint. |
 
 ## B1. ADDED - in ours, not in theirs
 
-None of these replaces a supplied element. 33 concepts, grouped by why they exist.
+None of these replaces a supplied element. 35 concepts, grouped by why they exist. (33 when this
+audit was written; D-0027 added the two row-scoped code-resolution concepts, see that row below.)
 
 | Added concept(s) | Why it exists |
 |---|---|
@@ -75,7 +95,7 @@ None of these replaces a supplied element. 33 concepts, grouped by why they exis
 | `Schedule` | Extracted from the `ROUTE_STATE` key so the version partition is a visible concept. |
 | `ScheduleObservation`, `RouteStateSnapshotLineage`, `SnapshotDate` | Per-snapshot observation grain, coalescing lineage, and explicit snapshot eligibility. Their model coalesces in the SCD builder and keeps no eligibility control. |
 | `ScheduleComparison`, `ScheduleExactChange`, `ScheduleAmendmentSide/Candidate/Group/GroupMember` (6) | Golden question 1's diff, with exact changes structurally separated from conservative key-shift amendment evidence (D-0006). Their document says the key-shift problem is "not solved on our side". |
-| `CodeResolutionCode`, `CodeResolutionCodeCandidate` | Zero/one/many code resolution kept queryable so only a cardinality-one EXACT match creates a concept link. D-0019 moved this from row grain to code grain. |
+| `CodeResolutionCode`, `CodeResolutionCodeCandidate`, `CodeResolution`, `CodeResolutionCandidate` | Zero/one/many code resolution kept queryable so only a cardinality-one EXACT match creates a concept link. D-0019 moved link semantics from row grain to code grain and provisionally dropped the row grain on a cost suspicion; D-0027 measured that cost at 0.18s, refuted the premise, and reinstated it. *Revised 2026-09-02 (TRUTH-01): this row listed only the two code-grain concepts and said "D-0019 moved this from row grain to code grain", which reads as a replacement. Both grains are bound today.* The code grain answers "does this raw code resolve to exactly one identity"; the row grain answers "which source object, row and field role mentioned it". |
 | `PassengerSourceLineage`, `PassengerSourceQuarantine`, `InvalidPassengerObservation`, `PassengerPlannedLeg` | Union precedence auditability, retained invalid observations, and the ordered planned station sequence that makes the stopover case real. |
 | `ExactFulfillment`, `FulfillmentCandidate`, `FulfillmentGroupMember` | Confirmed fulfilment separated from candidates and ambiguous groups. |
 | `RotationLinkValidation` | One row per candidate `NEXT_FLIGHT_ID` edge plus a terminal row per leg, carrying the acceptance verdict. Their model has the raw pointer only. |
@@ -111,6 +131,39 @@ prevent. Cost to fix: one `model.Relationship` plus one `define(...).where(...)`
 would be nearly empty today, because `PASSENGER_FLIGHT_CANONICAL.schedule_key` is non-null on
 **1 of 19,996 rows**.
 
+**A1 status: closed, by MODEL-01 for the structure and by D-0023 for the data.** Both halves of
+the finding were acted on and the finding above is left verbatim as the record of what was found.
+
+*Structure.* `RouteStateSchedules` exists at `rai_code/aviation_model/computed_schedule.py:155-169`
+and in the generated `rai_code/manual/aviation_temporal.py`, with `RouteState.schedules` and the
+`.alt()` inverse `PassengerFlight.scheduled_by`. It is exactly the fix costed above - one
+`model.Relationship` plus one `define(...).where(...)` - and it declares more than the two
+predicates the finding asked for: schedule identity, the half-open knowledge-window pin on the
+passenger publish date, the inclusive operating-window pin, and the weekday applicability check.
+The traversals the finding named as unaskable ("for this flight, what frequency and capacity had
+we published at the time", "which schedule version generated these flights") are askable now.
+
+*Data.* The "nearly empty" caveat is also out of date, and by a wide margin.
+`PASSENGER_FLIGHT_CANONICAL.schedule_key` is non-null on **7,951 of 19,446** canonical passenger
+flights, not 1 of 19,996, and a SQL replica of the full four-clause rule returns **7,950 pairs**
+(7,950 distinct passenger flights, 2,000 distinct route states), measured 2026-09-02:
+
+```sql
+SELECT COUNT(*) FROM PK_AVIATION_TEMPORAL.MODEL_INPUT.ROUTE_STATE rs
+JOIN PK_AVIATION_TEMPORAL.MODEL_INPUT.PASSENGER_FLIGHT_CANONICAL pf
+  ON rs.SCHEDULE_KEY = pf.SCHEDULE_KEY
+WHERE rs.KNOWLEDGE_VALID_FROM <= pf.PUBLISH_DATE AND pf.PUBLISH_DATE < rs.KNOWLEDGE_VALID_TO
+  AND rs.OPERATING_EFFECTIVE_DATE <= pf.OPERATING_DATE
+  AND pf.OPERATING_DATE <= rs.OPERATING_DISCONTINUE_DATE
+  AND <IS_OPERATING_<DAY> matching DAYOFWEEKISO(pf.OPERATING_DATE)>;
+-- 7950
+```
+
+*What remains true.* No named `EXPECTED_ANSWERS.yaml` scenario reads a value through this
+relationship, so it is populated but ungraded: no frozen fixture would catch a regression in it.
+Say "implemented and populated, not covered by a golden-question fixture". Do not say "zero live
+pairs", and do not say "does not exist"; this document said both, and both are now false.
+
 **A2. The four independent Neo4j edges are one physical concept discriminated by a string.**
 `AircraftDimensionDailyAssignment` carries all 61 non-identity properties for all four
 dimensions, and the subtypes are views (`identity_includes_type=False`), not separate entity
@@ -125,6 +178,15 @@ there, so the ontology a customer inspects does not tell them which properties b
 dimension. (iii) `Aircraft` has exactly two outbound relationships, not eight, so the "four
 independent clocks" story is a subtype predicate rather than four visibly distinct edges.
 
+**A2 status: (i) and (ii) stand, (iii) is closed.** *Revised 2026-09-02 (TRUTH-01).* The single
+shared physical concept and its always-absent cross-dimension properties are unchanged, so the
+scoping footgun in (i) and the inspection problem in (ii) are still real and `dv33_branches` still
+requires its `scope`. But (iii) is no longer true: `Aircraft` has **nine** outbound relationships
+in the live inventory, not two. Four of them are dimension-scoped
+(`state_assignments`, `type_assignments`, `engine_assignments`, `status_assignments`) and three
+are the direct one-hop readings named in A3 below, all at `computed_aircraft.py:109-190`. The
+"four independent clocks" story is four visibly distinct edges again.
+
 **A3. No direct `Aircraft -> AircraftType` / `EngineType` / `AircraftStatus` hop, and no inverse
 from `AircraftStatus`.** Every one-hop Cypher pattern on `CONFORMED`, `EQUIPPED` and `ASSIGNED`
 becomes two hops plus a dimension predicate. `AircraftType` and `EngineType` at least have
@@ -132,6 +194,16 @@ becomes two hops plus a dimension predicate. `AircraftType` and `EngineType` at 
 "aircraft that were ever in Storage" cannot be entered from the status node. In RAI the join is
 still writable from the assignment side, so this is ergonomic loss rather than lost
 expressiveness - but it is the deviation a Cypher-literate reviewer will notice first.
+
+**A3 status: closed for the three named hops and for `AircraftStatus`; open for
+`AircraftConfiguration`.** *Revised 2026-09-02 (TRUTH-01), verified against the live inventory and
+`rai_code/aviation_model/computed_aircraft.py`.* `Aircraft.conformed_to`, `Aircraft.equipped_with`
+and `Aircraft.assigned_status` (lines 148-190) each read
+`Aircraft <verb> <Target> from Date:valid_from until Date:valid_to`, so all three one-hop Cypher
+patterns are one hop again and carry both supplied edge properties.
+`AircraftStatus.daily_assignments` (lines 192-196) supplies the missing inverse, so "aircraft that
+were ever in Storage" is enterable from the status node. `AircraftConfiguration` still has no
+inverse reading; that half of the finding stands.
 
 **A4. `AIRCRAFT_STATE` versioned payload is roughly 20 of their ~38 attributes, and four
 immutable attributes were moved from `AIRCRAFT` to the versioned stream.** The absent versioned
@@ -183,13 +255,13 @@ measurement, not a prediction.
 
 | Measure | v1 live | v2 live |
 |---|---:|---:|
-| `aircraft_state` versions per filler aircraft | 1.005 | **8.83** |
-| filler aircraft with more than one state version | 2 of 999 | **993 of 993** |
-| `aircraft_status` versions per filler aircraft | 1.004 | **2.36** |
-| filler aircraft with more than one status version | 2 of 999 | **468** |
-| `aircraft_type` versions per filler aircraft | 48 (synthetic daily churn) | **1.20**, 200 aircraft convert |
-| `engine_type` versions per filler aircraft | 48 (synthetic daily churn) | **1.31**, 305 aircraft re-engine |
-| status observation vocabulary | 1,001 / 3 / 2 | **28,272 / 1,654 / 283** |
+| `aircraft_state` versions per aircraft | 1.005 | **8.770** |
+| aircraft with more than one state version | 2 of 999 | **995 of 999** |
+| `aircraft_status` versions per aircraft | 1.004 | **2.337** |
+| aircraft with more than one status version | 2 of 999 | **470 of 999** |
+| `aircraft_type` versions per aircraft | 48 (synthetic daily churn) | **1.204**, 202 aircraft convert |
+| `engine_type` versions per aircraft | 48 (synthetic daily churn) | **1.309**, 307 aircraft re-engine |
+| status observation vocabulary | 1,001 / 3 / 2 | **28,287 / 1,661 / 285** |
 | closed In Service -> Storage -> In Service spells | 2 | **439** over 258 aircraft |
 | spell-duration buckets populated | 2 | **7**, minimum 0 days, median 157, maximum 1,091 |
 | Q03 over its window | 132 rows, 2 aircraft, 2 types | **985 rows, 120 month ends, 10 types** (2025-2034) |
@@ -201,6 +273,20 @@ measurement, not a prediction.
 
 The type and engine version counts fall, and that is the improvement: 48 daily
 `SYN-TYPE-FILL-NNN` values per aircraft was noise that made golden question 4 unreadable.
+
+**Density rows re-measured 2026-09-02 (TRUTH-01), and the definition tightened.** The first six
+rows previously read "per filler aircraft" at 8.83 / 993 of 993 / 2.36 / 468 / 1.20, 200 / 1.31,
+305, and the vocabulary row at 28,272 / 1,654 / 283. Those came from `ENRICH-02`'s generator-side
+count over the 993 filler aircraft. The figures above are counted instead from the shipped
+`MODEL_INPUT.AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT`, grouped by `(dimension, aircraft_id)` over all
+**999** eligible aircraft, and the vocabulary row from `SOURCE.AIRCRAFT_HISTORY.START_AIRCRAFT_STATUS`
+(30,233 rows, all non-null). The two sets differ by under half a percent and by a handful of
+aircraft; the difference is the denominator (999 rather than 993) and the grain (the daily
+assignment coalesces same-day observations that the generator counts separately), not a
+correction. Quote the figures above, because they are the ones a customer can reproduce from the
+tables the demo actually reads. Restricted to the 993 filler aircraft the same query returns
+8.795 / 991, 2.339 / 467, 1.201 / 200 and 1.305 / 303, which is the closest reproduction of
+`ENRICH-02`'s column from `MODEL_INPUT` and is still not identical to it.
 
 ## Section 2 - Deviations that are cosmetic
 
@@ -223,8 +309,10 @@ The type and engine version counts fall, and that is the improvement: 48 daily
   `Route.states`, `Airline.operates`, `Airline.commercializes`, `Aircraft.actual_flights`,
   `PassengerFlight.fulfilled_by`, `AircraftType.daily_assignments` and
   `EngineType.daily_assignments` the inverse reading exists and costs nothing. Where the inverse
-  reading is missing (`Airport`, `AircraftStatus`, `AircraftConfiguration`, `Schedule` ->
-  `PassengerFlight`) the join is still writable from the other side; see A3.
+  reading is missing (`Airport`, `AircraftConfiguration`) the join is still writable from the other
+  side; see A3. *Revised 2026-09-02 (TRUTH-01): this list also named `AircraftStatus` and
+  `Schedule -> PassengerFlight`. Both now have an inverse -
+  `AircraftStatus.daily_assignments` and `PassengerFlight.scheduled_by` respectively.*
 - **Inverses of identity components are `Relationship`s, not `.alt()` readings** - a mechanical
   consequence of `identify_by` naming the owner slot after the lowercased concept. No cardinality
   difference.
@@ -239,12 +327,25 @@ The type and engine version counts fall, and that is the improvement: 48 daily
 The mapping document was written before the ontology existed, and our parity claims cite it. Six
 defects, three of them load-bearing.
 
+**Section 3 status, 2026-09-02 (TRUTH-01).** Defects 1, 2 and 4 were closed by building the code
+the mapping described, so the mapping became right and this section became wrong. Their original
+text is kept verbatim below, each with a status line, because the sequence matters: the mapping
+asserted something that was not built, the audit caught it, and the response was to build it
+rather than to soften the claim. Defect 3 is still open on substance and its concept count is
+refreshed. Defects 5 and 6 are unchanged.
+
 1. **`NEO4J_RAI_MAPPING.md:108` claims a built `RouteState`-to-`PassengerFlight` scheduling
    `Relationship`.** It does not exist. `NEO4J_PARITY_MATRIX.md:57` inherits the claim
    ("clock-qualified scheduling relationship", "Bounded plan-link parity"), and
    `build/design/ONTOLOGY_DESIGN.md:451` and `:581` and `:742` all specify it. Line 113's summary
    sentence, "No supplied edge is omitted", is therefore false. **This is the one place where a
    published parity claim is not backed by code.**
+
+   **Status: closed.** `RouteStateSchedules` is built at
+   `rai_code/aviation_model/computed_schedule.py:155-169` and mirrored in the generated
+   `rai_code/manual/aviation_temporal.py`. "No supplied edge is omitted" is true today. The
+   mapping row and the parity-matrix row are no longer the defect; their *population* figure was
+   ("zero live pairs" against a measured 7,950), and that is corrected in both files.
 2. **Lines 99-102 imply four separate dimension-scoped edges from `Aircraft`.** They read
    "Aircraft to `AircraftStateDailyAssignment`", "`AircraftTypeDailyAssignment` links Aircraft to
    optional exact AircraftType", and so on. Built code has exactly two relationships from
@@ -253,8 +354,13 @@ defects, three of them load-bearing.
    (`Aircraft.state_assignments`, `Aircraft.type_assignments`) were never written. The mapping is
    directionally right about cardinality and wrong about how many edges exist, which matters
    because it is the sentence a customer would read as "we have your four edges".
-3. **Line 68 lists `QueryExecutionContext` as an RAI concept.** It is not in the model (44
-   concepts, none by that name). `ONTOLOGY_DESIGN.md` section 9 item 4 explains why it moved to
+
+   **Status: closed.** The four dimension-scoped relationships were written at
+   `computed_aircraft.py:109-133` and the three direct one-hop readings at lines 148-190.
+   `Aircraft` now carries nine outbound relationships in the live inventory. The mapping's "we
+   have your four edges" reading is backed by code.
+3. **Line 68 lists `QueryExecutionContext` as an RAI concept.** It is not in the model (46
+   concepts as of D-0027, none by that name; 44 when this was first checked). `ONTOLOGY_DESIGN.md` section 9 item 4 explains why it moved to
    the query API boundary; the mapping table was never updated to match. Line 156 repeats it
    ("QueryExecutionContext plus RouteState two-clock predicates").
 4. **Line 57-58 describe `CodeResolution` keyed by a "deterministic resolution-context hash" over
@@ -264,6 +370,16 @@ defects, three of them load-bearing.
    `CodeResolutionCodeCandidate` keyed `(resolution, candidate_id)` - the D-0019 substitution to
    code grain. The row-scoped variant the mapping describes was deliberately dropped, but the
    mapping still describes it.
+
+   **Status: closed, by reversal rather than by alignment.** D-0019's exclusion was provisional on
+   a cost suspicion; D-0027 measured the cost at 0.18s against an 18s first query, refuted the
+   premise, and reinstated the row grain. `CodeResolution` (`resolution_id`) and
+   `CodeResolutionCandidate` (`resolution`, `candidate_id`) are bound concepts today, alongside
+   the code-grain pair, and `CODE_RESOLUTION`, `CODE_RESOLUTION_CANDIDATE` and
+   `CODE_RESOLUTION_INPUT` are three of the 37 declared sources. Neither grain supersedes the
+   other. The mapping's key description is still not literally the built one - the built identity
+   is `resolution_id`, not a described hash over five fields - so read the mapping row for intent
+   and `core_reference.py:140-180` for the shipped keys.
 5. **Lines 62 and 66 name `ScheduleAmendmentEvidence` and `FulfillmentCandidateEvidence` as
    concepts.** Built as four and three concepts respectively:
    `ScheduleAmendmentSide` / `Candidate` / `Group` / `GroupMember`, and `FulfillmentCandidate` /

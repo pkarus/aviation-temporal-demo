@@ -505,6 +505,13 @@ def test_time_literal_without_milliseconds_matches_nothing(am):
 
     Asserted rather than merely documented, because a query author who writes Snowflake's
     rendering gets an empty result with no error and will debug the join instead of the literal.
+
+    The matching count moved from 12,030 to 14,366 at the D-0023/D-0024 enrichment, and the
+    reason is worth stating rather than re-pinning blind: ``PASSENGER_DEPARTURE_UTC_TIME`` holds
+    exactly **one** distinct value across the whole of ``ROUTE_STATE``, so the millisecond
+    literal's match count is simply the table's row count and it moved because the table grew.
+    Both facts are re-derived from SQL below so the next fixture change re-measures instead of
+    drifting, and the pinned constants stay as the tripwire that forces the re-measure.
     """
     from relationalai.semantics.std import aggregates as aggs
 
@@ -518,8 +525,21 @@ def test_time_literal_without_milliseconds_matches_nothing(am):
         .where(am.RouteState.passenger_departure_utc_time == "16:00:00")
         .to_df()
     )
-    assert with_ms == 12030
+
+    row = sql(
+        "SELECT COUNT(*) AS TOTAL, "
+        "COUNT(DISTINCT PASSENGER_DEPARTURE_UTC_TIME) AS DISTINCT_TIMES, "
+        "COUNT_IF(TO_VARCHAR(PASSENGER_DEPARTURE_UTC_TIME, 'HH24:MI:SS.FF3') = '16:00:00.000') "
+        "AS AT_1600 "
+        f"FROM {DB}.MODEL_INPUT.ROUTE_STATE"
+    )[0]
+
+    # The sharp edge itself: the millisecond suffix is load-bearing, and its absence is silent.
     assert without_ms is None
+    # The number, pinned and independently re-derived.
+    assert int(with_ms) == int(row["AT_1600"]) == int(row["TOTAL"]) == 14366
+    # Why the number equals the row count. Drop this and the pin above looks arbitrary.
+    assert int(row["DISTINCT_TIMES"]) == 1
 
 
 # ------------------------------------------------- 4. the multi-open route beat
@@ -534,10 +554,14 @@ def test_multi_open_route_states_from_one_query(am):
     handling: ``Route`` does not appear in ``RouteState``'s identity, and ``Route.states`` is an
     ``.alt()`` reading that adds no functional dependency.
 
-    Note the precise claim. These are states concurrently valid *at a knowledge date*, not
-    open-ended ones: the fixture's knowledge clock ends at 2026-10-26 and **no** route state
-    carries the model open sentinel ``9999-01-01``, so a narration promising "open-ended
-    versions" would be false. ``test_no_route_state_carries_the_open_sentinel`` pins that.
+    Note the precise claim, and note how narrow it is. These 1,339 are states concurrently valid
+    *at a knowledge date*, not open-ended ones: **none of the 1,339** carries the model open
+    sentinel ``9999-01-01``, so narrating this beat as "1,339 open-ended versions" would be
+    false. That is a fact about this result set only. Since the D-0023/D-0024 enrichment the
+    table at large *does* carry the sentinel - 2,185 of 14,366 rows, 53 of them on ``SFO->LAX``
+    itself at later knowledge dates - so the claim must not be widened into "no route state is
+    ever open-ended". ``test_open_sentinel_present_overall_absent_from_the_demonstrated_beat``
+    pins both halves.
     """
     from relationalai.semantics.std import aggregates as aggs
 
@@ -574,24 +598,69 @@ def test_multi_open_route_states_from_one_query(am):
     assert expected == 1339
 
 
-def test_no_route_state_carries_the_open_sentinel(am):
-    """Honesty guard for the narration above.
+def test_open_sentinel_present_overall_absent_from_the_demonstrated_beat(am):
+    """Honesty guard for the narration above. Both halves of it.
 
-    Zero route states carry ``knowledge_valid_to = 9999-01-01`` in this fixture, so the beat
-    must be told as "concurrently valid at a knowledge date", never as "concurrently open-ended".
-    If a future fixture adds open-ended states this test fails and the narration can be widened
-    deliberately rather than drifting.
+    This test used to assert that *zero* route states carry ``knowledge_valid_to = 9999-01-01``.
+    That was true of the pre-enrichment fixture and it is false now: the D-0023/D-0024 enrichment
+    put the model open sentinel on 2,185 of 14,366 route states, and 53 of those sit on
+    ``SFO->LAX`` itself. Deleting the test would have silently retired the narration guard, and
+    re-pinning it to 2,185 alone would have guarded a number while dropping the thing it was
+    protecting, so it now pins the distinction the narration actually turns on:
+
+    * the sentinel **is** present in the table, and those states are genuinely open-ended, so
+      "no route state is ever open-ended" must never be said; but
+    * **none** of the 1,339 states concurrently valid on ``SFO->LAX`` at the demonstrated
+      knowledge date carries it, so the demo's headline beat is correctly told as "concurrently
+      valid at knowledge date" and would be overstated as "1,339 open-ended versions".
+
+    Both counts are re-derived from SQL as well as from the model, because the whole point of the
+    guard is that a presenter's sentence stays attached to a measurement.
     """
     from relationalai.semantics.std import aggregates as aggs
 
-    assert (
-        scalar(
-            am.model.select(aggs.count(am.RouteState).alias("n"))
-            .where(am.RouteState.knowledge_valid_to == am.MODEL_OPEN_INTERVAL)
-            .to_df()
-        )
-        is None
+    overall = scalar(
+        am.model.select(aggs.count(am.RouteState).alias("n"))
+        .where(am.RouteState.knowledge_valid_to == am.MODEL_OPEN_INTERVAL)
+        .to_df()
     )
+    on_route = scalar(
+        am.model.select(aggs.count(am.RouteState).alias("n"))
+        .where(
+            am.RouteState.route == am.Route,
+            am.Route.route_id == "SFO->LAX",
+            am.RouteState.knowledge_valid_to == am.MODEL_OPEN_INTERVAL,
+        )
+        .to_df()
+    )
+    in_the_beat = scalar(
+        am.model.select(aggs.count(am.RouteState).alias("n"))
+        .where(
+            am.RouteState.route == am.Route,
+            am.Route.route_id == "SFO->LAX",
+            am.RouteState.knowledge_valid_to == am.MODEL_OPEN_INTERVAL,
+            *am.known_on(am.RouteState, KNOWLEDGE_DATE),
+        )
+        .to_df()
+    )
+
+    row = sql(
+        "SELECT COUNT(*) AS TOTAL, "
+        "COUNT_IF(KNOWLEDGE_VALID_TO = '9999-01-01') AS OPEN_OVERALL, "
+        "COUNT_IF(ROUTE_ID = 'SFO->LAX' AND KNOWLEDGE_VALID_TO = '9999-01-01') AS OPEN_ON_ROUTE, "
+        "COUNT_IF(ROUTE_ID = 'SFO->LAX' AND KNOWLEDGE_VALID_TO = '9999-01-01' "
+        "AND KNOWLEDGE_VALID_FROM <= '2026-08-31' AND '2026-08-31' < KNOWLEDGE_VALID_TO) "
+        "AS OPEN_IN_THE_BEAT "
+        f"FROM {DB}.MODEL_INPUT.ROUTE_STATE"
+    )[0]
+
+    # Half one: open-ended states exist, so the unqualified denial is banned.
+    assert int(overall) == int(row["OPEN_OVERALL"]) == 2185
+    assert int(row["TOTAL"]) == 14366
+    assert int(on_route) == int(row["OPEN_ON_ROUTE"]) == 53
+    # Half two: none of them is inside the demonstrated 1,339, so the beat's wording holds.
+    assert in_the_beat is None
+    assert int(row["OPEN_IN_THE_BEAT"]) == 0
 
 
 # --------------------------------------------- 5. integrity guards that must be empty
@@ -719,11 +788,18 @@ def test_daily_assignment_multiplicity_gate():
 def test_bool_property_needs_explicit_comparison(am):
     """A boolean ``Property`` must be compared, never used as a bare truth filter.
 
-    Measured here for the first time: ``where(RouteState.is_codeshare)`` returns **all 12,030**
-    route states, because a bare property reference binds the value rather than testing it,
-    while ``where(RouteState.is_codeshare == True)`` correctly returns the 4 codeshares. This is
-    a silent wrong answer, not an error, and it is why every boolean filter in this package is
-    written ``== True`` / ``== False``.
+    ``where(RouteState.is_codeshare)`` returns **every** route state that *has* the property,
+    because a bare property reference binds the value rather than testing it, while
+    ``where(RouteState.is_codeshare == True)`` returns only the codeshares. This is a silent
+    wrong answer, not an error, and it is why every boolean filter in this package is written
+    ``== True`` / ``== False``.
+
+    The behaviour is unchanged since it was first measured; only the fixture moved. Post
+    D-0023/D-0024 the bare filter returns 14,366 (was 12,030) and the compared filter returns 19
+    (was 4), so the gap the test exists to catch is now 756-fold rather than 3,007-fold. The
+    assertion is therefore written as the *behaviour* - bare equals the population that carries
+    the property, compared equals the SQL truth count, and the two differ - with the measured
+    constants pinned underneath so a regression in either direction still trips it.
     """
     from relationalai.semantics.std import aggregates as aggs
 
@@ -737,13 +813,19 @@ def test_bool_property_needs_explicit_comparison(am):
         .where(am.RouteState.is_codeshare == True)  # noqa: E712
         .to_df()
     )
-    sql_true = int(
-        sql(
-            f"SELECT COUNT(*) AS n FROM {DB}.MODEL_INPUT.ROUTE_STATE WHERE IS_CODESHARE"
-        )[0]["N"]
-    )
-    assert int(compared) == sql_true == 4
-    assert int(bare) == 12030
+    row = sql(
+        "SELECT COUNT(*) AS TOTAL, COUNT_IF(IS_CODESHARE) AS N_TRUE, "
+        "COUNT_IF(IS_CODESHARE IS NOT NULL) AS N_PRESENT "
+        f"FROM {DB}.MODEL_INPUT.ROUTE_STATE"
+    )[0]
+
+    # The behavioural finding, stated as a relation rather than as two magic numbers.
+    assert int(compared) == int(row["N_TRUE"])
+    assert int(bare) == int(row["N_PRESENT"]) == int(row["TOTAL"])
+    assert int(bare) > int(compared), "the bare filter must be visibly wrong, not accidentally right"
+    # The measured constants, so a change of either is a deliberate re-measure.
+    assert int(compared) == 19
+    assert int(bare) == 14366
 
 
 def test_dv33_branches_are_mutually_exclusive(am):
@@ -1052,6 +1134,13 @@ def test_exact_fulfillment_is_the_only_source_of_the_fulfils_link(am):
 
     ``FulfillmentCandidate`` never feeds it. That is the exact/heuristic separation made
     structural: a heuristic match can never become a confirmed link by accident.
+
+    The invariant survives the D-0023/D-0024 enrichment; the numbers under it did not. Exact
+    fulfilments went from 4 to 704 and candidates from an unexercised handful to 341, which is
+    what finally gives the count test teeth: the 341 candidate legs are **disjoint** from the 704
+    exact ones (verified in SQL below), so a leak from the candidate side would show up as 1,045
+    rather than 704. Before the enrichment an equality at 4 could have passed with the separation
+    broken; now it cannot.
     """
     from relationalai.semantics.std import aggregates as aggs
 
@@ -1060,22 +1149,63 @@ def test_exact_fulfillment_is_the_only_source_of_the_fulfils_link(am):
         .where(am.AircraftFlight.fulfils == am.PassengerFlight)
         .to_df()
     )
-    exact = int(sql(f"SELECT COUNT(*) AS n FROM {DB}.MODEL_INPUT.FULFILLMENT_EXACT")[0]["N"])
-    assert int(fulfils) == exact == 4
+    row = sql(
+        "SELECT "
+        f"(SELECT COUNT(*) FROM {DB}.MODEL_INPUT.FULFILLMENT_EXACT) AS EXACT_ROWS, "
+        "(SELECT COUNT(DISTINCT ACTUAL_FLIGHT_ID) "
+        f"   FROM {DB}.MODEL_INPUT.FULFILLMENT_EXACT) AS EXACT_LEGS, "
+        f"(SELECT COUNT(*) FROM {DB}.MODEL_INPUT.FULFILLMENT_CANDIDATE) AS CANDIDATE_ROWS, "
+        "(SELECT COUNT(*) "
+        f"   FROM {DB}.MODEL_INPUT.FULFILLMENT_CANDIDATE c "
+        "   WHERE EXISTS (SELECT 1 "
+        f"                 FROM {DB}.MODEL_INPUT.FULFILLMENT_EXACT e "
+        "                 WHERE e.ACTUAL_FLIGHT_ID = c.ACTUAL_FLIGHT_ID)) AS CANDIDATE_OVERLAP"
+    )[0]
+
+    # The invariant: the link is exactly the exact side, no more and no less.
+    assert int(fulfils) == int(row["EXACT_ROWS"]) == int(row["EXACT_LEGS"]) == 704
+    # And the test is only meaningful because the heuristic side is non-empty and disjoint, so a
+    # leak would be visible as a count of 1,045 rather than hiding inside an equal number.
+    assert int(row["CANDIDATE_ROWS"]) == 341
+    assert int(row["CANDIDATE_OVERLAP"]) == 0
+    assert int(fulfils) < int(row["EXACT_ROWS"]) + int(row["CANDIDATE_ROWS"])
 
 
 # --------------------------------------------------------------- 8. the inventory
 
 
 def test_inventory_artifact(inventory):
-    """``build/design/ontology_inventory.json`` exists and describes the whole model."""
+    """``build/design/ontology_inventory.json`` exists and describes the whole model.
+
+    Every figure here is quoted in a customer-facing document, so this is the tripwire that
+    stops those documents going stale unnoticed - which is exactly what happened once already.
+    D-0027 reinstated the row-scoped code resolution, binding ``CODE_RESOLUTION``,
+    ``CODE_RESOLUTION_CANDIDATE`` and ``CODE_RESOLUTION_INPUT`` (34 sources to 37, 29 of the 56
+    new columns) and adding the ``CodeResolution`` / ``CodeResolutionCandidate`` concepts (44 to
+    46); the D-0023/D-0024 enrichment supplied the remaining 27 columns on tables that were
+    already bound. Meanwhile ``NEO4J_FIDELITY_AUDIT.md`` and ``BRIEF.md`` went on reporting 34
+    sources, 44 concepts and 1,292 properties.
+
+    The counts are therefore pinned exactly rather than loosely. ``concept_count`` in particular
+    was ``>= 40``, which would have passed at 44, 46 or 60 and so caught none of that drift.
+    """
     from aviation_model.inventory import INVENTORY_PATH
 
     assert INVENTORY_PATH.exists()
-    assert inventory["concept_count"] >= 40
-    assert inventory["declared_source_count"] == 34
-    assert inventory["declared_column_count"] == 749
-    assert inventory["table_count"] == 34
+    assert inventory["sdk_version"] == "1.20.1"
+    assert inventory["concept_count"] == 46
+    assert inventory["property_count"] == 1412
+    assert inventory["relationship_count"] == 22
+    assert inventory["bare_relationship_count"] == 11
+    assert inventory["define_rule_count"] == 175
+    assert inventory["require_rule_count"] == 5
+    assert inventory["declared_source_count"] == 37
+    assert inventory["declared_column_count"] == 805
+    assert inventory["table_count"] == 37
+    # A declared source is a bound table; the two counts describe the same set from both ends.
+    assert inventory["table_count"] == inventory["declared_source_count"]
+    assert len(inventory["concepts"]) == inventory["concept_count"]
+    assert len(inventory["tables"]) == inventory["table_count"]
 
 
 # --------------------------------------------------------------- 9. MODEL-02 parity

@@ -1,0 +1,235 @@
+{
+  "task_id": "TRUTH-01",
+  "status": "GREEN",
+  "measured_at": "2026-09-02",
+  "kind": "truth reconciliation, not a feature task",
+  "summary": "The five failing ontology gates are repaired and the full file is green at 93/93 in a single complete run (1,234.76s, zero failures). None of the five was deleted and none was weakened: two were stale pinned constants, three were assertions whose premise the D-0023/D-0024 enrichment had falsified and which are now re-expressed to pin what is actually true. Seven false or overbroad customer-facing claims are corrected across BRIEF.md, NEO4J_FIDELITY_AUDIT.md, NEO4J_RAI_MAPPING.md and NEO4J_PARITY_MATRIX.md, each with its superseded wording quoted in place and dated so the audit trail survives. CLAIMS_AUDIT.md carries a resolution ledger and rewritten safe-to-say / must-not-be-said lists. Two further false claims and two stale code comments were found that the claims audit had missed.",
+
+  "final_gate": {
+    "command": ".venv/bin/python -m pytest tests/test_model.py -m live -q -p no:randomly --show-capture=no --tb=short",
+    "result": "93 passed, 0 failed, 21 warnings in 1234.76s (0:20:34)",
+    "scope": "complete file, not a -k subset",
+    "before": "88 passed, 5 failed",
+    "engine": "aviation_temporal_logic_s (HIGHMEM_X64_S), warm",
+    "note": "The file on disk is byte-identical to the file this run executed. A cosmetic one-line edit made mid-run was reverted so the reported count is not against a different file."
+  },
+
+  "five_failing_tests": [
+    {
+      "test": "test_inventory_artifact",
+      "decision": "stale pinned constants, and the loose one strengthened",
+      "before": "concept_count >= 40; declared_source_count == 34; declared_column_count == 749; table_count == 34",
+      "after": "sdk_version == '1.20.1'; concept_count == 46; property_count == 1412; relationship_count == 22; bare_relationship_count == 11; define_rule_count == 175; require_rule_count == 5; declared_source_count == 37; declared_column_count == 805; table_count == 37; plus two internal-consistency checks (table_count == declared_source_count, len(concepts) == concept_count, len(tables) == table_count)",
+      "reasoning": "The three numeric pins were simply behind. The interesting failure was concept_count >= 40, which would have passed at 44, 46 or 60 and therefore caught none of the drift that this whole task exists to clean up. Every figure in the artifact is now pinned exactly, because every figure in the artifact is quoted in a customer-facing document.",
+      "cause_of_movement": "D-0027 reinstated the row-scoped code resolution: CODE_RESOLUTION, CODE_RESOLUTION_CANDIDATE and CODE_RESOLUTION_INPUT bound (34 sources to 37, 29 of the 56 new columns) and CodeResolution / CodeResolutionCandidate added (44 concepts to 46). The D-0023/D-0024 enrichment supplied the other 27 columns on already-bound tables. Verified by diffing build/design/ontology_inventory.json against build/task_reports/MODEL-01.json's inventory_figures."
+    },
+    {
+      "test": "test_no_route_state_carries_the_open_sentinel",
+      "renamed_to": "test_open_sentinel_present_overall_absent_from_the_demonstrated_beat",
+      "decision": "real semantic change, re-expressed; premise was false, the thing it protected is still true",
+      "before": "asserted zero route states carry knowledge_valid_to == 9999-01-01",
+      "after": "asserts both halves: overall == 2185 and total == 14366 (so the unqualified denial is banned), on SFO->LAX overall == 53, and in_the_beat is None with the SQL cross-check == 0 (so the demo's headline wording holds). Every count is taken from the live model AND independently from SQL.",
+      "reasoning": "Deleting it would have silently retired a narration guard. Re-pinning it to 2,185 alone would have guarded a number while dropping the distinction the guard exists for. The measurement that mattered was one nobody had taken: whether any of the 1,339 concurrently valid SFO->LAX states at the demonstrated knowledge date carries the sentinel. None does, so the instruction survives on a true reason.",
+      "measurements": {
+        "route_state_total": 14366,
+        "open_sentinel_overall": 2185,
+        "open_sentinel_on_sfo_lax": 53,
+        "open_sentinel_within_the_1339_concurrent_at_2026_08_31": 0,
+        "routes_carrying_the_sentinel": "72 of 72"
+      }
+    },
+    {
+      "test": "test_bool_property_needs_explicit_comparison",
+      "decision": "behavioural finding kept verbatim, numbers refreshed and the assertion re-grounded",
+      "before": "assert int(compared) == sql_true == 4; assert int(bare) == 12030",
+      "after": "assert compared == COUNT_IF(IS_CODESHARE); assert bare == COUNT_IF(IS_CODESHARE IS NOT NULL) == COUNT(*); assert bare > compared; then the pinned constants compared == 19 and bare == 14366",
+      "reasoning": "The finding is unchanged and still important: a bare boolean property reference binds the value instead of testing it, so where(RouteState.is_codeshare) returns every entity that HAS the property. Writing the assertion as the behaviour (bare equals the population carrying the property, compared equals the SQL truth count, and the two differ) makes it say what it means rather than assert two magic numbers, and the pinned constants stay underneath as the drift tripwire. Verified that IS_CODESHARE is non-null on all 14,366 rows, so bare == present == total is a true chain rather than a coincidence.",
+      "measurements": {"total": 14366, "n_true": 19, "n_present": 14366, "gap_factor": "756-fold, was 3007-fold"}
+    },
+    {
+      "test": "test_exact_fulfillment_is_the_only_source_of_the_fulfils_link",
+      "decision": "invariant re-verified and strengthened, numbers refreshed",
+      "before": "assert int(fulfils) == exact == 4",
+      "after": "assert fulfils == FULFILLMENT_EXACT rows == distinct ACTUAL_FLIGHT_ID == 704; assert FULFILLMENT_CANDIDATE == 341; assert candidate/exact leg overlap == 0; assert fulfils < exact + candidates",
+      "reasoning": "The invariant holds: the live model returns 704 for count(AircraftFlight) where fulfils == PassengerFlight, matching FULFILLMENT_EXACT exactly. The enrichment is what finally gives the test teeth. All 341 candidate legs are disjoint from the 704 exact ones (verified in SQL), so a leak from the heuristic side would surface as 1,045 rather than hiding inside an equal number. At the pre-enrichment figure of 4 exact and an unexercised candidate side, the equality could have passed with the separation broken.",
+      "measurements": {"fulfillment_exact_rows": 704, "distinct_actual_flight_id": 704, "distinct_passenger_flight_key": 653, "aircraft_flight_rows": 3900, "fulfillment_candidate_rows": 341, "candidate_pairs_overlapping_exact": 0}
+    },
+    {
+      "test": "test_time_literal_without_milliseconds_matches_nothing",
+      "decision": "re-pinned, with the reason it moved stated rather than assumed",
+      "before": "assert with_ms == 12030; assert without_ms is None",
+      "after": "assert without_ms is None; assert with_ms == COUNT_IF(formatted == '16:00:00.000') == COUNT(*) == 14366; assert COUNT(DISTINCT PASSENGER_DEPARTURE_UTC_TIME) == 1",
+      "why_it_moved": "PASSENGER_DEPARTURE_UTC_TIME holds exactly ONE distinct value across all of ROUTE_STATE (16:00:00.000), so the millisecond literal's match count is simply the table's row count. It moved from 12,030 to 14,366 because the table grew in the enrichment, not because anything about time-literal matching changed. The distinct-value assertion is added so the pin does not look arbitrary to the next reader.",
+      "reasoning": "The sharp edge itself, that the missing millisecond suffix matches nothing silently, is unchanged and is asserted first. The count is now re-derived from SQL alongside the pinned constant."
+    }
+  ],
+
+  "false_claims_corrected": [
+    {
+      "id": 1,
+      "file": "NEO4J_RAI_MAPPING.md",
+      "location_when_audited": "line 108",
+      "before": "Live population is zero pairs ... PASSENGER_FLIGHT_CANONICAL.schedule_key is non-null on 1 of 19,996 rows, and that one key (SYN-SK-HIST_700) has no ROUTE_STATE at all. The edge is declared, derived and evaluated without error; it is unexercised by the shipped fixture.",
+      "after": "Live population is 7,950 pairs (7,950 distinct passenger flights, 2,000 distinct route states) ... schedule_key non-null on 7,951 of 19,446 ... populated but ungraded: say 'implemented and populated, not covered by a golden-question fixture'.",
+      "verification": "SQL replica of the full four-clause computed_schedule.py:160-168 conjunction, run live 2026-09-02: 7,950 pairs, 7,950 distinct PASSENGER_FLIGHT_KEY, 2,000 distinct ROUTE_STATE_KEY."
+    },
+    {
+      "id": 2,
+      "file": "NEO4J_FIDELITY_AUDIT.md",
+      "location_when_audited": "element-count table line 24, edge row line 60, section 1 finding A1 lines 97-100, section 3 defect 1",
+      "before": "SCHEDULES edge verdict MISSING; 'No relationship, property or derived rule connects RouteState to PassengerFlight anywhere ... grep for SCHEDULES / schedules( returns zero hits in both'; element-count MISSING column 1; 'Plus 33 ADDED concepts (44 built concepts ...)'.",
+      "after": "Verdict RESHAPED (was MISSING) with the original text quoted as superseded; element-count MISSING column 0 and edges RESHAPED 3 to 4; a new 'A1 status: closed' note covering both the structure and the population, in the same pattern as the file's own A4/A7 status notes; section 3 defect 1 gains 'Status: closed'; ADDED concepts 33 to 35 of 46.",
+      "verification": "RouteStateSchedules at rai_code/aviation_model/computed_schedule.py:155-169, RouteState.schedules at :158, model.define at :160, PassengerFlight.scheduled_by at :171; same definition present in the generated rai_code/manual/aviation_temporal.py.",
+      "history_preserved": "yes, verbatim, with a dated revision marker. The document written to catch a false parity claim had come to carry one, and that sequence is now legible in the file rather than erased."
+    },
+    {
+      "id": 3,
+      "file": "NEO4J_FIDELITY_AUDIT.md",
+      "location_when_audited": "line 61, FULFILLED edge row",
+      "before": "it is populated on 4 of 3,900 aircraft flights live, so the edge exists but is barely exercised",
+      "after": "populated on 704 of 3,900 aircraft flights live (18 percent), over 653 distinct canonical passenger flights, so the one-plan-to-many-legs case is genuinely exercised",
+      "verification": "FULFILLMENT_EXACT 704 rows / 704 distinct ACTUAL_FLIGHT_ID / 653 distinct PASSENGER_FLIGHT_KEY; AIRCRAFT_FLIGHT 3,900 rows; live model count 704. The same file's own A7 status table already carried 704, so the document contradicted itself."
+    },
+    {
+      "id": 4,
+      "file": "BRIEF.md",
+      "location_when_audited": "Narration constraints, lines 214-215",
+      "severity": "highest in the task, this is a live stage instruction",
+      "before": "Say 'concurrently valid at knowledge date', never 'open-ended': zero route states carry the 9999-01-01 sentinel.",
+      "after": "The instruction is kept and scoped to the 1,339 SFO->LAX states, resting on the true reason (none of those 1,339 carries the sentinel, pinned by the renamed test). A following paragraph states plainly that 2,185 of 14,366 route states DO carry it, 53 of them on SFO->LAX at later knowledge dates, that those are genuinely open-ended, and gives the presenter the sentence to use when asked directly.",
+      "reasoning": "The old wording gave a correct instruction with a false reason attached. That is worse than either error alone: a presenter asked 'do any of your route states carry an open interval?' would have answered 'no, none' in good faith on its authority."
+    },
+    {
+      "id": 5,
+      "file": "NEO4J_RAI_MAPPING.md",
+      "location_when_audited": "line 57",
+      "before": "CodeResolutionCode (D-0019 supersedes the row-scoped CodeResolution) ... As built the grain is the distinct raw code, not the source row.",
+      "after": "Row header now names both grains as bound as of D-0027, with the superseded framing quoted and the D-0027 measurement (0.18s against an 18s first query, premise refuted) recorded. NEO4J_FIDELITY_AUDIT.md's B1 row and section 3 defect 4 carry the same correction.",
+      "verification": "All four of CodeResolution, CodeResolutionCandidate, CodeResolutionCode and CodeResolutionCodeCandidate are among the 46 live concepts; CODE_RESOLUTION, CODE_RESOLUTION_CANDIDATE and CODE_RESOLUTION_INPUT are among the 37 declared sources; core_reference.py:140-180.",
+      "residual_noted_not_hidden": "The mapping's described key for CodeResolution (a hash over five fields) is still not the built identity (resolution_id). Flagged in place."
+    },
+    {
+      "id": 6,
+      "files": ["NEO4J_FIDELITY_AUDIT.md", "BRIEF.md"],
+      "before": "'44 concepts, 1,292 properties, 11 bare relationships' (audit header) and '46 concepts, 1,292 properties, 32 relationships, 93/93 gates' (BRIEF completion table). Three of the BRIEF row's four figures were wrong, and 93/93 was false rather than merely stale.",
+      "after": "Both now read 46 concepts, 1,412 properties, 22 concept relationships, 11 bare relationships, 37 declared sources, 805 declared columns, SDK 1.20.1. The BRIEF gains a separate, dated gate row showing 93/93 from the real full run and a correction paragraph explaining that five gates were failing when 93/93 was first written.",
+      "verification": "build/design/ontology_inventory.json, now pinned figure-by-figure by test_inventory_artifact."
+    },
+    {
+      "id": 7,
+      "file": "NEO4J_PARITY_MATRIX.md",
+      "before": "all eight Current status cells read DESIGNED_NOT_YET_EXECUTED",
+      "after": "all eight read RAI_PROVEN, with a new evidence table citing QUERY-UC1.json (23/23, 46 tests), QUERY-UC2.json (21/21, 20/20 result sets), QUERY-ROT.json (6/6), the 49/49 SQL oracle, and the 93/93 ontology gate. A new section states explicitly why NO row is PROVEN: the claim scan has just failed and been repaired rather than passed clean, and the notebook / agent / HTML / prep_demo.py surface that state 5 refers to was descoped, so its conditions are unmeasurable rather than merely unmet.",
+      "reasoning": "Read literally the old column forbade saying any of the matrix's own allowed parity statements, while the rest of the repo recorded the questions as answering live. A gating column nobody advances is a dead gate, not a conservative one. RAI_PROVEN is the highest state the evidence supports and it is stated as such rather than rounded up."
+    },
+    {
+      "id": 8,
+      "file": "NEO4J_PARITY_MATRIX.md",
+      "verdict_in_claims_audit": "CONDITIONALLY_TRUE",
+      "action": "Added a 'Scope limit on the oracle-agreement sentences' paragraph naming all three known divergences between MODEL_INPUT and the independent oracle (rotation anomaly precedence for a cancelled target, cycle-detection scope, TARGET_NOT_OPERATED with four live rows and no oracle branch), citing D-0021/D-0022/D-0030, and instructing the presenter to say the oracle has no branch there rather than extending the claim. Previously this caveat existed only in BRIEF.md, which a presenter working from the matrix would not have read.",
+      "residual": "DEMO_QUESTIONS.md and NEO4J_RAI_MAPPING.md were outside this task's write scope and still lack the caveat."
+    }
+  ],
+
+  "found_and_not_on_the_task_list": [
+    {
+      "severity": "high",
+      "file": "NEO4J_FIDELITY_AUDIT.md",
+      "findings": ["A2(iii)", "A3", "section A AIRCRAFT_STATE row", "section B CONFORMED row", "section B ASSIGNED row", "section 2 missing-inverse bullet", "section 3 defect 2"],
+      "false_claim": "That Aircraft has 'exactly two outbound relationships, not eight', that there is no dimension-scoped edge from Aircraft ('grep returns nothing'), that no direct Aircraft -> AircraftType / EngineType / AircraftStatus hop exists, and that AircraftStatus has zero relationships so 'which aircraft were ever in Storage' cannot start from the status node.",
+      "measured_truth": "Aircraft has NINE outbound relationships in the live inventory: state_assignments, type_assignments, engine_assignments, status_assignments (computed_aircraft.py:109-133), conformed_to, equipped_with, assigned_status (lines 148-190, each carrying both supplied edge dates), plus daily_assignments and audit_assignments. AircraftStatus.daily_assignments exists at lines 192-196.",
+      "why_it_matters": "This is the same failure mode as the SCHEDULES claim and it compounds it: section 3 defect 2 criticised NEO4J_RAI_MAPPING.md for describing these very edges, so the audit was marking a correct document wrong. It also understates the demo. Four visibly distinct dimension edges and three one-hop Cypher-equivalent readings are exactly what a Cypher-literate reviewer would ask for, and the audit told the presenter they were absent.",
+      "action": "All seven passages corrected with dated revision markers and preserved original text. The AircraftConfiguration half of A3 genuinely remains open and is left open."
+    },
+    {
+      "severity": "medium",
+      "file": "NEO4J_FIDELITY_AUDIT.md",
+      "finding": "A7 status density table",
+      "issue": "It carried ENRICH-02's generator-side counts over 993 filler aircraft (8.83 / 2.36 / 1.20 / 1.31; vocabulary 28,272 / 1,654 / 283), which are not reproducible from the shipped tables.",
+      "measured_truth": "From MODEL_INPUT.AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT grouped by (dimension, aircraft_id) over all 999 eligible aircraft: aircraft_state 8.770 with 995 of 999 multi-version, aircraft_status 2.337 with 470 of 999, aircraft_type 1.204 with 202 converting, engine_type 1.309 with 307 re-engining. Status vocabulary from SOURCE.AIRCRAFT_HISTORY.START_AIRCRAFT_STATUS: In Service 28,287, Storage 1,661, Maintenance 285 over 30,233 rows. These match the orchestrator's independent measurement exactly.",
+      "action": "Table refreshed to the reproducible figures with the definition stated, the difference explained as denominator (999 vs 993) and grain (the daily assignment coalesces same-day observations the generator counts separately) rather than as error, and the closest filler-only reproduction (8.795 / 991, 2.339 / 467, 1.201 / 200, 1.305 / 303) recorded so the residual gap is visible rather than smoothed over."
+    },
+    {
+      "severity": "low, reported not fixed, outside write scope",
+      "items": [
+        "rai_code/aviation_model/core_flight.py:86 comment says PassengerFlight.schedule is 'Non-null on exactly one of 19,996 rows'. Live: 7,951 of 19,446. The comment goes on to justify a real design decision (binding PH-02 from the precedence winner) on the strength of that stale figure; the decision is still right, its stated evidence is not.",
+        "rai_code/aviation_model/sources.py:28, repeated at _regen_sources.py:185, says CODE_RESOLUTION, CODE_RESOLUTION_CANDIDATE and CODE_RESOLUTION_INPUT 'are deliberately NOT bound'. D-0027 bound all three; they are 3 of the 37 declared sources declared in that same file."
+      ]
+    },
+    {
+      "severity": "informational",
+      "note": "Checked and found sound: NEO4J_PARITY_MATRIX.md's Q03-CANONICAL cell ('132 rows, 120 distinct month ends') looks contradicted by BRIEF.md's '985 rows' but is not. The frozen manifest's Q03-CANONICAL is genuinely 132 rows over 2015-01-31 to 2024-12-31 (verified: 132 row_id entries in EXPECTED_ANSWERS.yaml); the 985 figure is the enriched 2025-2034 window. No change made."
+    },
+    {
+      "severity": "informational",
+      "note": "BRIEF.md's MODEL_INPUT row says '37 objects' and the ontology row now says '37 declared sources'. These are different 37s and it is a coincidence: the MODEL_INPUT schema holds 37 objects, of which 35 are bound, and the 37 declared sources are those 35 plus SOURCE.AIRCRAFT_CONFIGURATION and SOURCE.SCHEDULE_SNAPSHOT_CALENDAR. Left as is because both statements are true, but flagged because it invites a wrong inference."
+    }
+  ],
+
+  "files_written": [
+    "tests/test_model.py",
+    "BRIEF.md",
+    "NEO4J_FIDELITY_AUDIT.md",
+    "NEO4J_RAI_MAPPING.md",
+    "NEO4J_PARITY_MATRIX.md",
+    "CLAIMS_AUDIT.md",
+    "build/task_reports/TRUTH-01.json"
+  ],
+  "files_deliberately_not_touched": [
+    "EXPECTED_ANSWERS.yaml (frozen)",
+    "rai_code/aviation_model/** (ontology package)",
+    "rai_code/queries/**",
+    "data/** (generator and loader)",
+    "DECISION_LOG.md",
+    "DEMO_QUESTIONS.md"
+  ],
+  "git": "no commit, no push, per task constraint",
+
+  "commands_run": {
+    "gate_iteration": [
+      ".venv/bin/python -m pytest tests/test_model.py -m live -q -p no:randomly -k \"test_inventory_artifact or test_no_route_state_carries_the_open_sentinel or test_bool_property_needs_explicit_comparison or test_exact_fulfillment_is_the_only_source_of_the_fulfils_link or test_time_literal_without_milliseconds_matches_nothing\"  -> 5 failed, 88 deselected, 148.51s (the before state)",
+      ".venv/bin/python -m pytest tests/test_model.py -m live -q -p no:randomly --show-capture=no --tb=short -k \"<same five, sentinel test renamed>\"  -> 5 passed, 88 deselected, 155.03s",
+      ".venv/bin/python -m pytest tests/test_model.py -m live -q -p no:randomly --show-capture=no --tb=short  -> 93 passed, 0 failed, 1234.76s"
+    ],
+    "engine_check": ".venv/bin/rai reasoners list  -> aviation_temporal_logic_s Logic HIGHMEM_X64_S READY",
+    "read_only_sql": [
+      "SELECT COUNT(*), COUNT_IF(KNOWLEDGE_VALID_TO='9999-01-01'), COUNT_IF(IS_CODESHARE) ... FROM MODEL_INPUT.ROUTE_STATE  -> 14366 / 2185 / 19",
+      "SELECT COUNT(*) FROM MODEL_INPUT.ROUTE_STATE WHERE ROUTE_ID='SFO->LAX' AND KNOWLEDGE_VALID_TO='9999-01-01'  -> 53",
+      "same with the 2026-08-31 half-open knowledge predicate added  -> 0 (and 1339 without the sentinel predicate)",
+      "SELECT COUNT(DISTINCT PASSENGER_DEPARTURE_UTC_TIME) FROM MODEL_INPUT.ROUTE_STATE  -> 1 ('16:00:00.000' on all 14,366)",
+      "SELECT COUNT(*), COUNT(DISTINCT ACTUAL_FLIGHT_ID), COUNT(DISTINCT PASSENGER_FLIGHT_KEY) FROM MODEL_INPUT.FULFILLMENT_EXACT  -> 704 / 704 / 653",
+      "SELECT COUNT(*) FROM MODEL_INPUT.FULFILLMENT_CANDIDATE  -> 341; overlap with FULFILLMENT_EXACT on ACTUAL_FLIGHT_ID  -> 0",
+      "SELECT COUNT(*) FROM MODEL_INPUT.AIRCRAFT_FLIGHT  -> 3900",
+      "RouteStateSchedules replica: ROUTE_STATE join PASSENGER_FLIGHT_CANONICAL on SCHEDULE_KEY, half-open knowledge window on PUBLISH_DATE, inclusive operating window on OPERATING_DATE, IS_OPERATING_<DAY> matching DAYOFWEEKISO  -> 7950 pairs, 7950 distinct PF, 2000 distinct RS; PF total 19446, PF schedule_key non-null 7951",
+      "per-dimension version density from MODEL_INPUT.AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT grouped by (DIMENSION, AIRCRAFT_ID), all 999 and filler-only (AIRCRAFT_ID > 1006)",
+      "SELECT START_AIRCRAFT_STATUS, COUNT(*) FROM SOURCE.AIRCRAFT_HISTORY GROUP BY 1  -> In Service 28287 / Storage 1661 / Maintenance 285, 30233 rows total",
+      "SOURCE layer totals from INFORMATION_SCHEMA  -> 182,039 rows, 204 columns; MODEL_INPUT 37 objects",
+      "INFORMATION_SCHEMA.COLUMNS for ROUTE_STATE / PASSENGER_FLIGHT_CANONICAL / FULFILLMENT_EXACT / AIRCRAFT_HISTORY (column discovery)"
+    ],
+    "code_and_artifact_verification": [
+      "grep RouteStateSchedules / schedules( in rai_code/aviation_model/ and rai_code/manual/aviation_temporal.py",
+      "grep state_assignments|type_assignments|engine_assignments|status_assignments|conformed_to|equipped_with|assigned_status|AircraftStatus.daily_assignments in rai_code/aviation_model/",
+      "python inspection of build/design/ontology_inventory.json: all top-level counts, the 46 concept names, the 37 declared source names, Aircraft's relationship list, AircraftStatus's relationship list, column counts of the three new CODE_RESOLUTION tables",
+      "python inspection of build/task_reports/MODEL-01.json inventory_figures (the 44/1292/34/749 pre-D-0027 snapshot), ENRICH-02.json density measures, QUERY-UC1/UC2/ROT.json status and evidence",
+      "python inspection of EXPECTED_ANSWERS.yaml Q03-CANONICAL (read only, not modified)"
+    ]
+  },
+
+  "constraints_honoured": [
+    "No test deleted. No assertion weakened; one loose assertion (concept_count >= 40) was tightened to an exact pin.",
+    "Every number written in a document was measured by this task or taken from the orchestrator's stated measured-truth block, and the two were cross-checked against each other where they overlapped. They agreed on all overlapping figures.",
+    "No claim made stronger than the evidence. The parity matrix advanced to RAI_PROVEN, not PROVEN, and says why in its own words.",
+    "Superseded wording quoted in place with a dated revision marker rather than silently replaced, in all four documents.",
+    "Snowflake access read-only SELECT under --role RAI_DEMO_AVIATION_TEMPORAL throughout. No mutation, no DDL.",
+    "No prepareIndex model lock was hit; the shared engine was warm and only one importing process ran at a time."
+  ],
+
+  "unresolved": [
+    "The claim scan is repaired, not passed clean. A fresh independent pass over the corrected text is the prerequisite for any row reaching PROVEN, and this task cannot supply it because this task did the editing.",
+    "DEMO_QUESTIONS.md and NEO4J_RAI_MAPPING.md still state the oracle-agreement claim without the fixture-scope caveat. Outside this task's write scope.",
+    "Two stale code comments (core_flight.py:86, sources.py:28 and _regen_sources.py:185) remain. Outside this task's write scope.",
+    "RouteStateSchedules is populated with 7,950 live pairs and read by no frozen EXPECTED_ANSWERS.yaml fixture, so nothing would catch a regression in it. That is a coverage gap, not a truth defect, and every document now says so in the same words.",
+    "NEO4J_FIDELITY_AUDIT.md's A3 finding remains genuinely open for AircraftConfiguration, which still has no inverse reading.",
+    "The File:line citations inside CLAIMS_AUDIT.md's findings no longer resolve, since the corrections shifted the lines. Noted at the top of that document, with the instruction to search on the quoted text instead."
+  ]
+}

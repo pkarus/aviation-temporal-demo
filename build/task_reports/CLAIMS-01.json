@@ -1,0 +1,93 @@
+{
+  "task": "CLAIMS-01",
+  "title": "Independent claims audit of customer-facing parity documents",
+  "date": "2026-09-02",
+  "status": "complete",
+  "scope": "audit only; no code, ontology, or Snowflake write. Read-only SELECT against PK_AVIATION_TEMPORAL.MODEL_INPUT under RAI_DEMO_AVIATION_TEMPORAL. rai_code/aviation_model was never imported and nothing under rai_code/queries/ was run.",
+  "deliverables": [
+    "CLAIMS_AUDIT.md",
+    "build/task_reports/CLAIMS-01.json"
+  ],
+  "documents_audited": [
+    "NEO4J_PARITY_MATRIX.md",
+    "NEO4J_RAI_MAPPING.md",
+    "BRIEF.md (Completion state and Narration constraints sections)",
+    "README.md",
+    "DEMO_QUESTIONS.md",
+    "SOURCE_CONTRACT.md (limitations)",
+    "NEO4J_FIDELITY_AUDIT.md",
+    "rai_code/aviation_model/*.py docstrings"
+  ],
+  "evidence_basis": {
+    "task_reports_checked": [
+      "MODEL-01.json", "MODEL-02.json", "FIDELITY-01.json",
+      "ENRICH-01.json", "ENRICH-02.json", "DATA-04a.json", "DATA-04b.json"
+    ],
+    "decision_log_entries_checked": [
+      "D-0019", "D-0020", "D-0021", "D-0022", "D-0023", "D-0027", "D-0029", "D-0030"
+    ],
+    "live_inventory": "build/design/ontology_inventory.json, regenerated 2026-09-02 after MODEL-01/FIDELITY-01: 46 concepts, 1412 properties, 22 concept relationships, 11 bare relationships",
+    "live_snowflake_queries_run": [
+      "SELECT COUNT(*), SUM(sentinel) FROM MODEL_INPUT.ROUTE_STATE -- 14366 total, 2185 carry the 9999-01-01 knowledge sentinel",
+      "SELECT COUNT(*), SUM(sentinel) FROM MODEL_INPUT.ROUTE_STATE JOIN ROUTE WHERE ROUTE_ID='SFO->LAX' AND concurrently valid at 2026-08-31 -- 1339 total, 0 carry the sentinel",
+      "SELECT COUNT(*) FROM MODEL_INPUT.PASSENGER_FLIGHT_CANONICAL WHERE SCHEDULE_KEY IS NOT NULL -- 7951",
+      "Full RouteStateSchedules conjunction (schedule identity, both clocks, weekday) replicated in SQL against PASSENGER_FLIGHT_CANONICAL join ROUTE_STATE -- 7950 of 7951 satisfy it",
+      "SELECT COUNT(*) FROM MODEL_INPUT.AIRCRAFT_FLIGHT -- 3900",
+      "SELECT COUNT(*) FROM MODEL_INPUT.FULFILLMENT_EXACT -- 704"
+    ],
+    "code_greps_run": [
+      "grep -rn SCHEDULES/schedules(/RouteStateSchedules rai_code/aviation_model/*.py rai_code/manual/aviation_temporal.py -- present, contradicts NEO4J_FIDELITY_AUDIT.md's zero-hits claim",
+      "grep -n 'CodeResolution = model.Concept' rai_code/aviation_model/core_reference.py -- both CodeResolution (row-scoped) and CodeResolutionCode (code-grain) are bound as concepts"
+    ]
+  },
+  "verdict_counts": {
+    "FALSE": 6,
+    "OVERBROAD": 1,
+    "CONDITIONALLY_TRUE": 1,
+    "SUPPORTED": 6,
+    "UNPROVEN": 0,
+    "total_claims_audited": 14
+  },
+  "three_most_dangerous_findings": [
+    {
+      "rank": 1,
+      "claim": "NEO4J_FIDELITY_AUDIT.md:97 and :60 assert the (ROUTE_STATE)-[:SCHEDULES]->(PASSENGER_FLIGHT) edge 'does not exist' and that grep for it returns zero hits in both rai_code/aviation_model/ and rai_code/manual/aviation_temporal.py.",
+      "why_dangerous": "The audit document exists specifically to catch a false parity claim after one was already found and shipped once (the 'no supplied edge is omitted' defect). This document itself now contains a false claim of the opposite direction (says missing when present), which is exactly the failure mode the audit was created to prevent, and undermines its authority as ground truth for the next reader.",
+      "verdict": "FALSE",
+      "evidence": "Direct grep: RouteStateSchedules is defined in computed_schedule.py:155-169 and confirmed in the generated aviation_temporal.py:3727-3743."
+    },
+    {
+      "rank": 2,
+      "claim": "NEO4J_RAI_MAPPING.md:108 and NEO4J_PARITY_MATRIX.md:57 both state the SCHEDULES relationship has 'zero live pairs' and that PASSENGER_FLIGHT_CANONICAL.schedule_key 'has no ROUTE_STATE at all'.",
+      "why_dangerous": "This is the specific factual justification for treating a real, implemented capability as unusable. It is stale by four orders of magnitude: live SQL shows 7,950 of 7,951 eligible canonical passenger flights satisfy the full relationship conjunction after the D-0023 enrichment. A presenter following this document would tell Cirium a working capability is empty, or would avoid demonstrating something that now works.",
+      "verdict": "FALSE",
+      "evidence": "SQL replica of computed_schedule.py:160-168's exact conjunction against live MODEL_INPUT tables returns 7950 of 7951, not 0. ENRICH-01.json:533 and ENRICH-02.json:562-575 confirm this was a deliberate, measured enrichment target."
+    },
+    {
+      "rank": 3,
+      "claim": "BRIEF.md:214-215's narration constraint: 'Say \"concurrently valid at knowledge date\", never \"open-ended\": zero route states carry the 9999-01-01 sentinel.'",
+      "why_dangerous": "This is an active instruction for what to say on stage, not a passive documentation lag. As literally written it is an unqualified, checkable claim about the whole ROUTE_STATE table, and it is false: 2,185 of 14,366 route states (15 percent) do carry the model's own open-interval sentinel. The narrower claim it is trying to protect (the demonstrated SFO->LAX multi-open example has no sentinel rows) is true, but the instruction does not say that, and a presenter reciting it verbatim in response to a direct question ('do any of your route states never close?') would give a wrong answer live.",
+      "verdict": "OVERBROAD",
+      "evidence": "Live SQL: 14366 total ROUTE_STATE rows, 2185 with KNOWLEDGE_VALID_TO = '9999-01-01'. The specific SFO->LAX at knowledge date 2026-08-31 set (1339 rows) has 0 sentinel rows, confirmed separately."
+    }
+  ],
+  "four_specific_checks_from_task_brief": {
+    "1_native_temporal_support_claim": "SUPPORTED. temporal.py explicitly states RAI 1.20.1 has no temporal support at all and every predicate is a hand-written conjunction; the differentiation claimed everywhere audited is 'written once, reused', never 'native'.",
+    "2_multi_open_route_claim": "SUPPORTED for the mechanism (.alt() reading, no inverse FD, 1339 concurrent states live-verified). See dangerous finding 3 for the one overbroad narration-constraint wording issue found alongside it.",
+    "3_data_realism_production_performance_cost_claims": "SUPPORTED. No audited document claims production scale, performance advantage, cost advantage, or security superiority; NEO4J_PARITY_MATRIX.md's own prohibited-statements list matches what was actually found.",
+    "4_independent_oracle_agreement_claims": "CONDITIONALLY_TRUE. Every individual claim is properly scoped to 'the frozen fixtures' and remains true given that D-0021/D-0022/D-0030's divergences are unexercised by those fixtures. But NEO4J_PARITY_MATRIX.md, NEO4J_RAI_MAPPING.md, and DEMO_QUESTIONS.md never mention that any divergence exists; only BRIEF.md's known-issues list does. Recommended fix: cross-reference BRIEF.md's known issues 4 and 5 from the parity matrix's evidence state machine."
+  },
+  "secondary_findings": [
+    "NEO4J_RAI_MAPPING.md:57 describes CodeResolutionCode as superseding the row-scoped CodeResolution; D-0027 reversed D-0019's exclusion and both grains are now bound as concepts in core_reference.py:150-194. FALSE, stale.",
+    "NEO4J_FIDELITY_AUDIT.md:4-5's header (44 concepts, 1292 properties) and BRIEF.md:179 (46 concepts but still 1292 properties) both lag the live build/design/ontology_inventory.json (46 concepts, 1412 properties, regenerated after both documents were written). FALSE, stale.",
+    "NEO4J_PARITY_MATRIX.md:36-43's Current status column reads DESIGNED_NOT_YET_EXECUTED for all eight questions, contradicting BRIEF.md's Completion state section which records all eight answering live with 23/23, 21/21, 6/6 result sets and 49/49 SQL oracles green. The document's own claim-gating mechanism was never advanced to match. FALSE, stale, and it is the mechanism meant to gate what may be said."
+  ],
+  "safe_to_say_summary": "RAI has no native temporal support and none is claimed; the differentiation is a shared, reusable predicate layer. The SFO->LAX multi-open result and its mechanism are real and reproducible. The require(unique(...)) no-op disclosure is accurate and consistently stated. All eight golden questions answer live against frozen expected answers and an independent SQL oracle, for the named frozen parameters, on synthetic data with no production/performance/cost claim attached. All thirteen supplied Neo4j edges are implemented; the one gap found by FIDELITY-01 is genuinely fixed.",
+  "must_not_say_summary": "Do not call the SCHEDULES relationship empty or unexercised without citing its current 7950-of-7951 live population. Do not say zero route states carry an open sentinel without scoping it to the demonstrated SFO->LAX example. Do not extend independent-oracle agreement beyond the named frozen fixture parameters; three specific divergences are known and undemonstrated. Do not quote ontology size or edge-completeness figures from NEO4J_FIDELITY_AUDIT.md or BRIEF.md without checking build/design/ontology_inventory.json first.",
+  "documents_not_modified": [
+    "NEO4J_PARITY_MATRIX.md", "NEO4J_RAI_MAPPING.md", "BRIEF.md", "README.md",
+    "DEMO_QUESTIONS.md", "SOURCE_CONTRACT.md", "NEO4J_FIDELITY_AUDIT.md",
+    "rai_code/aviation_model/*.py"
+  ],
+  "note": "This report and CLAIMS_AUDIT.md are the only files this task wrote. The staleness findings above are recommendations for a follow-up task to apply; CLAIMS-01's mandate was audit only."
+}

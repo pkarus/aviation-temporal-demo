@@ -157,7 +157,7 @@ the `CLAUDE.md` exit definition both require `prep_demo.py` to pass cold and war
 agent, figures and HTML. Under this reduction that definition is **not met**, and the demo is not
 shippable as a customer-facing 30-minute technical demo: there is no notebook to present from, no
 Snowflake Intelligence access path, and no runbook to narrate. What it will be is the verified
-engineering core — a strict-mode ontology over a hash-verified source layer, answering all eight
+engineering core - a strict-mode ontology over a hash-verified source layer, answering all eight
 golden questions live against frozen expected answers that an independent SQL oracle already
 reproduces. That is the part that had to be right first, and it is the part that everything descoped
 here would have been built on top of.
@@ -176,12 +176,25 @@ session (ontology plus queries), the retained work is **done**.
 | `SOURCE` | 182,039 rows, 204 columns, content hashes equal to manifest 1.2.0 |
 | `MODEL_INPUT` | 37 objects, 801+ traced columns, 88/88 integrity gates |
 | Independent SQL oracles | 49/49 result sets, `all_green=True` |
-| Ontology | 46 concepts, 1,292 properties, 32 relationships, 93/93 gates |
+| Ontology | 46 concepts, 1,412 properties, 22 concept relationships plus 11 bare, 37 declared sources, 805 declared columns, SDK 1.20.1 |
+| Ontology live gate | **93/93**, full-file run 2026-09-02, 1,234s, zero failures |
 | Q01-Q04 + Q02F | 23/23 result sets, 46 tests |
 | Q05-Q07 | 21/21 checks, 91 tests |
 | Q08 | 6/6 result sets, 41 tests |
 
 Every gate was rerun by the orchestrator rather than accepted on a sub-agent's report.
+
+**Correction, 2026-09-02 (TRUTH-01).** The ontology row of this table read "46 concepts, 1,292
+properties, 32 relationships, 93/93 gates". Three of those four figures were wrong. The property
+count and the relationship count were the pre-D-0027 snapshot from `build/task_reports/MODEL-01.json`,
+and 93/93 was not merely stale but false at the time it was written: five of the 93 gates were
+failing, on pinned constants the D-0023/D-0024 enrichment had invalidated
+(`declared_source_count`, the route-state open sentinel, the codeshare and route-state totals, the
+exact-fulfilment count, and the millisecond time literal). All five are repaired, none by deletion
+or by weakening an assertion, and the 93/93 above is a complete run of the file as it stands. The
+figures now come from `build/design/ontology_inventory.json` and are pinned exactly by
+`tests/test_model.py::test_inventory_artifact`, which previously asserted only
+`concept_count >= 40` and so could not have caught any of this.
 
 ### Known issues carried forward, in the order they would bite
 
@@ -211,7 +224,27 @@ Every gate was rerun by the orchestrator rather than accepted on a sub-agent's r
 
 ### Narration constraints
 
-Say "concurrently valid at knowledge date", never "open-ended": zero route states carry the
-`9999-01-01` sentinel. Do not present the five `require(unique(...))` lines as live checks; they are a
-documented no-op in 1.20.1. Q07's operating clock visibly undercounts marketing and that is
-contractually correct (D-0029) — say it rather than explain it away.
+Say "concurrently valid at knowledge date", never "open-ended", **about the 1,339 `SFO->LAX`
+states**. The reason is that none of those 1,339 carries the `9999-01-01` open sentinel, verified
+live and pinned by
+`tests/test_model.py::test_open_sentinel_present_overall_absent_from_the_demonstrated_beat`.
+
+Do not extend that to the table. It is **not** true that zero route states carry the sentinel:
+2,185 of 14,366 do, 53 of them on `SFO->LAX` itself at knowledge dates after 2026-08-31, and those
+are genuinely open-ended. The earlier wording of this constraint gave the true instruction with a
+false reason attached, which is worse than either alone, because a presenter who is asked "do any of
+your route states carry an open interval?" would have answered "no, none" on its authority. The
+answer is "yes, about 15 percent of them do; the specific multi-open result I am showing you does
+not, which is why I am saying concurrently valid at a knowledge date rather than open-ended."
+
+Do not present the five `require(unique(...))` lines as live checks; they are a documented no-op in
+1.20.1. Q07's operating clock visibly undercounts marketing and that is contractually correct
+(D-0029), so say it rather than explain it away.
+
+Do not quote the ontology's size, or any live population figure, from memory or from a document
+older than the last data change. Two rounds of late enrichment (D-0023/D-0024) and the D-0027
+`CodeResolution` reinstatement moved almost every number in this repository, and three documents
+kept asserting the old ones. `build/design/ontology_inventory.json` is the authority for model size
+and `MODEL_INPUT` is the authority for populations;
+`tests/test_model.py::test_inventory_artifact` now pins every figure in that artifact exactly, so
+the next drift fails a gate instead of reaching a slide.
