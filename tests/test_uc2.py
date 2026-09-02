@@ -98,33 +98,49 @@ def frozen(manifest):
     return out
 
 
+# Every UC2 result set in the manifest: the twelve frozen at 1.1.1, then the eight D-0023 added
+# at 1.2.0. The enriched ones re-ask the same three questions at 2027 parameters over the
+# enriched population, so they exercise the same code path at roughly ten times the cardinality
+# (Q07 3 rows to 30, Q05 35 to 392).
+RESULT_SET_IDS = (
+    "Q06-CANONICAL",
+    "Q06-INCOMPLETE-ENDPOINT",
+    "Q06-MISSING-CARRIER-ROLE",
+    "Q06-INVALID-DATE",
+    "Q06-ENRICHED-MARKETING",
+    "Q06-ENRICHED-OPERATING",
+    "Q07-MARKETING",
+    "Q07-OPERATING",
+    "Q07-KNOWLEDGE-END-EMPTY",
+    "Q07-MISSING-KNOWLEDGE-DATE",
+    "Q07-MISSING-OPERATING-DATE",
+    "Q07-MISSING-CARRIER-ROLE",
+    "Q07-ENRICHED-KNOWLEDGE-LATE",
+    "Q07-ENRICHED-KNOWLEDGE-EARLY",
+    "Q07-ENRICHED-OPERATING-SHIFT",
+    "Q07-ENRICHED-ROLE",
+    "Q05-CANONICAL",
+    "Q05-INELIGIBLE-ENDPOINT",
+    "Q05-ENRICHED",
+    "Q05-ENRICHED-GAP-PAIRS",
+)
+
+
 @pytest.fixture(scope="session")
 def invocations(uc2, frozen, manifest):
-    """Every frozen UC2 result set, invoked once. ``{id: (status, error_code, frame)}``."""
-    labels = {
-        question_id: uc2.manifest_label_source(question_id, manifest)
-        for question_id in ("Q05", "Q06", "Q07")
-    }
+    """Every frozen UC2 result set, invoked once. ``{id: (status, error_code, frame)}``.
+
+    Labels are scoped **per result set**, not per question. At 1.2.0 the semantic identity is
+    no longer unique across a question's result sets: Q07's three enriched marketing sets
+    share all 30 identities and 87 of ``Q05-ENRICHED-GAP-PAIRS``'s recur inside
+    ``Q05-ENRICHED``. A question-wide map would label one set with another's identifiers.
+    """
     out: dict[str, tuple[str, str | None, Any]] = {}
-    for result_set_id in (
-        "Q06-CANONICAL",
-        "Q06-INCOMPLETE-ENDPOINT",
-        "Q06-MISSING-CARRIER-ROLE",
-        "Q06-INVALID-DATE",
-        "Q07-MARKETING",
-        "Q07-OPERATING",
-        "Q07-KNOWLEDGE-END-EMPTY",
-        "Q07-MISSING-KNOWLEDGE-DATE",
-        "Q07-MISSING-OPERATING-DATE",
-        "Q07-MISSING-CARRIER-ROLE",
-        "Q05-CANONICAL",
-        "Q05-INELIGIBLE-ENDPOINT",
-    ):
+    for result_set_id in RESULT_SET_IDS:
         result_set = frozen[result_set_id]
         question_id = result_set["question_id"]
-        out[result_set_id] = uc2.invoke_result_set(
-            question_id, result_set, labels[question_id]
-        )
+        labels = uc2.manifest_label_source(question_id, manifest, result_set_id)
+        out[result_set_id] = uc2.invoke_result_set(question_id, result_set, labels)
     return out
 
 
@@ -142,7 +158,7 @@ def q05_gap(uc2, manifest):
     This window brackets a missing snapshot (2026-10-12) and an incomplete one
     (2026-10-19), so it is the live test that neither manufactures an event.
     """
-    labels = uc2.manifest_label_source("Q05", manifest)
+    labels = uc2.manifest_label_source("Q05", manifest, "Q05-CANONICAL")
     frame = uc2.schedule_four_week_changes(GAP_PREVIOUS, GAP_AFTER, 7, labels=labels)
     return frame.to_dict("records")
 
@@ -185,23 +201,29 @@ def _one(records, **match):
 # ========================================================== 1. complete conformance
 
 
-@pytest.mark.parametrize(
-    "result_set_id",
-    [
-        "Q06-CANONICAL",
-        "Q06-INCOMPLETE-ENDPOINT",
-        "Q06-MISSING-CARRIER-ROLE",
-        "Q06-INVALID-DATE",
-        "Q07-MARKETING",
-        "Q07-OPERATING",
-        "Q07-KNOWLEDGE-END-EMPTY",
-        "Q07-MISSING-KNOWLEDGE-DATE",
-        "Q07-MISSING-OPERATING-DATE",
-        "Q07-MISSING-CARRIER-ROLE",
-        "Q05-CANONICAL",
-        "Q05-INELIGIBLE-ENDPOINT",
-    ],
-)
+@pytest.mark.parametrize("result_set_id", RESULT_SET_IDS)
+def test_frozen_result_set_semantic_verdict(uc2, frozen, invocations, result_set_id):
+    """The order-free verdict over the derived columns (D-0018).
+
+    Every column the query computes from the model with no manifest input, compared as a
+    multiset so a duplicated or dropped event cannot hide behind a correct total. This is the
+    verdict that is genuinely earned; the ordered one below is separately labelled because
+    Q05's declared sequence sorts on a supplied column.
+    """
+    result_set = frozen[result_set_id]
+    status, error_code, frame = invocations[result_set_id]
+    expected_rows = [uc2._manifest_row(r) for r in (result_set.get("rows") or ())]
+
+    assert status == result_set["invocation_status"], (result_set_id, status)
+    if result_set.get("error_code") is not None:
+        assert error_code == result_set["error_code"], (result_set_id, error_code)
+    assert len(frame) == result_set["expected_cardinality"], result_set_id
+
+    diffs = uc2.compare_semantic(frame, expected_rows, result_set["question_id"])
+    assert not diffs, f"{result_set_id}: " + "; ".join(diffs[:10])
+
+
+@pytest.mark.parametrize("result_set_id", RESULT_SET_IDS)
 def test_frozen_result_set_reproduced_completely(
     uc2, frozen, invocations, result_set_id
 ):
@@ -210,6 +232,9 @@ def test_frozen_result_set_reproduced_completely(
     ``canonicalization.object_rules``: rows compare as a complete ordered sequence after the
     declared ``order_by``, and missing or extra columns fail. A cardinality-only check would
     pass on a frame of thirty-five wrong rows.
+
+    For Q05 this is the **presentation** half of the D-0018 split: it asserts that the module
+    applies the supplied labels and the declared sequence, not that it recovered them.
     """
     result_set = frozen[result_set_id]
     question_id = result_set["question_id"]
@@ -278,6 +303,31 @@ def test_q05_semantic_verdict_is_order_free(uc2, frozen, q05):
     }
 
 
+def test_q05_enriched_event_ids_are_derived_not_supplied(uc2, frozen):
+    """The 1.2.0 enriched Q05 ``event_id`` values need no label source at all.
+
+    D-0018's supplied-label problem is confined to ``Q05-CANONICAL``'s 30 hand-authored
+    mnemonics. ``Q05-ENRICHED`` freezes the fail-loud token instead, which is a pure function
+    of the four semantic-identity columns the query already computes. Running with **no**
+    ``LabelSource`` and still reproducing all 392 ``event_id`` cells is the proof: 380
+    declared-class events by the derivable token and 12 candidate/group/member events by the
+    manifest-adopted string templates. Only ``row_id`` stays supplied.
+    """
+    frame = uc2.schedule_four_week_changes("2027-01-04", "2027-06-28", 7)
+    got = frame.to_dict("records")
+    expected = [uc2._manifest_row(r) for r in frozen["Q05-ENRICHED"]["rows"]]
+
+    by_identity = {uc2._q05_row_identity(r): r["event_id"] for r in expected}
+    assert len(by_identity) == len(expected)
+    for row in got:
+        identity = uc2._q05_row_identity(row)
+        assert identity in by_identity, row
+        assert row["event_id"] == by_identity[identity], row
+    assert len(got) == len(expected)
+    # row_id remains supplied, and says so.
+    assert all(r["row_id"].startswith(uc2._UNLABELLED) for r in got)
+
+
 def test_q05_rows_by_adjacent_pair(manifest, q05):
     """The per-pair counts 7 / 5 / 9 / 14, the manifest's cheapest early diagnostic.
 
@@ -311,7 +361,7 @@ def test_q05_window_uses_only_the_declared_adjacent_pairs(manifest, q05):
     canonical window's five eligible dates give exactly four pairs; a window filter that
     leaked the 2026-09-07 comparison in would add 12,012 exact removals.
     """
-    assertions = manifest["scope"]["q05_window_assertions"]
+    assertions = manifest["scope"]["schedule_source_universe"]["q05_window_assertions"]
     declared = {
         (dt.date.fromisoformat(a), dt.date.fromisoformat(b))
         for a, b in assertions["adjacent_pairs"]
@@ -726,13 +776,20 @@ def test_snapshot_eligibility_is_presence_and_completeness_only(uc2):
     2026-10-26 is complete with an observed row count of **zero** and must be eligible;
     2026-10-19 is present with 9,917 rows and must not be. Any implementation that inferred
     completeness from a row count gets both of these backwards.
+
+    Scoped by year. D-0025 added 26 snapshot dates in 2027 - 24 eligible, one present but
+    incomplete, one missing - so that the enriched schedule block exercises presence,
+    completeness and gap semantics on its own dates without touching the 2026 calendar any
+    frozen expectation reads. Asserting one flat set would couple the 2026 contract to the
+    2027 enrichment, which is exactly the coupling D-0023's additivity argument avoids.
     """
     calendar = uc2.snapshot_calendar()
     assert calendar[GAP_AFTER] == (True, True)
     assert calendar[GAP_INCOMPLETE] == (True, False)
     assert calendar[GAP_MISSING] == (False, False)
     eligible = {day for day, (present, complete) in calendar.items() if present and complete}
-    assert eligible == {
+
+    assert {day for day in eligible if day.year == 2026} == {
         dt.date(2026, 8, 3),
         dt.date(2026, 8, 10),
         dt.date(2026, 8, 17),
@@ -741,6 +798,15 @@ def test_snapshot_eligibility_is_presence_and_completeness_only(uc2):
         dt.date(2026, 9, 7),
         dt.date(2026, 10, 5),
         dt.date(2026, 10, 26),
+    }
+
+    block_2027 = {day: flags for day, flags in calendar.items() if day.year == 2027}
+    assert len(block_2027) == 26
+    assert sum(1 for present, complete in block_2027.values() if present and complete) == 24
+    assert sum(1 for present, complete in block_2027.values() if present and not complete) == 1
+    assert sum(1 for present, _ in block_2027.values() if not present) == 1
+    assert set(calendar) == set(block_2027) | {
+        day for day in calendar if day.year == 2026
     }
 
 
@@ -769,6 +835,12 @@ def test_concurrent_open_route_states_on_one_route(uc2, invocations):
     counts = {str(r["route_id"]): int(r["open_states"]) for r in per_route.to_dict("records")}
     assert counts["SFO->LAX"] > 1
     assert sum(1 for v in counts.values() if v > 1) > 1
+    # Measured 2026-09-02 after the D-0023 reload: every one of the ten routes carries over a
+    # thousand concurrently open states at this knowledge date, SFO->LAX 1,339 of them. The
+    # three-digit gap between that and Q07-MARKETING's active_schedule_count of 2 is the whole
+    # point: the partition is by schedule identity and carrier, never by route.
+    assert counts["SFO->LAX"] > 1000
+    assert all(v > 1 for v in counts.values())
 
     _, _, marketing = invocations["Q07-MARKETING"]
     rows = marketing.to_dict("records")
@@ -901,6 +973,41 @@ def test_dropping_a_clock_changes_the_answer(uc2):
     assert both != operating_only
     assert len(knowledge_only) > len(both)
     assert len(operating_only) > len(both)
+
+
+def test_moving_either_clock_moves_the_enriched_answer(invocations):
+    """The 1.2.0 two-clock beat: each clock changes the answer on its own, by a known amount.
+
+    Three enriched result sets share two of their three parameters. Moving the knowledge date
+    back one week changes 8 of the 30 markets; moving the operating date from Monday to the
+    preceding Saturday changes 4. Measured against the manifest rather than predicted: D-0023
+    forecast "exactly 4 rows when either clock moves", and the knowledge side actually moves
+    8. Both are non-zero, which is the property the demo beat needs - a single-clock
+    implementation would return the same frame for at least one of these pairs.
+    """
+
+    def measures(result_set_id):
+        _, _, frame = invocations[result_set_id]
+        return {
+            (row["airline_id"], row["route_id"]): (
+                row["result_status"],
+                row["active_schedule_count"],
+                row["weekly_frequency"],
+                row["weekly_total_seats"],
+            )
+            for row in frame.to_dict("records")
+        }
+
+    late = measures("Q07-ENRICHED-KNOWLEDGE-LATE")
+    early = measures("Q07-ENRICHED-KNOWLEDGE-EARLY")
+    shifted = measures("Q07-ENRICHED-OPERATING-SHIFT")
+
+    def moved(a, b):
+        return {k for k in set(a) | set(b) if a.get(k) != b.get(k)}
+
+    assert len(late) == len(early) == len(shifted) == 30
+    assert len(moved(late, early)) == 8, sorted(moved(late, early))
+    assert len(moved(late, shifted)) == 4, sorted(moved(late, shifted))
 
 
 # ============================================== 7. codeshare and carrier-role separation

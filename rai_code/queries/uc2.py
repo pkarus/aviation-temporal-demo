@@ -79,13 +79,14 @@ than of taste:
 Supplied manifest labels (D-0018)
 ---------------------------------
 
-``row_id`` in all three questions, and Q05's ``event_id`` for its five declared classes, are
-**not derivable**. D-0018 proved this twice: the Q05 mnemonics follow no generative rule
-(``SYN-SK-BASE_100`` maps to ``BASE`` while ``SYN-SK-PHY_BASE_700`` maps to ``CAP-700`` under
-one event class and one field name), and the declared row sequence is separately unrecoverable
-because on 2026-08-31 the ``EXACT_ADDITION`` block orders ``[MKT_ENTRY_714, UNPAIR_NEW]`` while
-the ``UNPAIRED_ADDITION`` block orders the identical pair inverted. The contracted identities
-are SHA-256 digests (measured: ``728f067e...`` for the one amendment candidate), not mnemonics.
+``row_id`` in all three questions, and ``Q05-CANONICAL``'s ``event_id`` for its five declared
+classes, are **not derivable**. D-0018 proved this twice: the Q05 mnemonics follow no
+generative rule (``SYN-SK-BASE_100`` maps to ``BASE`` while ``SYN-SK-PHY_BASE_700`` maps to
+``CAP-700`` under one event class and one field name), and the declared row sequence is
+separately unrecoverable because on 2026-08-31 the ``EXACT_ADDITION`` block orders
+``[MKT_ENTRY_714, UNPAIR_NEW]`` while the ``UNPAIRED_ADDITION`` block orders the identical pair
+inverted. The contracted identities are SHA-256 digests (measured: ``728f067e...`` for the one
+amendment candidate), not mnemonics.
 
 D-0018's QUERY-UC2 binding is therefore honoured literally: the label map is **not** in the
 ontology and **not** hard-coded here. Every query function takes an optional
@@ -98,14 +99,35 @@ harness in :func:`main` and ``tests/test_uc2.py`` uses. The three candidate/grou
 ``SYN-CAND-<YYYYMMDD>-NN``, ``SYN-AMB-<YYYYMMDD>-NN`` and ``<group_id>-M<k>``, with their
 ordinals ranked **in PyRel**.
 
+The verdict is reported as two, apart and labelled, exactly as D-0018 requires: an order-free
+**semantic** verdict over the columns the query derives (:func:`compare_semantic`), and a
+**presentation** verdict over the declared sequence and the supplied identifier columns
+(:func:`compare_rows`). Passing the second is evidence the module applies the labels, not that
+it recovered them.
+
+At manifest 1.2.0 the supplied surface **shrank on its own**. D-0023's enriched Q05 result sets
+freeze the fail-loud token itself as their ``event_id``, and that token is a pure function of
+the semantic identity, so :func:`unlabelled_event_id` reproduces every enriched declared-class
+``event_id`` cell with no manifest input - 345 in ``Q05-ENRICHED`` and 78 in
+``Q05-ENRICHED-GAP-PAIRS``. Of the 20 UC2 result sets, only ``Q05-CANONICAL``'s 30 mnemonics
+are a genuinely supplied ``event_id``.
+
 Running
 -------
 
     .venv/bin/rai reasoners resume --type Logic --name aviation_temporal_logic_s --wait
     PYTHONPATH=rai_code .venv/bin/python rai_code/queries/uc2.py
 
-Cold start was measured at 631s, so a first run against a suspended engine looks like a hang
-for ten minutes. Warm queries are 2.5-6s; the engine is shared, so queueing is not failure.
+Measured 2026-09-02 on ``aviation_temporal_logic_s`` (HIGHMEM_X64_S) against the post-D-0023
+reload: 133.5s model install, index and CDC re-sync; all 20 result sets in 217.0s with a 7.98s
+median and a 69.15s worst case (``Q05-CANONICAL``, which pays first touch on the four amendment
+relations - the 392-row ``Q05-ENRICHED`` behind it costs 23.28s).
+
+The three query modules share one model on one engine, and importing any of them is a **write**
+transaction. A read issued while a sibling holds that lock fails with ``prepareIndex: The model
+is currently locked by active write transaction(s)`` rather than waiting, so :func:`warm_model`
+retries. Blocking on a sibling's install was measured at roughly 13 minutes; that is contention,
+not a hang.
 """
 
 from __future__ import annotations
@@ -464,10 +486,16 @@ class LabelSource:
         supplied = self.event_ids.get(identity)
         if supplied is not None:
             return supplied
-        return _unlabelled("EVENT", identity)
+        return unlabelled_event_id(identity)
 
 
 EMPTY_LABELS = LabelSource()
+
+
+def _unlabelled_token(identity: Sequence[Any]) -> str:
+    """``UNLABELLED|<part>|<part>...``, with ``None`` rendered as an empty part."""
+    parts = "|".join("" if p is None else str(p) for p in identity)
+    return f"{_UNLABELLED}|{parts}"
 
 
 def _unlabelled(kind: str, identity: Sequence[Any]) -> str:
@@ -477,8 +505,25 @@ def _unlabelled(kind: str, identity: Sequence[Any]) -> str:
     diagnostic string, never as a plausible-looking valid label, so the label join cannot mask
     an extra, missing or misclassified event.
     """
-    parts = "|".join("" if p is None else str(p) for p in identity)
-    return f"{_UNLABELLED}|{kind}|{parts}"
+    return _unlabelled_token((kind, *identity))
+
+
+def unlabelled_event_id(identity: Sequence[Any]) -> str:
+    """The Q05 fail-loud ``event_id``, ``UNLABELLED|`` plus the semantic identity itself.
+
+    Deliberately *derivable*: it is a pure function of the four semantic-identity columns
+    ``(comparison_date, event_class, schedule_key, field_name)`` that the query already
+    computes, with no manifest input. The 1.2.0 enriched Q05 result sets freeze exactly this
+    string for their declared-class events - 345 in ``Q05-ENRICHED`` and 78 in
+    ``Q05-ENRICHED-GAP-PAIRS`` - so those ``event_id`` cells are recomputed rather than
+    supplied, and the supplied-label problem D-0018 documents is confined to
+    ``Q05-CANONICAL``'s 30 hand-authored mnemonics.
+
+    Fail-loud survives the change: an extra, missing or misclassified event produces a token
+    that differs from the frozen one in exactly the field that was got wrong, so the label
+    join still cannot mask it.
+    """
+    return _unlabelled_token(identity)
 
 
 def _q05_row_identity(row: Mapping[str, Any]) -> tuple:
@@ -526,7 +571,11 @@ def _load_manifest() -> Mapping[str, Any]:
         return yaml.safe_load(handle)
 
 
-def manifest_label_source(question_id: str, manifest: Mapping[str, Any] | None = None) -> LabelSource:
+def manifest_label_source(
+    question_id: str,
+    manifest: Mapping[str, Any] | None = None,
+    result_set_id: str | None = None,
+) -> LabelSource:
     """Build a :class:`LabelSource` from the frozen manifest. Conformance harness only.
 
     This is the D-0018 "shared conformance harness" seam. The label *values* live in
@@ -534,6 +583,17 @@ def manifest_label_source(question_id: str, manifest: Mapping[str, Any] | None =
     ontology (which would put the frozen answer inside the artifact whose independence the
     demo asserts) and they are not literals in this file. The join key is computed from the
     query's own output columns, so supplying labels cannot change any derived cell.
+
+    **``result_set_id`` scoping is required at manifest 1.2.0, not optional.** The semantic
+    identity is unique *within* a result set but not across them, because D-0023's additive
+    enrichment added result sets that re-ask the same question at different parameters. Q07's
+    three enriched marketing sets share all 30 ``(result_status, carrier_role, airline_id,
+    route_id)`` identities while declaring different ``row_id`` prefixes, and 87 of Q05's
+    ``Q05-ENRICHED-GAP-PAIRS`` identities recur inside ``Q05-ENRICHED``. A question-wide map
+    would silently resolve those 117 collisions last-write-wins and label one result set with
+    another's identifiers - the precise class of masking D-0018 exists to prevent. Building
+    the map question-wide is therefore still allowed but raises on a conflicting collision
+    rather than picking a winner.
     """
     manifest = manifest or _load_manifest()
     identity = _ROW_IDENTITY[question_id]
@@ -543,9 +603,18 @@ def manifest_label_source(question_id: str, manifest: Mapping[str, Any] | None =
         if question["question_id"] != question_id:
             continue
         for result_set in question["result_sets"]:
+            if result_set_id is not None and result_set["result_set_id"] != result_set_id:
+                continue
             for raw in result_set.get("rows") or ():
                 row = _manifest_row(raw)
-                row_ids[identity(row)] = row["row_id"]
+                key = identity(row)
+                previous = row_ids.get(key)
+                if previous is not None and previous != row["row_id"]:
+                    raise ValueError(
+                        f"{question_id}: identity {key!r} carries both {previous!r} and "
+                        f"{row['row_id']!r} across result sets; pass result_set_id"
+                    )
+                row_ids[key] = row["row_id"]
                 if question_id == "Q05" and row["event_class"] in DECLARED_LABEL_CLASSES:
                     event_ids[_q05_label_identity(row)] = row["event_id"]
     return LabelSource(row_ids=row_ids, event_ids=event_ids)
@@ -1582,50 +1651,268 @@ def _cells_equal(left: Any, right: Any) -> bool:
     return left == right
 
 
+# --- the D-0018 verdict split ------------------------------------------------------
+#
+# Q05's declared order_by sorts on event_id, and Q05-CANONICAL's 30 declared-class event_ids
+# are hand-authored mnemonics that no implementation can derive; the declared sequence is
+# separately unrecoverable (on 2026-08-31 the EXACT_ADDITION block orders
+# [MKT_ENTRY_714, UNPAIR_NEW] while the UNPAIRED_ADDITION block orders the identical pair
+# inverted). D-0018 therefore requires two verdicts, reported apart and labelled:
+#
+#   SEMANTIC     - order-free, over the columns the query computes with no manifest input.
+#                  This is the verdict that is genuinely earned.
+#   PRESENTATION - the declared sequence and the supplied identifier columns, asserted only
+#                  after the label join. Passing it is evidence the module *applies* the
+#                  supplied labels, not that it recovered them.
+#
+# Q06 and Q07 have derivable order keys, so their semantic verdict is over every column
+# except row_id and their presentation verdict is the full ordered comparison.
+
+_SUPPLIED_COLUMNS: Mapping[str, frozenset[str]] = {
+    "Q05": frozenset({"row_id", "event_id"}),
+    "Q06": frozenset({"row_id"}),
+    "Q07": frozenset({"row_id"}),
+}
+
+
+def semantic_columns(question_id: str) -> tuple[str, ...]:
+    """The output columns the query derives with no manifest input."""
+    supplied = _SUPPLIED_COLUMNS[question_id]
+    return tuple(c for c in _QUESTION_COLUMNS[question_id] if c not in supplied)
+
+
+def compare_semantic(
+    got: pd.DataFrame, expected: Sequence[Mapping[str, Any]], question_id: str
+) -> list[str]:
+    """Order-free multiset comparison over the derived columns only (D-0018).
+
+    A multiset and not a set: two rows that agree on every derived column are two events, and
+    collapsing them would hide a duplicate. Q05's semantic identity is unique within a result
+    set, so in practice the multiplicities are all one, and asserting them keeps it that way.
+    """
+    columns = semantic_columns(question_id)
+    missing = [c for c in columns if c not in got.columns]
+    if missing:
+        return [f"missing columns {missing}"]
+
+    def norm(value: Any) -> Any:
+        """One cell as a hashable canonical form, matching :func:`_cells_equal`.
+
+        Numerics collapse to ``float`` so a frozen ``200`` and a computed ``200.0`` are the
+        same event rather than two; ``bool`` is checked before ``int`` because it is a
+        subclass of it and ``True`` must not become ``1.0``.
+        """
+        value = _cell(value)
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return round(float(value), 9)
+        return str(value)
+
+    def key(row: Mapping[str, Any]) -> tuple:
+        return tuple(norm(row.get(c)) for c in columns)
+
+    got_counts: dict[tuple, int] = {}
+    for row in _records(got):
+        got_counts[key(row)] = got_counts.get(key(row), 0) + 1
+    want_counts: dict[tuple, int] = {}
+    for row in expected:
+        want_counts[key(row)] = want_counts.get(key(row), 0) + 1
+
+    def render(k: tuple) -> str:
+        return "|".join("" if part is None else str(part) for part in k)
+
+    diffs: list[str] = []
+    for k in sorted(set(want_counts) - set(got_counts), key=render):
+        diffs.append(f"missing event {render(k)}")
+    for k in sorted(set(got_counts) - set(want_counts), key=render):
+        diffs.append(f"unexpected event {render(k)}")
+    for k in sorted(set(got_counts) & set(want_counts), key=render):
+        if got_counts[k] != want_counts[k]:
+            diffs.append(
+                f"multiplicity {got_counts[k]} != {want_counts[k]} for {render(k)}"
+            )
+    return diffs
+
+
+@dataclass
+class Verdict:
+    result_set_id: str
+    question_id: str
+    rows: int
+    seconds: float
+    semantic: list[str] = field(default_factory=list)
+    presentation: list[str] = field(default_factory=list)
+
+    @property
+    def semantic_ok(self) -> bool:
+        return not self.semantic
+
+    @property
+    def presentation_ok(self) -> bool:
+        return not self.presentation
+
+
+def run_result_set(
+    question_id: str, result_set: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> Verdict:
+    """Invoke one frozen result set and return both verdicts plus its wall time.
+
+    Labels are scoped to **this** result set. At manifest 1.2.0 that is a correctness
+    requirement rather than tidiness - see :func:`manifest_label_source`.
+    """
+    import time  # noqa: PLC0415
+
+    labels = manifest_label_source(question_id, manifest, result_set["result_set_id"])
+    started = time.monotonic()
+    status, error_code, frame = invoke_result_set(question_id, result_set, labels)
+    elapsed = time.monotonic() - started
+
+    expected_rows = [_manifest_row(row) for row in (result_set.get("rows") or ())]
+    verdict = Verdict(
+        result_set_id=result_set["result_set_id"],
+        question_id=question_id,
+        rows=len(frame),
+        seconds=elapsed,
+    )
+
+    invocation: list[str] = []
+    if status != result_set["invocation_status"]:
+        invocation.append(
+            f"invocation_status {status!r} != {result_set['invocation_status']!r}"
+        )
+    expected_code = result_set.get("error_code")
+    if expected_code is not None and error_code != expected_code:
+        invocation.append(f"error_code {error_code!r} != {expected_code!r}")
+    if len(frame) != result_set["expected_cardinality"]:
+        invocation.append(
+            f"cardinality {len(frame)} != {result_set['expected_cardinality']}"
+        )
+
+    # The invocation status gates both verdicts: a refusal that should have been an answer is
+    # a semantic failure, not a presentation one.
+    verdict.semantic = invocation + compare_semantic(frame, expected_rows, question_id)
+    verdict.presentation = compare_rows(
+        frame, expected_rows, _QUESTION_COLUMNS[question_id]
+    )
+    return verdict
+
+
+_MODEL_LOCKED = "locked by active write transaction"
+
+
+def warm_model(attempts: int = 20, delay: float = 45.0) -> float:
+    """Force the one-off model install and index, retrying while it is write-locked.
+
+    The three query modules (``uc1``, ``uc2``, ``rotation``) share one ``aviation_temporal``
+    model on one engine. Importing any of them installs the model's rules, which is a **write**
+    transaction, and RAI 1.20.1 refuses to prepare the index for a read while another
+    transaction holds that write lock:
+
+        prepareIndex: The model is currently locked by active write transaction(s)
+
+    That is contention, not a defect, and it is the expected state whenever two of the three
+    modules start within a few minutes of each other. Retrying is the correct response; failing
+    the whole conformance run because a sibling module happened to be installing is not.
+
+    Returns the wall time spent, which is the honest cold-start number: on a freshly reloaded
+    ``SOURCE`` and ``MODEL_INPUT`` it is dominated by the CDC re-sync and is measured in
+    minutes, not seconds.
+    """
+    import time  # noqa: PLC0415
+
+    started = time.monotonic()
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            snapshot_calendar(refresh=True)
+            return time.monotonic() - started
+        except Exception as exc:  # noqa: BLE001 - re-raised below if it is not the lock
+            if _MODEL_LOCKED not in str(exc):
+                raise
+            last = exc
+            print(
+                f"  model write-locked by a sibling module; retry "
+                f"{attempt + 1}/{attempts} in {delay:.0f}s",
+                flush=True,
+            )
+            time.sleep(delay)
+    raise RuntimeError(
+        f"model still write-locked after {attempts} attempts over "
+        f"{attempts * delay / 60:.0f} minutes"
+    ) from last
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run every frozen UC2 result set plus ``TT-BOTH-CLOCKS`` and print a pass/fail summary."""
+    """Run every frozen UC2 result set plus ``TT-BOTH-CLOCKS`` and print both verdicts.
+
+    Covers manifest 1.1.1 and the 1.2.0 result sets D-0023 added, in the QUERY_ROUTING build
+    order Q06, Q07, Q05. Timings are wall clock per result set; the first is the cold one and
+    carries the CDC re-sync and model indexing for the whole run.
+    """
     manifest = _load_manifest()
     questions = {q["question_id"]: q for q in manifest["questions"]}
     truth_tables = {t["truth_table_id"]: t for t in manifest["contract_truth_tables"]}
 
-    results: list[tuple[str, bool, str]] = []
-    for question_id in ("Q06", "Q07", "Q05"):
-        question = questions[question_id]
-        labels = manifest_label_source(question_id, manifest)
-        columns = _QUESTION_COLUMNS[question_id]
-        for result_set in question["result_sets"]:
-            name = result_set["result_set_id"]
-            status, error_code, frame = invoke_result_set(question_id, result_set, labels)
-            expected_status = result_set["invocation_status"]
-            expected_code = result_set.get("error_code")
-            expected_rows = [
-                _manifest_row(row) for row in (result_set.get("rows") or ())
-            ]
-            diffs: list[str] = []
-            if status != expected_status:
-                diffs.append(f"invocation_status {status!r} != {expected_status!r}")
-            if expected_code is not None and error_code != expected_code:
-                diffs.append(f"error_code {error_code!r} != {expected_code!r}")
-            diffs += compare_rows(frame, expected_rows, columns)
-            results.append((name, not diffs, "; ".join(diffs[:4])))
+    cold = warm_model()
+    print(f"  model ready after {cold:.1f}s (install, index and CDC re-sync)", flush=True)
 
-    table = truth_tables["TT-BOTH-CLOCKS"]
+    verdicts: list[Verdict] = []
+    for question_id in ("Q06", "Q07", "Q05"):
+        for result_set in questions[question_id]["result_sets"]:
+            verdict = run_result_set(question_id, result_set, manifest)
+            verdicts.append(verdict)
+            print(
+                f"  ran {verdict.result_set_id:<34} {verdict.rows:>4} rows "
+                f"{verdict.seconds:7.2f}s "
+                f"sem={'PASS' if verdict.semantic_ok else 'FAIL'} "
+                f"pres={'PASS' if verdict.presentation_ok else 'FAIL'}",
+                flush=True,
+            )
+
+    import time  # noqa: PLC0415
+
+    started = time.monotonic()
     got = both_clocks_truth_table()
+    tt_seconds = time.monotonic() - started
+    table = truth_tables["TT-BOTH-CLOCKS"]
     expected_tt = [_manifest_row(row) for row in table["rows"]]
     tt_diffs = compare_rows(got, expected_tt, tuple(got.columns))
-    results.append(("TT-BOTH-CLOCKS", not tt_diffs, "; ".join(tt_diffs[:4])))
 
-    width = max(len(name) for name, _, _ in results)
-    failures = 0
+    width = max([len(v.result_set_id) for v in verdicts] + [len("TT-BOTH-CLOCKS")])
     print()
-    print("QUERY-UC2 conformance against EXPECTED_ANSWERS.yaml")
-    print("-" * (width + 12))
-    for name, ok, detail in results:
-        if not ok:
+    print("QUERY-UC2 conformance against EXPECTED_ANSWERS.yaml (1.1.1 + 1.2.0)")
+    print(f"{'result set'.ljust(width)}  rows  seconds  semantic  presentation  detail")
+    print("-" * (width + 46))
+    failures = 0
+    for verdict in verdicts:
+        if not (verdict.semantic_ok and verdict.presentation_ok):
             failures += 1
-        print(f"{name.ljust(width)}  {'PASS' if ok else 'FAIL'}  {detail}")
-    print("-" * (width + 12))
-    print(f"{len(results) - failures}/{len(results)} result sets pass")
+        detail = "; ".join((verdict.semantic + verdict.presentation)[:3])
+        print(
+            f"{verdict.result_set_id.ljust(width)}  {verdict.rows:>4}  "
+            f"{verdict.seconds:7.2f}  "
+            f"{'PASS' if verdict.semantic_ok else 'FAIL':<8}  "
+            f"{'PASS' if verdict.presentation_ok else 'FAIL':<12}  {detail}"
+        )
+    print(
+        f"{'TT-BOTH-CLOCKS'.ljust(width)}  {len(got):>4}  {tt_seconds:7.2f}  "
+        f"{'PASS' if not tt_diffs else 'FAIL':<8}  {'-':<12}  "
+        + "; ".join(tt_diffs[:3])
+    )
+    print("-" * (width + 46))
+    total = len(verdicts) + 1
+    failures += 1 if tt_diffs else 0
+    warm = sorted(v.seconds for v in verdicts)
+    print(f"{total - failures}/{total} checks pass")
+    print(
+        f"cold model install / index / CDC re-sync: {cold:.1f}s; "
+        f"warm per result set median {warm[len(warm) // 2]:.2f}s, "
+        f"min {warm[0]:.2f}s, max {warm[-1]:.2f}s; "
+        f"all {len(verdicts)} result sets {sum(v.seconds for v in verdicts):.1f}s"
+    )
     print()
     return 1 if failures else 0
 

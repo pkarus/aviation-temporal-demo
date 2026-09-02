@@ -1,0 +1,191 @@
+{
+  "task_id": "QUERY-UC2",
+  "status": "green",
+  "summary": "Q05, Q06 and Q07 run as live PyRel queries against PK_AVIATION_TEMPORAL on aviation_temporal_logic_s. All 20 UC2 result sets in EXPECTED_ANSWERS.yaml reproduce exactly, cell for cell and in the declared order: the 12 frozen at manifest 1.1.1 and the 8 that D-0023 added at 1.2.0. TT-BOTH-CLOCKS reproduces all nine rows. 21/21 checks pass. Two verdicts are reported apart, as D-0018 requires: an order-free semantic verdict over the derived columns, and a presentation verdict over the declared sequence and the supplied identifier columns.",
+  "sdk_version": "1.20.1",
+  "engine": "aviation_temporal_logic_s (HIGHMEM_X64_S)",
+  "model_name": "aviation_temporal",
+  "database": "PK_AVIATION_TEMPORAL",
+  "role": "RAI_DEMO_AVIATION_TEMPORAL",
+  "measured_at": "2026-09-02",
+  "reproduce": [
+    ".venv/bin/rai reasoners resume --type Logic --name aviation_temporal_logic_s --wait",
+    "PYTHONPATH=rai_code TERM=dumb .venv/bin/python rai_code/queries/uc2.py",
+    "PYTHONPATH=rai_code TERM=dumb .venv/bin/python -m pytest tests/test_uc2.py -q"
+  ],
+  "files_written": [
+    "rai_code/queries/uc2.py",
+    "tests/test_uc2.py",
+    "build/task_reports/QUERY-UC2.json"
+  ],
+  "verdicts": {
+    "note": "semantic is the order-free multiset comparison over the columns the query derives with no manifest input; presentation is the complete ordered cell-by-cell comparison including row_id and event_id. seconds is wall clock for the whole result set, including every RAI round trip it makes.",
+    "result_sets": [
+      {"result_set_id": "Q06-CANONICAL", "manifest_version": "1.1.1", "rows": 2, "seconds": 7.98, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q06-INCOMPLETE-ENDPOINT", "manifest_version": "1.1.1", "rows": 0, "seconds": 0.0, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q06-MISSING-CARRIER-ROLE", "manifest_version": "1.1.1", "rows": 0, "seconds": 0.0, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q06-INVALID-DATE", "manifest_version": "1.1.1", "rows": 0, "seconds": 0.0, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q06-ENRICHED-MARKETING", "manifest_version": "1.2.0", "rows": 7, "seconds": 6.35, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q06-ENRICHED-OPERATING", "manifest_version": "1.2.0", "rows": 5, "seconds": 7.43, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-MARKETING", "manifest_version": "1.1.1", "rows": 3, "seconds": 17.55, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-OPERATING", "manifest_version": "1.1.1", "rows": 2, "seconds": 11.61, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-KNOWLEDGE-END-EMPTY", "manifest_version": "1.1.1", "rows": 0, "seconds": 7.07, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-MISSING-KNOWLEDGE-DATE", "manifest_version": "1.1.1", "rows": 0, "seconds": 0.0, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-MISSING-OPERATING-DATE", "manifest_version": "1.1.1", "rows": 0, "seconds": 0.0, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-MISSING-CARRIER-ROLE", "manifest_version": "1.1.1", "rows": 0, "seconds": 0.0, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-ENRICHED-KNOWLEDGE-LATE", "manifest_version": "1.2.0", "rows": 30, "seconds": 16.92, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-ENRICHED-KNOWLEDGE-EARLY", "manifest_version": "1.2.0", "rows": 30, "seconds": 12.78, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-ENRICHED-OPERATING-SHIFT", "manifest_version": "1.2.0", "rows": 30, "seconds": 8.63, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q07-ENRICHED-ROLE", "manifest_version": "1.2.0", "rows": 18, "seconds": 9.82, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q05-CANONICAL", "manifest_version": "1.1.1", "rows": 35, "seconds": 69.15, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q05-INELIGIBLE-ENDPOINT", "manifest_version": "1.1.1", "rows": 0, "seconds": 0.0, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q05-ENRICHED", "manifest_version": "1.2.0", "rows": 392, "seconds": 23.28, "semantic": "PASS", "presentation": "PASS"},
+      {"result_set_id": "Q05-ENRICHED-GAP-PAIRS", "manifest_version": "1.2.0", "rows": 87, "seconds": 18.39, "semantic": "PASS", "presentation": "PASS"}
+    ],
+    "truth_tables": [
+      {"truth_table_id": "TT-BOTH-CLOCKS", "rows": 9, "seconds": 38.78, "verdict": "PASS", "note": "nine (knowledge_position, operating_position) combinations evaluated by the same two ontology predicates Q07 uses; exactly TT23-R05 and TT23-R06 eligible."}
+    ],
+    "totals": {"checks": 21, "passed": 21, "failed": 0},
+    "pytest": {
+      "command": "PYTHONPATH=rai_code TERM=dumb .venv/bin/python -m pytest tests/test_uc2.py -q",
+      "tests": 91,
+      "result": "91 passed, 0 failed",
+      "wall_seconds": 406,
+      "note": "42 test functions, 91 cases after parametrisation over all 20 result sets in two verdicts. The first run of this session was 89 passed / 2 failed; both failures were stale test assumptions predating the D-0023 enrichment, not query defects, and both are named under stale_test_assumptions_found_and_fixed."
+    }
+  },
+  "timings_seconds": {
+    "model_install_index_and_cdc_resync": 133.5,
+    "all_20_result_sets": 217.0,
+    "warm_per_result_set_median": 7.98,
+    "warm_per_result_set_max": 69.15,
+    "warm_per_result_set_max_result_set": "Q05-CANONICAL",
+    "blocked_on_sibling_model_write_lock_before_first_query": "about 780s on one of four runs",
+    "note": "Zero-second result sets are the seven typed parameter errors plus the two endpoint refusals; they are raised before any query is sent, which is the contracted behaviour. Q05-CANONICAL is the slowest because it is the first result set to touch the four amendment relations; the 392-row Q05-ENRICHED immediately behind it costs 23.28s."
+  },
+  "d0018_treatment": {
+    "binding": "The label map is not in the PyRel model and not hard-coded in uc2.py. Query functions take an optional LabelSource; without one, row_id and the declared-class event_id render as visible UNLABELLED tokens.",
+    "verdict_split": "compare_semantic() is the order-free multiset comparison over the 14 Q05 derived columns (15 for Q06, 15 for Q07), excluding row_id and event_id. compare_rows() is the complete ordered comparison including them. main() prints both per result set; tests/test_uc2.py asserts both, with the presentation test docstring stating plainly that passing it is evidence the module applies the labels, not that it recovered them.",
+    "single_copy_of_the_label_map": "manifest_label_source() reads EXPECTED_ANSWERS.yaml at comparison time and joins on the independently computed semantic identity, the same (comparison_date, event_class, schedule_key, field_name) key data/oracles/q05_event_labels.sql uses. No second copy was created.",
+    "supplied_surface_shrank_at_1_2_0": "D-0023's enriched Q05 result sets freeze the fail-loud token itself as event_id, and that token is a pure function of the semantic identity. unlabelled_event_id() now emits exactly that format, so 345 event_id cells in Q05-ENRICHED and 78 in Q05-ENRICHED-GAP-PAIRS are recomputed rather than supplied. test_q05_enriched_event_ids_are_derived_not_supplied runs Q05-ENRICHED with no LabelSource at all and reproduces every event_id. Only Q05-CANONICAL's 30 mnemonics remain genuinely supplied.",
+    "fail_loud_preserved": "An extra, missing or misclassified event still produces a token that differs from the frozen one in exactly the field that was got wrong, so the label join cannot mask it."
+  },
+  "model_predicates_reused_not_recopied": [
+    "aviation_model.known_on(state, k) - DV-14 <= k < DV-15, half-open. Used by Q05 (via the ScheduleComparison adjacency), Q06 at both endpoints and inside the correlated anti-join, and Q07 as one half of the two-clock filter.",
+    "aviation_model.operates_on(state, o, weekday_relationship) - SS-08 <= o <= SS-09 inclusive at both ends, plus the weekday flag. Q07 only. Deliberately a different function from known_on; nothing in uc2.py retypes either conjunction.",
+    "aviation_model.computed_schedule.RouteStateOperatesOnWeekday - the SS-14..SS-20 weekday flag as a named relationship rather than a seven-branch match.",
+    "aviation_model.computed_schedule.RouteStateIsPhysicalRepresentative - the D-0007 base-metal gate for the operating carrier role.",
+    "aviation_model.RouteState.economy_excluding_premium - DV-26, the bound MODEL_INPUT column, cross-checked in the ontology by CabinDerivationDisagreement.",
+    "aviation_model.RouteState.cabin_quality_status - DV-27, read per state and folded into the row-level cabin_quality.",
+    "aviation_model.SnapshotDate.is_present / is_complete - eligibility is exactly their conjunction and nothing else.",
+    "aviation_model.ScheduleComparison / ScheduleExactChange / ScheduleAmendmentCandidate / ScheduleAmendmentGroup / ScheduleAmendmentGroupMember - the DV-34 through DV-37 interval and amendment derivations arrive through model.Table() and are read, never recomputed in PyRel."
+  ],
+  "what_the_ontology_could_not_express": [
+    {
+      "item": "Q05's normalised 16-column ScheduleChangeEvent view",
+      "detail": "QUERY_ROUTING.md prefers it in the ontology. Two obstacles: uc2.py may not write the ontology package, and RAI 1.20.1 has no fragment union at all - model.union(frag_a, frag_b).to_df() raises [Missing arg] (PROBE D5) and the | form raises the same (PROBE D6). Even inside the ontology this would be five define rules, not one query. The five branches are therefore run as five queries and unioned in Python, each emitting the full 16-column schema with explicit nulls.",
+      "risk": "Low. The branches are disjoint by event_class and the closure tests assert the partition."
+    },
+    {
+      "item": "event_class_rank",
+      "detail": "QUERY_ROUTING.md says this one belongs on the concept because it is a semantic ordering of a semantic enum. It is a module constant here, taken verbatim from canonicalization.enum_sort_ranks.Q05_event_class, for the same file-ownership reason."
+    },
+    {
+      "item": "Mixed orderings in one rank",
+      "detail": "rank(desc(side), asc(key)) raises 'Mixed orderings in rank/cumsum are not supported yet' in 1.20.1, so the AMBIGUOUS_GROUP_MEMBER -Mk ordinal is composed from two single-ordering PyRel aggregates (rank within a side, plus the removed-side cardinality per group as an offset). Both halves are computed in RAI; only the integer addition is Python. Inherited from the prior session's measurement, not re-measured in this run."
+    },
+    {
+      "item": "No temporal support in RAI 1.20.1",
+      "detail": "temporal.py records that a search of the whole semantics tree for valid_from, bitemporal, as_of, effective_from and interval returns nothing. Every predicate is a hand-written conjunction over two Date properties. That is honest parity with a property graph, and it is why nothing in the API imposes a one-open-version-per-parent assumption that the multi-open route case would have to relax."
+    },
+    {
+      "item": "An empty result is a zero-column DataFrame",
+      "detail": "PROBE D11. Every function assembles its own column list so Q07-KNOWLEDGE-END-EMPTY returns a correctly shaped empty frame with invocation_status OK, distinguishable from the parameter errors and the endpoint refusals."
+    }
+  ],
+  "changes_made_this_session": [
+    "manifest_label_source() gained a result_set_id parameter and a collision guard. This was a real 1.2.0 correctness bug, not tidying: the semantic identity is unique within a result set but not across them. Q07's three enriched marketing sets share all 30 (result_status, carrier_role, airline_id, route_id) identities while declaring different row_id prefixes, and 87 of Q05-ENRICHED-GAP-PAIRS's identities recur inside Q05-ENRICHED. The previous question-wide map resolved those 117 collisions last-write-wins and would have labelled one result set with another's identifiers. Building the map question-wide now raises rather than picking a winner.",
+    "unlabelled_event_id() emits UNLABELLED| plus the semantic identity, dropping the EVENT kind token. That is the exact string the 1.2.0 manifest freezes, so 423 enriched event_id cells became derived instead of supplied.",
+    "compare_semantic() and the Verdict dataclass added; main() now reports both verdicts, per-result-set wall time, and cold and warm summaries, and covers all 20 result sets rather than the 12 frozen at 1.1.1.",
+    "warm_model() added: a bounded retry on 'prepareIndex: The model is currently locked by active write transaction(s)'.",
+    "tests/test_uc2.py: RESULT_SET_IDS extended to all 20; a new order-free semantic conformance test parametrised over all 20; test_q05_enriched_event_ids_are_derived_not_supplied; test_moving_either_clock_moves_the_enriched_answer."
+  ],
+  "stale_test_assumptions_found_and_fixed": [
+    {
+      "test": "test_q05_window_uses_only_the_declared_adjacent_pairs",
+      "fault": "Read manifest['scope']['q05_window_assertions']; the key actually lives at scope.schedule_source_universe.q05_window_assertions. KeyError, so the assertion had never executed.",
+      "fix": "Corrected the path. The assertion now runs and passes: Q05-CANONICAL uses all and only the four declared adjacent eligible pairs."
+    },
+    {
+      "test": "test_snapshot_eligibility_is_presence_and_completeness_only",
+      "fault": "Asserted one flat set of eight eligible snapshot dates. D-0025 added 26 dates in 2027, so the set is now 32 eligible across 36 dates.",
+      "fix": "Scoped by year. The 2026 contract is asserted as exactly the same eight dates, and the 2027 block is asserted separately at its measured shape - 26 dates, 24 eligible, one present-incomplete (2027-03-15), one missing (2027-04-19). Asserting one flat set would couple the 2026 contract to the enrichment, which is the coupling D-0023's additivity argument exists to avoid."
+    }
+  ],
+  "measurements_taken_live": {
+    "snapshot_calendar": {"total_dates": 36, "2026": {"eligible": 8, "present_incomplete": 1, "missing": 1}, "2027": {"eligible": 24, "present_incomplete": 1, "missing": 1}, "2027_non_eligible_dates": ["2027-03-15", "2027-04-19"]},
+    "concurrent_open_route_states_at_2026_08_31": {
+      "SFO->LAX": 1339,
+      "SEA->DEN": 1336,
+      "LAX->LAS": 1335,
+      "BOS->MIA": 1334,
+      "DEN->ORD": 1334,
+      "routes_with_more_than_one_open_state": "10 of 10",
+      "why_it_matters": "Q07-MARKETING returns active_schedule_count 2 for SYN-OP-A on SFO->LAX while the route itself carries 1,339 concurrently open states at the same knowledge date. The three-order-of-magnitude gap is the demonstration that route-state versioning partitions by schedule identity and carrier and never by route. Any argmax, latest-state-per-route or unique-state assumption would return a plausible number here and be wrong."
+    }
+  },
+  "new_live_findings": [
+    {
+      "finding": "Concurrent model write-lock contention between the three query modules is a hard failure, not a wait.",
+      "detail": "uc1.py, uc2.py and rotation.py share one aviation_temporal model on one engine, and importing any of them installs the model's rules as a write transaction. A read issued while a sibling holds that lock fails immediately with SnowflakeTableObjectsException / 'prepareIndex: The model is currently locked by active write transaction(s)'. Two of four runs died this way. Blocking inside the import itself was measured at roughly 13 minutes on one run. uc2.py now retries; the sibling modules and any Phase 8 gate that runs the three in parallel need the same treatment or a serialisation lock.",
+      "affects": "QUERY-UC1, QUERY-ROT, QUERY-INT, prep_demo.py"
+    },
+    {
+      "finding": "The cold number in the brief is not the number that hurts.",
+      "detail": "Model install, index and CDC re-sync after the full SOURCE and MODEL_INPUT rebuild measured 133.5s, not the roughly 700s the brief predicted. What actually cost ten to thirteen minutes on the failing runs was waiting on a sibling's write lock. Reporting 700s as CDC would have been wrong."
+    },
+    {
+      "finding": "D-0023's two-clock prediction is half right, measured against the manifest.",
+      "detail": "D-0023 forecast that the enriched two-clock result sets 'differ in exactly 4 rows when either clock moves'. Moving the operating date from 2027-07-05 to 2027-07-03 changes exactly 4 of the 30 markets, as predicted. Moving the knowledge date from 2027-06-28 back to 2027-06-21 changes 8, not 4. Both are non-zero, which is what the demo beat needs; the prediction is simply low on the knowledge side. Asserted at the measured values in test_moving_either_clock_moves_the_enriched_answer, with the discrepancy named in the docstring."
+    },
+    {
+      "finding": "Q05-CANONICAL is 3x slower than the 11x larger Q05-ENRICHED.",
+      "detail": "69.15s against 23.28s for 392 rows. The cost is first touch on the four amendment relations, not the row count. Worth knowing before anyone sizes the engine off the canonical number."
+    }
+  ],
+  "success_criteria": {
+    "every_q05_q07_result_set_frozen_and_1_2_0_reproduced_by_a_live_rai_query": "met - 20/20, cell for cell, in the declared order",
+    "heuristic_rows_expose_confidence_and_evidence": "met - CANDIDATE_UNIQUE carries exactness CANDIDATE and confidence MEDIUM with both schedule_key and related_schedule_key populated; AMBIGUOUS_CANDIDATE_GROUP and its members carry AMBIGUOUS / LOW with both keys null and no pair chosen; UNPAIRED_* carry UNPAIRED / NONE. Q07's UNRESOLVED_PHYSICAL_SERVICE rows carry every measure null, cabin_quality NOT_COUNTED and the named unresolved_service_key.",
+    "per_result_set_verdict_and_cold_warm_timings": "met - see verdicts and timings_seconds",
+    "no_pandas_query_logic": "met - filtering, joining and aggregation are in PyRel. Python does parameter validation, typed error codes, the union of the five Q05 branches (no fragment union exists in 1.20.1), the frozen row ordering, and the supplied-label join.",
+    "model_input_boundary_respected": "met - DV-34..37 and DV-13..15 arrive through model.Table() and are read, never recomputed",
+    "two_clock_eligibility_predicate_reused_not_copied": "met - known_on and operates_on come from aviation_model.temporal"
+  },
+  "open_issues_and_risks": [
+    {
+      "risk": "Q05-CANONICAL's declared row sequence remains unverifiable in principle.",
+      "detail": "D-0018 proved it. The presentation verdict passes because the module applies the supplied labels, and the test says so in its docstring. This is disclosed, not fixed, and REDTEAM-01 was already asked to retest whether the disclosure is sufficient for a customer audience.",
+      "severity": "known and accepted"
+    },
+    {
+      "risk": "cadence_days is validated and then does not filter.",
+      "detail": "parameter_schema declares it non-nullable with minimum 1, and the independent SQL oracle binds it and never references it again. uc2.py matches the oracle and discloses this in _coerce_cadence_days. A reader who assumes Q05 honours a 14-day cadence would be wrong. Worth an explicit line in the talk track.",
+      "severity": "medium, disclosure-only"
+    },
+    {
+      "risk": "The three query modules cannot safely run in parallel.",
+      "detail": "See the write-lock finding. uc2.py retries; uc1.py and rotation.py were not inspected for the same treatment and are not mine to change. Phase 8's prep_demo.py must serialise them or inherit intermittent red.",
+      "severity": "high for the gate, zero for the answers"
+    },
+    {
+      "risk": "D-0029's Q07 operating-clock deviation is load-bearing for the enriched role beat.",
+      "detail": "Q07-ENRICHED-ROLE is 8 counted and 10 UNRESOLVED_PHYSICAL_SERVICE. Under the literal D-0007 rule the operating clock counted zero on the enriched block, and ENRICH-02 made the CAP block base metal to give it something to count. The 10 unresolved rows are correct and contracted, but a viewer who reads the operating role as 'physical capacity' will see it undercount marketing by a large margin. That is the honest answer and it needs saying out loud on stage, not explaining away.",
+      "severity": "medium, narrative"
+    },
+    {
+      "risk": "The declared result_set_sha256 on the 1.2.0 sets is not checked by this module.",
+      "detail": "It is computed by data/run_oracles.py over its own canonical_row normalisation, which is oracle-layer convention. uc2.py compares every cell of every row against the same frozen rows the hash covers, which is strictly stronger and produces a per-cell diff instead of a single bit. Recreating the hash here would have duplicated oracle code for a weaker check.",
+      "severity": "low, deliberate"
+    }
+  ]
+}
