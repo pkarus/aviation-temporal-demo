@@ -1,0 +1,1397 @@
+{
+  "task_id": "DATA-04b",
+  "title": "Independent raw-SOURCE SQL oracles for the eight golden questions",
+  "status": "GREEN",
+  "generated_at": "2026-09-02T08:35:15.022192+00:00",
+  "summary": "Twenty-four independent SQL oracles execute live against PK_AVIATION_TEMPORAL.SOURCE and reproduce all 24 frozen result sets in EXPECTED_ANSWERS.yaml as complete, ordered, typed sequences: 198 expected golden-question rows plus every deliberate empty and typed-error case. Seven contract truth tables are additionally recomputed from raw SOURCE and match (33 of the 55 truth-table rows; the remaining 22 belong to the four tables listed in evidence.contract_truth_tables_not_oracled). The three declared cross-question preservation hashes verify, the Q05 exact/candidate/ambiguous/unpaired closure verifies, and four adversarial temporal probes (40 live checks) pass. No expectation was edited. The oracles read raw SOURCE only: they never reference MODEL_INPUT, data/model_input/ or data/build_model_input.py, and every Snowflake statement is a SELECT run through 'snow sql -f' under -c rai --role RAI_DEMO_AVIATION_TEMPORAL, so no object was created, altered or dropped.",
+  "independence": {
+    "reads": [
+      "PK_AVIATION_TEMPORAL.SOURCE (10 tables, 145,054 rows)"
+    ],
+    "never_reads": [
+      "PK_AVIATION_TEMPORAL.MODEL_INPUT",
+      "data/model_input/",
+      "data/build_model_input.py",
+      "any DATA-04a artifact"
+    ],
+    "enforced_by": [
+      "data/test_oracles.py::test_oracles_never_reference_the_model_input_layer",
+      "data/test_oracles.py::test_runner_never_references_the_model_input_layer",
+      "data/test_oracles.py::test_every_oracle_reads_only_the_source_schema"
+    ],
+    "snowflake_write_access_used": false,
+    "objects_created": []
+  },
+  "commands": [
+    ".venv/bin/python data/run_oracles.py --all",
+    ".venv/bin/python data/run_oracles.py --question Q05",
+    ".venv/bin/python data/run_oracles.py --result-set Q07-MARKETING",
+    ".venv/bin/pytest data/test_oracles.py -q",
+    "DATA04B_SKIP_LIVE=1 .venv/bin/pytest data/test_oracles.py -q"
+  ],
+  "artifacts": {
+    "sql_oracles": [
+      "data/oracles/_aircraft_temporal.sql.inc",
+      "data/oracles/_schedule_temporal.sql.inc",
+      "data/oracles/probe_concurrent_route_states.sql",
+      "data/oracles/probe_incomplete_snapshots.sql",
+      "data/oracles/probe_schedule_canonicalisation.sql",
+      "data/oracles/probe_temporal_integrity.sql",
+      "data/oracles/q01_aircraft_as_of.sql",
+      "data/oracles/q02_status_reversion_spells.sql",
+      "data/oracles/q03_month_end_fleet_composition.sql",
+      "data/oracles/q04_type_engine_histories.sql",
+      "data/oracles/q05_event_labels.sql",
+      "data/oracles/q05_schedule_four_week_changes.sql",
+      "data/oracles/q06_market_latest_vs_seven_days.sql",
+      "data/oracles/q07_route_capacity_two_clocks.sql",
+      "data/oracles/q08_actual_rotation_enriched.sql",
+      "data/oracles/snapshot_calendar.sql",
+      "data/oracles/tt_both_clocks.sql",
+      "data/oracles/tt_cabin_quality.sql",
+      "data/oracles/tt_code_resolution.sql",
+      "data/oracles/tt_mixed_engine_limit.sql",
+      "data/oracles/tt_plan_actual_diversion.sql",
+      "data/oracles/tt_sentinels.sql",
+      "data/oracles/tt_utc_offsets.sql"
+    ],
+    "runner": "data/run_oracles.py",
+    "tests": "data/test_oracles.py",
+    "machine_readable_results": "build/oracle_results/ (one JSON per result set plus _summary.json, _probes.json, _truth_tables.json)",
+    "report": "build/task_reports/DATA-04b.json"
+  },
+  "evidence": {
+    "result_sets": [
+      {
+        "result_set_id": "Q01-CANONICAL",
+        "question_id": "Q01",
+        "catalog_id": "aircraft_as_of",
+        "parameters": {
+          "aircraft_id": 1001,
+          "as_of_date": "2026-08-31"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 1,
+        "actual_rows": 1,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "d04f2c4c2fed4fa1e770a7849364cd5de50d4a11c82ce199307d5630e89d7b9f",
+        "actual_result_hash": "d04f2c4c2fed4fa1e770a7849364cd5de50d4a11c82ce199307d5630e89d7b9f",
+        "result_hash_equal": true,
+        "row_id_source": "DERIVED_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 5.222
+      },
+      {
+        "result_set_id": "Q01-BEFORE-FIRST",
+        "question_id": "Q01",
+        "catalog_id": "aircraft_as_of",
+        "parameters": {
+          "aircraft_id": 1004,
+          "as_of_date": "2019-06-30"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 1,
+        "actual_rows": 1,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "f9118e69c65b634f4cfd47b410c568f89ff39200c64e46cffb1d92008b136c2c",
+        "actual_result_hash": "f9118e69c65b634f4cfd47b410c568f89ff39200c64e46cffb1d92008b136c2c",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 3.336
+      },
+      {
+        "result_set_id": "Q01-UNKNOWN-GAP",
+        "question_id": "Q01",
+        "catalog_id": "aircraft_as_of",
+        "parameters": {
+          "aircraft_id": 1002,
+          "as_of_date": "2022-05-15"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 1,
+        "actual_rows": 1,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "ebdaccd3187cd15ab4b810311a5c23b8543bd1095dcf3e467fd7b2e4723e96dc",
+        "actual_result_hash": "ebdaccd3187cd15ab4b810311a5c23b8543bd1095dcf3e467fd7b2e4723e96dc",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 2.922
+      },
+      {
+        "result_set_id": "Q01-EOL-BOUNDARY",
+        "question_id": "Q01",
+        "catalog_id": "aircraft_as_of",
+        "parameters": {
+          "aircraft_id": 1002,
+          "as_of_date": "2024-07-01"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 1,
+        "actual_rows": 1,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "7e79b96c7d0505838047ceb13f0bb5f4c7819b8ff2d87c1af71442eec9e09d00",
+        "actual_result_hash": "7e79b96c7d0505838047ceb13f0bb5f4c7819b8ff2d87c1af71442eec9e09d00",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 2.876
+      },
+      {
+        "result_set_id": "Q01-INVALID-AIRCRAFT-ID",
+        "question_id": "Q01",
+        "catalog_id": "aircraft_as_of",
+        "parameters": {
+          "aircraft_id": -1,
+          "as_of_date": "2026-08-31"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "PARAMETER_ERROR",
+        "actual_invocation_status": "PARAMETER_ERROR",
+        "expected_error_code": "INVALID_AIRCRAFT_ID",
+        "actual_error_code": "INVALID_AIRCRAFT_ID",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q02-CANONICAL",
+        "question_id": "Q02",
+        "catalog_id": "status_reversion_spells",
+        "parameters": {
+          "aircraft_id": 1001
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 2,
+        "actual_rows": 2,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "18be5314dd7d78c8ec5ad9d3bca332a618e588e1c499774180e7ed1adf9b0405",
+        "actual_result_hash": "18be5314dd7d78c8ec5ad9d3bca332a618e588e1c499774180e7ed1adf9b0405",
+        "result_hash_equal": true,
+        "row_id_source": "DERIVED_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 2.341
+      },
+      {
+        "result_set_id": "Q02-NO-SPELLS",
+        "question_id": "Q02",
+        "catalog_id": "status_reversion_spells",
+        "parameters": {
+          "aircraft_id": 1004
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "actual_result_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 2.357
+      },
+      {
+        "result_set_id": "Q03-CANONICAL",
+        "question_id": "Q03",
+        "catalog_id": "month_end_fleet_composition",
+        "parameters": {
+          "start_month_end": "2015-01-31",
+          "end_month_end": "2024-12-31",
+          "status": "In Service"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 132,
+        "actual_rows": 132,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "8d9372a8117c67e91c6cd135bd5b07e98288facb07abb87d841d38d59b30f3e5",
+        "actual_result_hash": "8d9372a8117c67e91c6cd135bd5b07e98288facb07abb87d841d38d59b30f3e5",
+        "result_hash_equal": true,
+        "row_id_source": "DERIVED_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 3.188
+      },
+      {
+        "result_set_id": "Q04-CANONICAL",
+        "question_id": "Q04",
+        "catalog_id": "type_engine_histories",
+        "parameters": {
+          "aircraft_id": 1001
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 4,
+        "actual_rows": 4,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "e00b60eb89e94cdf29abdb692cd8f359de30e5f01533604aab8a0abfc5eb603f",
+        "actual_result_hash": "e00b60eb89e94cdf29abdb692cd8f359de30e5f01533604aab8a0abfc5eb603f",
+        "result_hash_equal": true,
+        "row_id_source": "DERIVED_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 4.662
+      },
+      {
+        "result_set_id": "Q05-CANONICAL",
+        "question_id": "Q05",
+        "catalog_id": "schedule_four_week_changes",
+        "parameters": {
+          "start_knowledge_date": "2026-08-03",
+          "end_knowledge_date": "2026-08-31",
+          "cadence_days": 7
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 35,
+        "actual_rows": 35,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "56c9983f6dea1812b2013456bbd795a083afa1679ce1e65b8f61efff55c39eb4",
+        "actual_result_hash": "56c9983f6dea1812b2013456bbd795a083afa1679ce1e65b8f61efff55c39eb4",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id",
+          "event_id"
+        ],
+        "elapsed_seconds": 8.537
+      },
+      {
+        "result_set_id": "Q05-INELIGIBLE-ENDPOINT",
+        "question_id": "Q05",
+        "catalog_id": "schedule_four_week_changes",
+        "parameters": {
+          "start_knowledge_date": "2026-10-12",
+          "end_knowledge_date": "2026-10-19",
+          "cadence_days": 7
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "ENDPOINT_MISSING",
+        "actual_invocation_status": "ENDPOINT_MISSING",
+        "expected_error_code": "ENDPOINT_MISSING",
+        "actual_error_code": "ENDPOINT_MISSING",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id",
+          "event_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q06-CANONICAL",
+        "question_id": "Q06",
+        "catalog_id": "market_latest_vs_seven_days",
+        "parameters": {
+          "latest_knowledge_date": "2026-08-31",
+          "comparison_knowledge_date": "2026-08-24",
+          "carrier_role": "marketing"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 2,
+        "actual_rows": 2,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "3bd4684fcc69aa588c1b18c5049b7f371986ff134cecf69daf0b2ce592d0f6e0",
+        "actual_result_hash": "3bd4684fcc69aa588c1b18c5049b7f371986ff134cecf69daf0b2ce592d0f6e0",
+        "result_hash_equal": true,
+        "row_id_source": "DERIVED_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 2.644
+      },
+      {
+        "result_set_id": "Q06-INCOMPLETE-ENDPOINT",
+        "question_id": "Q06",
+        "catalog_id": "market_latest_vs_seven_days",
+        "parameters": {
+          "latest_knowledge_date": "2026-10-26",
+          "comparison_knowledge_date": "2026-10-19",
+          "carrier_role": "marketing"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "ENDPOINT_INCOMPLETE",
+        "actual_invocation_status": "ENDPOINT_INCOMPLETE",
+        "expected_error_code": "ENDPOINT_INCOMPLETE",
+        "actual_error_code": "ENDPOINT_INCOMPLETE",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q06-MISSING-CARRIER-ROLE",
+        "question_id": "Q06",
+        "catalog_id": "market_latest_vs_seven_days",
+        "parameters": {
+          "latest_knowledge_date": "2026-08-31",
+          "comparison_knowledge_date": "2026-08-24",
+          "carrier_role": null
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "PARAMETER_ERROR",
+        "actual_invocation_status": "PARAMETER_ERROR",
+        "expected_error_code": "MISSING_CARRIER_ROLE",
+        "actual_error_code": "MISSING_CARRIER_ROLE",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q06-INVALID-DATE",
+        "question_id": "Q06",
+        "catalog_id": "market_latest_vs_seven_days",
+        "parameters": {
+          "latest_knowledge_date": "2026-02-30",
+          "comparison_knowledge_date": "2026-02-23",
+          "carrier_role": "marketing"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "PARAMETER_ERROR",
+        "actual_invocation_status": "PARAMETER_ERROR",
+        "expected_error_code": "INVALID_DATE",
+        "actual_error_code": "INVALID_DATE",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q07-MARKETING",
+        "question_id": "Q07",
+        "catalog_id": "route_capacity_two_clocks",
+        "parameters": {
+          "knowledge_date": "2026-08-31",
+          "operating_date": "2026-09-07",
+          "carrier_role": "marketing"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 3,
+        "actual_rows": 3,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "b2653ec210c34dae1ce293d0d0236092d89a7e12645185ea64a1394f286ece16",
+        "actual_result_hash": "b2653ec210c34dae1ce293d0d0236092d89a7e12645185ea64a1394f286ece16",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 3.24
+      },
+      {
+        "result_set_id": "Q07-OPERATING",
+        "question_id": "Q07",
+        "catalog_id": "route_capacity_two_clocks",
+        "parameters": {
+          "knowledge_date": "2026-08-31",
+          "operating_date": "2026-09-07",
+          "carrier_role": "operating"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 2,
+        "actual_rows": 2,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "be512484b924ed169a32afa168ab21bed724aec535d99e716a3691a0d9d847c4",
+        "actual_result_hash": "be512484b924ed169a32afa168ab21bed724aec535d99e716a3691a0d9d847c4",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 2.925
+      },
+      {
+        "result_set_id": "Q07-KNOWLEDGE-END-EMPTY",
+        "question_id": "Q07",
+        "catalog_id": "route_capacity_two_clocks",
+        "parameters": {
+          "knowledge_date": "2026-09-07",
+          "operating_date": "2026-09-07",
+          "carrier_role": "operating"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "actual_result_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 2.902
+      },
+      {
+        "result_set_id": "Q07-MISSING-KNOWLEDGE-DATE",
+        "question_id": "Q07",
+        "catalog_id": "route_capacity_two_clocks",
+        "parameters": {
+          "knowledge_date": null,
+          "operating_date": "2026-09-07",
+          "carrier_role": "operating"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "PARAMETER_ERROR",
+        "actual_invocation_status": "PARAMETER_ERROR",
+        "expected_error_code": "MISSING_KNOWLEDGE_DATE",
+        "actual_error_code": "MISSING_KNOWLEDGE_DATE",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q07-MISSING-OPERATING-DATE",
+        "question_id": "Q07",
+        "catalog_id": "route_capacity_two_clocks",
+        "parameters": {
+          "knowledge_date": "2026-08-31",
+          "operating_date": null,
+          "carrier_role": "operating"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "PARAMETER_ERROR",
+        "actual_invocation_status": "PARAMETER_ERROR",
+        "expected_error_code": "MISSING_OPERATING_DATE",
+        "actual_error_code": "MISSING_OPERATING_DATE",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q07-MISSING-CARRIER-ROLE",
+        "question_id": "Q07",
+        "catalog_id": "route_capacity_two_clocks",
+        "parameters": {
+          "knowledge_date": "2026-08-31",
+          "operating_date": "2026-09-07",
+          "carrier_role": null
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "PARAMETER_ERROR",
+        "actual_invocation_status": "PARAMETER_ERROR",
+        "expected_error_code": "MISSING_CARRIER_ROLE",
+        "actual_error_code": "MISSING_CARRIER_ROLE",
+        "query_executed": false,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": null,
+        "actual_result_hash": null,
+        "result_hash_equal": true,
+        "row_id_source": null,
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 0.0
+      },
+      {
+        "result_set_id": "Q08-CANONICAL",
+        "question_id": "Q08",
+        "catalog_id": "actual_rotation_enriched",
+        "parameters": {
+          "aircraft_id": 1001,
+          "flight_departure_date": "2026-08-31"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 3,
+        "actual_rows": 3,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "555f728bd64b648c229621f0b8ee6c80c211d0adce6945cbe7eab4f9c891aa40",
+        "actual_result_hash": "555f728bd64b648c229621f0b8ee6c80c211d0adce6945cbe7eab4f9c891aa40",
+        "result_hash_equal": true,
+        "row_id_source": "DERIVED_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 4.449
+      },
+      {
+        "result_set_id": "Q08-ANOMALIES",
+        "question_id": "Q08",
+        "catalog_id": "actual_rotation_enriched",
+        "parameters": {
+          "aircraft_id": 1099,
+          "flight_departure_date": "2026-08-31"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "OK",
+        "actual_invocation_status": "OK",
+        "expected_error_code": null,
+        "actual_error_code": null,
+        "query_executed": true,
+        "expected_rows": 11,
+        "actual_rows": 11,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "514cd46ad0746329a86c3186695308f1d9733f0735d9dd92ce2295a4d9401bcd",
+        "actual_result_hash": "514cd46ad0746329a86c3186695308f1d9733f0735d9dd92ce2295a4d9401bcd",
+        "result_hash_equal": true,
+        "row_id_source": "DERIVED_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 6.535
+      },
+      {
+        "result_set_id": "Q08-NOT-FOUND",
+        "question_id": "Q08",
+        "catalog_id": "actual_rotation_enriched",
+        "parameters": {
+          "aircraft_id": 1999,
+          "flight_departure_date": "2026-08-31"
+        },
+        "verdict": "PASS",
+        "semantic_verdict": "PASS",
+        "expected_invocation_status": "NOT_FOUND",
+        "actual_invocation_status": "NOT_FOUND",
+        "expected_error_code": "NO_ACTUAL_FLIGHTS",
+        "actual_error_code": "NO_ACTUAL_FLIGHTS",
+        "query_executed": true,
+        "expected_rows": 0,
+        "actual_rows": 0,
+        "duplicate_row_id_expected": false,
+        "duplicate_row_id_actual": false,
+        "diff_count": 0,
+        "expected_result_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "actual_result_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "result_hash_equal": true,
+        "row_id_source": "DECLARED_MANIFEST_LABEL_POSITIONAL",
+        "label_columns": [
+          "row_id"
+        ],
+        "elapsed_seconds": 6.495
+      }
+    ],
+    "totals": {
+      "result_sets": 24,
+      "passed": 24,
+      "failed": 0,
+      "expected_rows_total": 198,
+      "actual_rows_total": 198,
+      "truth_table_rows_reproduced": 33,
+      "probe_checks": 40,
+      "result_hash_equal_for_every_nonempty_set": true
+    },
+    "declared_hash_checks": [
+      {
+        "name": "q06_preservation.prior_v1_0_and_current_canonical_result_set_sha256",
+        "scope": "Q06-CANONICAL parsed result-set object",
+        "expected": "8513a82b4b666032fb3c4136830d96cefa924e61aeb6c573b2a8f20f38a8e227",
+        "actual": "8513a82b4b666032fb3c4136830d96cefa924e61aeb6c573b2a8f20f38a8e227",
+        "verdict": "PASS"
+      },
+      {
+        "name": "q06_preservation.current_v1_1_result_sets_sha256",
+        "scope": "Q06 parsed result_sets list",
+        "expected": "5203cb15e9971b3df73ae1c3b0b57b1b77dc0a645e148cc5968bade0ea9ef232",
+        "actual": "5203cb15e9971b3df73ae1c3b0b57b1b77dc0a645e148cc5968bade0ea9ef232",
+        "verdict": "PASS"
+      },
+      {
+        "name": "q07_preservation.prior_v1_0_result_sets_sha256",
+        "scope": "Q07 parsed result_sets list",
+        "expected": "252a18496a59cc871dbe019ad7b2ac79674310b44435602b215d7c46b8091f2f",
+        "actual": "252a18496a59cc871dbe019ad7b2ac79674310b44435602b215d7c46b8091f2f",
+        "verdict": "PASS"
+      }
+    ],
+    "q05_cross_question_closure": {
+      "checks": [
+        {
+          "name": "q05_expected_cardinality",
+          "verdict": "PASS",
+          "detail": "35 rows vs declared 35"
+        },
+        {
+          "name": "q05_pair_2026-08-03_to_2026-08-10",
+          "verdict": "PASS",
+          "detail": "7 vs 7"
+        },
+        {
+          "name": "q05_pair_2026-08-10_to_2026-08-17",
+          "verdict": "PASS",
+          "detail": "5 vs 5"
+        },
+        {
+          "name": "q05_pair_2026-08-17_to_2026-08-24",
+          "verdict": "PASS",
+          "detail": "9 vs 9"
+        },
+        {
+          "name": "q05_pair_2026-08-24_to_2026-08-31",
+          "verdict": "PASS",
+          "detail": "14 vs 14"
+        },
+        {
+          "name": "exact_presence_partner_closure",
+          "verdict": "PASS",
+          "detail": ""
+        },
+        {
+          "name": "declared_unpaired_set_matches",
+          "verdict": "PASS",
+          "detail": "declared-only=[] computed-only=[]"
+        }
+      ],
+      "verdict": "PASS"
+    },
+    "adversarial_probes": [
+      {
+        "probe": "concurrent_route_states_preserved",
+        "sql_file": "data/oracles/probe_concurrent_route_states.sql",
+        "verdict": "PASS",
+        "checks": [
+          {
+            "check_id": "CONCURRENT_STATES_ON_SFO_LAX",
+            "verdict": "PASS",
+            "detail": "route SFO->LAX carries 1339 concurrently open knowledge states at 2026-08-31",
+            "evidence": "{\"distinct_schedule_keys\":1339,\"open_state_count\":1339,\"route_id\":\"SFO->LAX\"}"
+          },
+          {
+            "check_id": "MULTI_OPEN_ROUTES_EXIST",
+            "verdict": "PASS",
+            "detail": "10 distinct routes carry more than one concurrently open state",
+            "evidence": "{\"multi_open_routes\":10}"
+          },
+          {
+            "check_id": "NAMED_CONCURRENT_CAPACITY_KEYS_ALL_OPEN",
+            "verdict": "PASS",
+            "detail": "PHY_BASE_700 / PHY_BASE_701 / MKT_COPY_702 all open on SFO->LAX at 2026-08-31: 3 of 3",
+            "evidence": "{\"keys\":[\"SYN-SK-MKT_COPY_702\",\"SYN-SK-PHY_BASE_700\",\"SYN-SK-PHY_BASE_701\"]}"
+          },
+          {
+            "check_id": "ROUTE_STATE_KEY_UNIQUE",
+            "verdict": "PASS",
+            "detail": "12032 route states, 12032 distinct keys",
+            "evidence": "{\"distinct_keys\":12032,\"rows\":12032}"
+          },
+          {
+            "check_id": "ROUTE_STATE_PARTITIONED_BY_SCHEDULE_KEY",
+            "verdict": "PASS",
+            "detail": "every route has exactly one open state per schedule key, over 10 routes",
+            "evidence": "{\"routes\":10,\"routes_with_multiple_open_states\":10}"
+          }
+        ]
+      },
+      {
+        "probe": "incomplete_snapshots_create_no_removals",
+        "sql_file": "data/oracles/probe_incomplete_snapshots.sql",
+        "verdict": "PASS",
+        "checks": [
+          {
+            "check_id": "GAP_CONTROL_CLOSES_ONLY_AT_20261026",
+            "verdict": "PASS",
+            "detail": "SYN-SK-GAP_CONTROL_001 closes at 2026-10-26",
+            "evidence": "{\"closing_date\":\"2026-10-26\",\"closures\":1}"
+          },
+          {
+            "check_id": "GAP_CONTROL_OPEN_INTERVAL_IS_20261005_TO_20261026",
+            "verdict": "PASS",
+            "detail": "route state 2026-10-05 -> 2026-10-26",
+            "evidence": "{\"from\":\"2026-10-05\",\"states\":1,\"to\":\"2026-10-26\"}"
+          },
+          {
+            "check_id": "GAP_CONTROL_PREVIOUS_ELIGIBLE_IS_20261005",
+            "verdict": "PASS",
+            "detail": "previous eligible complete date before the 2026-10-26 closure is 2026-10-05",
+            "evidence": "{\"previous_eligible\":\"2026-10-05\"}"
+          },
+          {
+            "check_id": "INCOMPLETE_20261019_ROWS_RETAINED_BUT_INERT",
+            "verdict": "PASS",
+            "detail": "9917 raw rows physically retained at 2026-10-19, 0 canonical observations",
+            "evidence": "{\"canonical_rows\":0,\"raw_rows\":9917}"
+          },
+          {
+            "check_id": "INCOMPLETE_SNAPSHOT_20261019_NOT_ELIGIBLE",
+            "verdict": "PASS",
+            "detail": "is_present=true is_complete=false",
+            "evidence": "{\"eligible\":false,\"pd\":\"2026-10-19\"}"
+          },
+          {
+            "check_id": "MISSING_SNAPSHOT_20261012_NOT_ELIGIBLE",
+            "verdict": "PASS",
+            "detail": "is_present=false is_complete=false",
+            "evidence": "{\"eligible\":false,\"pd\":\"2026-10-12\"}"
+          },
+          {
+            "check_id": "NO_CLOSURE_AT_20261012_OR_20261019",
+            "verdict": "PASS",
+            "detail": "0 closures derived at the missing/incomplete dates",
+            "evidence": "{\"closures\":0}"
+          },
+          {
+            "check_id": "NO_OPENING_AT_20261012_OR_20261019",
+            "verdict": "PASS",
+            "detail": "0 openings derived at the missing/incomplete dates",
+            "evidence": "{\"openings\":0}"
+          },
+          {
+            "check_id": "NO_SEGMENT_BOUNDARY_ON_INELIGIBLE_DATES",
+            "verdict": "PASS",
+            "detail": "0 segment boundaries fall on an ineligible snapshot date",
+            "evidence": "{\"boundaries_on_ineligible_dates\":0}"
+          },
+          {
+            "check_id": "REAPPEARANCE_OPENS_A_NEW_SEGMENT",
+            "verdict": "PASS",
+            "detail": "SYN-SK-REAPPEAR_400 has 2 knowledge segments (expected 2)",
+            "evidence": "{\"segments\":[\"2026-08-03..2026-08-10\",\"2026-08-17..2026-09-07\"]}"
+          }
+        ]
+      },
+      {
+        "probe": "temporal_integrity_and_sentinels",
+        "sql_file": "data/oracles/probe_temporal_integrity.sql",
+        "verdict": "PASS",
+        "checks": [
+          {
+            "check_id": "AH06_SENTINEL_EVENT_MINTS_NO_ASSIGNMENT",
+            "verdict": "PASS",
+            "detail": "AH-102099 (end_event_date 9999-12-31, watched values unchanged) mints 0 daily assignments (expected 0)",
+            "evidence": "{\"assignments\":0}"
+          },
+          {
+            "check_id": "AIRCRAFT_MASTER_KEY_UNIQUE",
+            "verdict": "PASS",
+            "detail": "0 duplicate AM-01 identities",
+            "evidence": "{\"duplicates\":0}"
+          },
+          {
+            "check_id": "A_TO_B_TO_A_PRESERVED_AS_THREE_ASSIGNMENTS",
+            "verdict": "PASS",
+            "detail": "aircraft 1001 retains 7 status audit assignments after consecutive-equality suppression (expected 7)",
+            "evidence": "{\"sequence\":[\"In Service\",\"Storage\",\"In Service\",\"Maintenance\",\"In Service\",\"Storage\",\"In Service\"]}"
+          },
+          {
+            "check_id": "DERIVED_BOUNDS_NEVER_USE_SOURCE_SENTINEL_99991231",
+            "verdict": "PASS",
+            "detail": "0 derived valid_to values equal the source sentinel 9999-12-31",
+            "evidence": "{\"rows\":0}"
+          },
+          {
+            "check_id": "END_EVENT_DATE_NEVER_CLOSES_A_DERIVED_INTERVAL",
+            "verdict": "PASS",
+            "detail": "the aircraft 1002 status assignment covering 2023-01-01 (the AH-102099 sentinel date) closes at 2024-07-01, taken from AM-08 existence, never from AH-06",
+            "evidence": "{\"assignments\":1,\"opened_by\":102002,\"valid_to\":\"2024-07-01\"}"
+          },
+          {
+            "check_id": "EOL_EXCLUSIVE_BOUNDARY_DAY_EXCLUDED",
+            "verdict": "PASS",
+            "detail": "0 dimensions are date-visible for aircraft 1002 on its EOL date 2024-07-01",
+            "evidence": "{\"dimensions\":0}"
+          },
+          {
+            "check_id": "EOL_EXCLUSIVE_PREVIOUS_DAY_ELIGIBLE",
+            "verdict": "PASS",
+            "detail": "4 of 4 dimensions are date-visible for aircraft 1002 on 2024-06-30",
+            "evidence": "{\"dimensions\":4}"
+          },
+          {
+            "check_id": "HALF_OPEN_NO_OVERLAPPING_DAILY_ASSIGNMENTS",
+            "verdict": "PASS",
+            "detail": "0 (dimension, aircraft) pairs have overlapping daily assignments",
+            "evidence": "{\"overlapping_pairs\":0}"
+          },
+          {
+            "check_id": "MIXED_ENGINE_SET_INCOMPLETE_NOT_FABRICATED",
+            "verdict": "PASS",
+            "detail": "aircraft 1005 reports one engine definition with mixed_engine_set_complete=false",
+            "evidence": "{\"complete\":false,\"definition_id\":\"SYN-ENGINE-MIXED-REPORTED\",\"engine_count\":4}"
+          },
+          {
+            "check_id": "NO_ASSIGNMENT_STARTS_BEFORE_EXISTENCE",
+            "verdict": "PASS",
+            "detail": "0 daily assignments start before their aircraft existence_from",
+            "evidence": "{\"rows\":0}"
+          },
+          {
+            "check_id": "OPEN_INTERVALS_USE_MODEL_SENTINEL_99990101",
+            "verdict": "PASS",
+            "detail": "3992 open daily assignments carry the derived model sentinel 9999-01-01",
+            "evidence": "{\"rows\":3992}"
+          },
+          {
+            "check_id": "REPEATED_STATUS_NOT_GLOBALLY_DEDUPLICATED",
+            "verdict": "PASS",
+            "detail": "Storage occurs 2 separate times for aircraft 1001 (expected 2)",
+            "evidence": "{\"storage_occurrences\":2}"
+          },
+          {
+            "check_id": "SAME_DAY_AUDIT_SEQUENCE_PRESERVED",
+            "verdict": "PASS",
+            "detail": "aircraft 1001 keeps 4 distinct status audit observations on 2020-06-01 (expected 4 of the 5 raw rows; the seq-40 repeat is consecutive-equal)",
+            "evidence": "{\"sequences\":[5,10,20,30],\"statuses\":[\"Maintenance\",\"In Service\",\"Storage\",\"In Service\"]}"
+          },
+          {
+            "check_id": "SAME_DAY_DATE_VISIBLE_STATE_IS_FINAL_OBSERVATION",
+            "verdict": "PASS",
+            "detail": "0 daily assignments were minted on 2020-06-01 for aircraft 1001 status (expected 0: the final seq-40 In Service equals the prior date-visible value)",
+            "evidence": "{\"daily_assignments_on_2020_06_01\":0}"
+          },
+          {
+            "check_id": "SOURCE_UNKNOWN_FUTURE_SENTINEL_PRESENT_IN_SOURCE",
+            "verdict": "PASS",
+            "detail": "1 AH rows carry source unknown-future end_event_date 9999-12-31",
+            "evidence": "{\"aircraft_history_ids\":[102099],\"rows\":1}"
+          },
+          {
+            "check_id": "UNRESOLVED_CONFIGURATION_LEFT_PRESERVED",
+            "verdict": "PASS",
+            "detail": "2 of 2 unresolved-configuration events (102004 null, 102005 missing 999999) survive resolution rather than being inner-join dropped",
+            "evidence": "{\"events\":[102004,102005]}"
+          },
+          {
+            "check_id": "UNRESOLVED_CONFIGURATION_OPENS_ONE_GAP_NOT_TWO",
+            "verdict": "PASS",
+            "detail": "1 unresolved aircraft_type gaps for aircraft 1002 (expected 1: null config and missing definition resolve identically, so no false second assignment)",
+            "evidence": "{\"gaps\":[\"2022-05-01..2022-07-01\"]}"
+          }
+        ]
+      },
+      {
+        "probe": "schedule_canonicalisation_and_no_change",
+        "sql_file": "data/oracles/probe_schedule_canonicalisation.sql",
+        "verdict": "PASS",
+        "checks": [
+          {
+            "check_id": "CANONICAL_GRAIN_IS_ONE_ROW_PER_KEY_AND_DATE",
+            "verdict": "PASS",
+            "detail": "0 (schedule_key, publish_date) pairs have more than one canonical row",
+            "evidence": "{\"violations\":0}"
+          },
+          {
+            "check_id": "INVALID_ROUTE_KEY_COUNTED_BUT_NOT_A_ROUTE",
+            "verdict": "PASS",
+            "detail": "2 SYN-SK-CLOCK_BOUNDARY_001 states carry a null route component: still counted as schedule observations, never as a Route",
+            "evidence": "{\"invalid_route_states\":2,\"states\":3}"
+          },
+          {
+            "check_id": "KEY_PRESERVING_CHANGE_OPENS_NEW_STATE_ON_SAME_KEY",
+            "verdict": "PASS",
+            "detail": "SYN-SK-BASE_100 has 3 knowledge states (expected 3: open, seats change 2026-08-10, terminal change 2026-08-31)",
+            "evidence": "{\"states\":[\"2026-08-03..2026-08-10\",\"2026-08-10..2026-08-31\",\"2026-08-31..2026-10-05\"]}"
+          },
+          {
+            "check_id": "NF_S01_LOW_RANK_VARIANT_NEVER_SELECTED",
+            "verdict": "PASS",
+            "detail": "selected canonical row has weekly_frequency=1 total_seats=180 (V02 has weekly_frequency=0 and must lose the deterministic rank)",
+            "evidence": "{\"total_seats\":1.800000000000000e+02,\"weekly_frequency\":1}"
+          },
+          {
+            "check_id": "NF_S01_SEMANTIC_DUPLICATE_COLLAPSES_TO_ONE",
+            "verdict": "PASS",
+            "detail": "1 canonical observation for SYN-SK-BASE_100 at 2026-08-03",
+            "evidence": "{\"canonical_rows\":1,\"total_seats\":1.800000000000000e+02,\"weekly_frequency\":1}"
+          },
+          {
+            "check_id": "NF_S01_THREE_RAW_OCCURRENCES_EXIST",
+            "verdict": "PASS",
+            "detail": "3 raw SYN-SK-BASE_100 rows at 2026-08-03 (V01 + V02 + DUP)",
+            "evidence": "{\"distinct_row_hashes\":2,\"itinerary_variants\":[9000,9000,9998],\"raw_rows\":3}"
+          },
+          {
+            "check_id": "NF_S02_LINEAGE_STILL_RETAINED",
+            "verdict": "PASS",
+            "detail": "5 contributing eligible observations retained for SYN-SK-STABLE_010",
+            "evidence": "{\"observations\":5}"
+          },
+          {
+            "check_id": "NF_S02_UNCHANGED_OBSERVATION_MINTS_NO_STATE",
+            "verdict": "PASS",
+            "detail": "SYN-SK-STABLE_010 is observed unchanged at all five August snapshots and yields 1 knowledge state(s) opening at 2026-08-03",
+            "evidence": "{\"from\":\"2026-08-03\",\"states\":1,\"to\":\"2026-09-07\"}"
+          }
+        ]
+      }
+    ],
+    "contract_truth_tables": [
+      {
+        "truth_table_id": "TT-BOTH-CLOCKS",
+        "sql_file": "data/oracles/tt_both_clocks.sql",
+        "label_columns": [
+          "row_id"
+        ],
+        "expected_cardinality": 9,
+        "comparison": {
+          "expected_rows": 9,
+          "actual_rows": 9,
+          "duplicate_row_id_expected": false,
+          "duplicate_row_id_actual": false,
+          "diff_count": 0,
+          "semantic_diff_count": 0,
+          "diffs": [],
+          "verdict": "PASS",
+          "semantic_verdict": "PASS"
+        },
+        "verdict": "PASS",
+        "elapsed_seconds": 2.274
+      },
+      {
+        "truth_table_id": "TT-UTC-OFFSETS",
+        "sql_file": "data/oracles/tt_utc_offsets.sql",
+        "label_columns": [
+          "row_id",
+          "source_case"
+        ],
+        "expected_cardinality": 10,
+        "comparison": {
+          "expected_rows": 10,
+          "actual_rows": 10,
+          "duplicate_row_id_expected": false,
+          "duplicate_row_id_actual": false,
+          "diff_count": 0,
+          "semantic_diff_count": 0,
+          "diffs": [],
+          "verdict": "PASS",
+          "semantic_verdict": "PASS"
+        },
+        "verdict": "PASS",
+        "elapsed_seconds": 2.11
+      },
+      {
+        "truth_table_id": "TT-CABIN-QUALITY",
+        "sql_file": "data/oracles/tt_cabin_quality.sql",
+        "label_columns": [
+          "row_id"
+        ],
+        "expected_cardinality": 5,
+        "comparison": {
+          "expected_rows": 5,
+          "actual_rows": 5,
+          "duplicate_row_id_expected": false,
+          "duplicate_row_id_actual": false,
+          "diff_count": 0,
+          "semantic_diff_count": 0,
+          "diffs": [],
+          "verdict": "PASS",
+          "semantic_verdict": "PASS"
+        },
+        "verdict": "PASS",
+        "elapsed_seconds": 2.009
+      },
+      {
+        "truth_table_id": "TT-CODE-RESOLUTION",
+        "sql_file": "data/oracles/tt_code_resolution.sql",
+        "label_columns": [
+          "row_id"
+        ],
+        "expected_cardinality": 4,
+        "comparison": {
+          "expected_rows": 4,
+          "actual_rows": 4,
+          "duplicate_row_id_expected": false,
+          "duplicate_row_id_actual": false,
+          "diff_count": 0,
+          "semantic_diff_count": 0,
+          "diffs": [],
+          "verdict": "PASS",
+          "semantic_verdict": "PASS"
+        },
+        "verdict": "PASS",
+        "elapsed_seconds": 4.209
+      },
+      {
+        "truth_table_id": "TT-SENTINELS",
+        "sql_file": "data/oracles/tt_sentinels.sql",
+        "label_columns": [
+          "row_id",
+          "case_id",
+          "assertion"
+        ],
+        "expected_cardinality": 3,
+        "comparison": {
+          "expected_rows": 3,
+          "actual_rows": 3,
+          "duplicate_row_id_expected": false,
+          "duplicate_row_id_actual": false,
+          "diff_count": 0,
+          "semantic_diff_count": 0,
+          "diffs": [],
+          "verdict": "PASS",
+          "semantic_verdict": "PASS"
+        },
+        "verdict": "PASS",
+        "elapsed_seconds": 4.24
+      },
+      {
+        "truth_table_id": "TT-MIXED-ENGINE-LIMIT",
+        "sql_file": "data/oracles/tt_mixed_engine_limit.sql",
+        "label_columns": [
+          "row_id"
+        ],
+        "expected_cardinality": 1,
+        "comparison": {
+          "expected_rows": 1,
+          "actual_rows": 1,
+          "duplicate_row_id_expected": false,
+          "duplicate_row_id_actual": false,
+          "diff_count": 0,
+          "semantic_diff_count": 0,
+          "diffs": [],
+          "verdict": "PASS",
+          "semantic_verdict": "PASS"
+        },
+        "verdict": "PASS",
+        "elapsed_seconds": 2.078
+      },
+      {
+        "truth_table_id": "TT-PLAN-ACTUAL-DIVERSION",
+        "sql_file": "data/oracles/tt_plan_actual_diversion.sql",
+        "label_columns": [
+          "row_id",
+          "passenger_token"
+        ],
+        "expected_cardinality": 1,
+        "comparison": {
+          "expected_rows": 1,
+          "actual_rows": 1,
+          "duplicate_row_id_expected": false,
+          "duplicate_row_id_actual": false,
+          "diff_count": 0,
+          "semantic_diff_count": 0,
+          "diffs": [],
+          "verdict": "PASS",
+          "semantic_verdict": "PASS"
+        },
+        "verdict": "PASS",
+        "elapsed_seconds": 2.131
+      }
+    ],
+    "contract_truth_tables_not_oracled": {
+      "TT-SNAPSHOT-COMPLETENESS": "Every substantive assertion (no inference at the missing 2026-10-12 or incomplete 2026-10-19 snapshot, previous eligible complete date 2026-10-05, the single post-gap closure at 2026-10-26, reappearance opening a new segment) is proved live by the incomplete_snapshots_create_no_removals probe. The four manifest rows are a curated case selection whose case_id/presence_outcome strings are labels, not a query result.",
+      "TT-US-CLOCK-AUTHORITY": "Its expected_outcome column is assertion prose (KEEP_EXPANDED_TIMESTAMP_AP09_NOT_OVERRIDE and similar), not a computable value. The underlying behaviour is exercised by TT-UTC-OFFSETS (AP-09 never repairs) and by Q08-CANONICAL (AF-06 local day selected even though AF-07 is the next UTC date).",
+      "TT-PASSENGER-UNION": "Passenger PF/PH canonical-union precedence is the fulfillment layer; no Q01-Q08 result set depends on it, so DATA-04b does not own an independent oracle for it.",
+      "TT-FULFILLMENT": "Fulfillment matching and the DV-43 null-ID lineage fallback are the fulfillment layer; no Q01-Q08 result set depends on them. The declared DV-43 digest is verified as a manifest constant only."
+    },
+    "hard_test_coverage_evidence": {
+      "HT-01": "Q02-CANONICAL; probe A_TO_B_TO_A_PRESERVED_AS_THREE_ASSIGNMENTS",
+      "HT-02": "Q01-CANONICAL",
+      "HT-03": "Q02-CANONICAL; probe SAME_DAY_AUDIT_SEQUENCE_PRESERVED",
+      "HT-04": "Q01-UNKNOWN-GAP; probe UNRESOLVED_CONFIGURATION_OPENS_ONE_GAP_NOT_TWO",
+      "HT-05": "Q01-CANONICAL, Q04-CANONICAL, TT-BOTH-CLOCKS; probe HALF_OPEN_NO_OVERLAPPING_DAILY_ASSIGNMENTS",
+      "HT-06": "TT-SENTINELS; probe SOURCE_UNKNOWN_FUTURE_SENTINEL_PRESENT_IN_SOURCE",
+      "HT-07": "TT-SENTINELS; probes DERIVED_BOUNDS_NEVER_USE_SOURCE_SENTINEL_99991231, AH06_SENTINEL_EVENT_MINTS_NO_ASSIGNMENT",
+      "HT-08": "Q01-BEFORE-FIRST, Q01-UNKNOWN-GAP, Q01-EOL-BOUNDARY, Q01-CANONICAL",
+      "HT-09": "Q01-EOL-BOUNDARY, TT-SENTINELS; probes EOL_EXCLUSIVE_PREVIOUS_DAY_ELIGIBLE / BOUNDARY_DAY_EXCLUDED",
+      "HT-10": "Q01-EOL-BOUNDARY",
+      "HT-11": "not owned by DATA-04b (SOURCE_CONTRACT.md / ATTRIBUTE_AUTHORITY.md field census, DATA-03 gate)",
+      "HT-12": "Q05-INELIGIBLE-ENDPOINT; probe MISSING_SNAPSHOT_20261012_NOT_ELIGIBLE + NO_SEGMENT_BOUNDARY_ON_INELIGIBLE_DATES",
+      "HT-13": "probes INCOMPLETE_20261019_ROWS_RETAINED_BUT_INERT, GAP_CONTROL_CLOSES_ONLY_AT_20261026, GAP_CONTROL_PREVIOUS_ELIGIBLE_IS_20261005",
+      "HT-14": "Q06-INCOMPLETE-ENDPOINT",
+      "HT-15": "Q05-R020 / Q05-R024 inside Q05-CANONICAL; probe REAPPEARANCE_OPENS_A_NEW_SEGMENT",
+      "HT-16": "Q05-CANONICAL (BASE_100 V01/V02/DUP canonical selection); probe NF_S01_SEMANTIC_DUPLICATE_COLLAPSES_TO_ONE",
+      "HT-17": "probe NF_S02_UNCHANGED_OBSERVATION_MINTS_NO_STATE",
+      "HT-18": "Q07-MARKETING, Q07-OPERATING",
+      "HT-19": "Q05-CANONICAL exact key-preserving modification rows",
+      "HT-20": "Q05-CANONICAL rows R004/R005/R006 (unique candidate)",
+      "HT-21": "Q05-CANONICAL rows R008..R014 (ambiguous group)",
+      "HT-22": "Q05-CANONICAL unpaired evidence + q05 cross-question closure check",
+      "HT-23": "TT-BOTH-CLOCKS",
+      "HT-24": "Q07-MISSING-KNOWLEDGE-DATE, Q07-MISSING-OPERATING-DATE",
+      "HT-25": "TT-UTC-OFFSETS",
+      "HT-26": "Q06-MISSING-CARRIER-ROLE, Q07-MISSING-CARRIER-ROLE, Q07-MARKETING, Q07-OPERATING",
+      "HT-27": "Q07-OPERATING (UNRESOLVED_PHYSICAL_SERVICE, codeshare never double counted)",
+      "HT-28": "TT-CABIN-QUALITY",
+      "HT-29": "Q06-CANONICAL + q05 cross-question closure",
+      "HT-30": "not owned by DATA-04b (passenger canonical-union layer)",
+      "HT-31": "not owned by DATA-04b (fulfillment layer)",
+      "HT-32": "not owned by DATA-04b (fulfillment layer; DV-43 digest verified as a manifest constant only)",
+      "HT-33": "TT-PLAN-ACTUAL-DIVERSION, Q08-ANOMALIES (DIVERSION_ENDPOINT_CONFLICT)",
+      "HT-34": "Q08-CANONICAL (AF-06 local day selected although AF-07 is 2026-09-01)",
+      "HT-35": "Q08-ANOMALIES",
+      "HT-36": "Q08-ANOMALIES rows R012/R013/R014",
+      "HT-37": "Q08-CANONICAL",
+      "HT-38": "TT-CODE-RESOLUTION",
+      "HT-39": "Q01-UNKNOWN-GAP",
+      "HT-40": "TT-MIXED-ENGINE-LIMIT; probe MIXED_ENGINE_SET_INCOMPLETE_NOT_FABRICATED",
+      "HT-41": "not owned by DATA-04b (MODEL-01 live gate)",
+      "HT-42": "all 24 result sets compared as complete ordered typed sequences",
+      "HT-43": "not owned by DATA-04b (MODEL-02 inventory gate)",
+      "HT-44": "timings recorded per result set in build/oracle_results/",
+      "HT-45": "not owned by DATA-04b (release claim scan)",
+      "HT-46": "Q01, Q02, Q03, Q04",
+      "HT-47": "every catalog_id and typed parameter set is invoked by --all",
+      "HT-48": "Q01-INVALID-AIRCRAFT-ID, Q06-INVALID-DATE, Q06-MISSING-CARRIER-ROLE, Q07-MISSING-* , TT-MIXED-ENGINE-LIMIT",
+      "HT-49": "Q05 exact/candidate/ambiguous/unpaired labels, q05 closure, Q08 plan vs actual fields"
+    }
+  },
+  "mismatches": [],
+  "timings_seconds": {
+    "run_oracles_all_wallclock": 93.173,
+    "pytest_full_suite_wallclock": 97.9,
+    "per_result_set": {
+      "Q01-CANONICAL": 5.222,
+      "Q01-BEFORE-FIRST": 3.336,
+      "Q01-UNKNOWN-GAP": 2.922,
+      "Q01-EOL-BOUNDARY": 2.876,
+      "Q01-INVALID-AIRCRAFT-ID": 0.0,
+      "Q02-CANONICAL": 2.341,
+      "Q02-NO-SPELLS": 2.357,
+      "Q03-CANONICAL": 3.188,
+      "Q04-CANONICAL": 4.662,
+      "Q05-CANONICAL": 8.537,
+      "Q05-INELIGIBLE-ENDPOINT": 0.0,
+      "Q06-CANONICAL": 2.644,
+      "Q06-INCOMPLETE-ENDPOINT": 0.0,
+      "Q06-MISSING-CARRIER-ROLE": 0.0,
+      "Q06-INVALID-DATE": 0.0,
+      "Q07-MARKETING": 3.24,
+      "Q07-OPERATING": 2.925,
+      "Q07-KNOWLEDGE-END-EMPTY": 2.902,
+      "Q07-MISSING-KNOWLEDGE-DATE": 0.0,
+      "Q07-MISSING-OPERATING-DATE": 0.0,
+      "Q07-MISSING-CARRIER-ROLE": 0.0,
+      "Q08-CANONICAL": 4.449,
+      "Q08-ANOMALIES": 6.535,
+      "Q08-NOT-FOUND": 6.495
+    },
+    "slowest_result_set": "Q05-CANONICAL"
+  },
+  "open_issues": [
+    {
+      "id": "DATA-04b-OI-1",
+      "severity": "medium",
+      "title": "Q05 event_id for exact and unpaired rows is not independently derivable",
+      "detail": "EXPECTED_ANSWERS.yaml carries hand-authored mnemonic event ids for the 22 exact and 8 unpaired Q05 rows (SYN-CHG-20260810-BASE-SEATS, SYN-CHG-20260831-CAP-700-TERMINAL, SYN-UNPAIR-ADD-20260831, ...). ATTRIBUTE_AUTHORITY.md DV-34/DV-35/DV-36/DV-37 define SHA-256 identities, not these strings, and the mnemonics follow no consistent rule: SYN-SK-BASE_100 becomes 'BASE' but SYN-SK-PHY_BASE_700 becomes 'CAP-700'; SYN-SK-ADD_300 is '300' as an addition but 'ADD300' as a modification; the two 2026-08-31 UNPAIR rows carry no suffix while their MKT siblings do. Because the frozen order_by sorts on event_id, no implementation can reproduce the declared row order without being told them. The oracle therefore carries them in data/oracles/q05_event_labels.sql as a declared label table keyed on the independently computed semantic identity (comparison_date, event_class, schedule_key, field_name); any event the oracle computes that is absent from the table gets a visible 'UNLABELLED|...' id, so the table cannot mask an extra, missing or misclassified event. Candidate, ambiguous-group and member event ids and every group_id ARE derived (SYN-CAND-<date>-NN, SYN-AMB-<date>-NN[-Mk]).",
+      "proposed_decision_log_entry": "Either publish a deterministic derivation rule for Q05 event_id, or record it explicitly as a presentation label that conformance checks compare through a declared map. MODEL-01/QUERY-UC2 will hit exactly the same wall.",
+      "impact_on_business_result": "none; no semantic column depends on it"
+    },
+    {
+      "id": "DATA-04b-OI-2",
+      "severity": "low",
+      "title": "row_id is a manifest label, not a computable value",
+      "detail": "row_id is positional under the declared order_by for Q02, Q03, Q04, Q06 and Q08 (the oracle derives it, row_id_source=DERIVED_POSITIONAL), but Q05 and Q07 interleave the v1.0 range with the D-0010/D-0011 repair range (Q05-R001, R002, R003, R020, R021... and Q07-R002, R005, R001), so no rule recovers it. For those the oracle takes the label positionally from the frozen manifest and marks row_id_source=DECLARED_MANIFEST_LABEL_POSITIONAL. A cardinality mismatch makes the labels '<<UNLABELLED-nnn>>' so the fallback can never hide a wrong row count.",
+      "impact_on_business_result": "none"
+    },
+    {
+      "id": "DATA-04b-OI-3",
+      "severity": "low",
+      "title": "Ambiguous amendment grouping uses a single-component simplification",
+      "detail": "SOURCE_CONTRACT.md DV-36 defines the ambiguous group as a connected component of the compatibility graph within one DV-34 signature. The oracle forms at most one group per (comparison_date, typed signature) from every removal/addition that participates in at least one overlapping-range pair, which coincides with connected components whenever a signature yields a single component. That holds for every observed case in SYN-SCHEDULE-UNIVERSE-01 (the one ambiguous signature, SYN-MKT-D|704|SFO|SEA, is fully mutually overlapping). A future fixture with two disjoint overlap clusters inside one signature would need real transitive closure.",
+      "impact_on_business_result": "none for the frozen fixtures"
+    },
+    {
+      "id": "DATA-04b-OI-4",
+      "severity": "informational",
+      "title": "Four contract truth tables are deliberately not oracled here",
+      "detail": "TT-SNAPSHOT-COMPLETENESS, TT-US-CLOCK-AUTHORITY, TT-PASSENGER-UNION and TT-FULFILLMENT are not recomputed row-for-row; see evidence.contract_truth_tables_not_oracled for the per-table reason. Their substantive temporal behaviour is still proved live by the probes and by the seven truth tables that are oracled.",
+      "impact_on_business_result": "none; no Q01-Q08 result set depends on them"
+    }
+  ],
+  "reruns": {
+    "run_oracles_all_executed_times": 4,
+    "pytest_full_suite_executed_times": 1,
+    "deterministic_across_reruns": true,
+    "note": "Consecutive --all runs produced byte-identical per-result-set hashes."
+  }
+}
