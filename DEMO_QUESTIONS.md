@@ -206,7 +206,11 @@ installed-version live equality test adds demonstrable value.
   `member_schedule_key`, with null member fields last.
 - **Scoped parity claim:** matches key-preserving and key-presence workload semantics; key-changing
   relationships are parity evidence only as explicitly labeled candidates/groups, never exact. The
-  bounded claim covers exactly the 35 independently recomputed v1.1 rows.
+  bounded claim covers exactly the 35 v1.1 rows. Under D-0018 that claim is qualified: the event set,
+  classification, keys, field deltas, gap flags and the candidate/ambiguous/unpaired closure are
+  independently recomputed, but `event_id` and `row_id` are supplied manifest labels and the declared
+  row sequence therefore is not independently verified. 490 of Q05-CANONICAL's 560 cells are
+  recomputed; 65 are supplied.
 - **Snowflake differentiation:** deterministic snapshot control, lineage, SQL reconciliation, and RAI
   rules execute over the same Snowflake-resident data.
 - **Limitation:** without a stable amendment ID, non-overlapping shifts may remain unpaired and

@@ -656,3 +656,78 @@ entry with a new entry rather than editing its historical conclusion.
   loaded SOURCE data itself is reproducible at any time by rerunning the generator and the loader.
 - **Status:** accepted; final acceptance requires a green live load and the downstream ontology and
   query gates.
+
+---
+
+## D-0018 — Q05 `event_id` is a supplied manifest label, not a derived identity
+
+- **Date:** 2026-09-02
+- **Trigger:** DATA-04b reproduced all 24 frozen result sets from independent SQL oracles with zero
+  cell diffs, but could not derive the 30 Q05 `event_id` mnemonics from any source fixture.
+- **Question:** Q05's frozen `order_by` sorts on `event_id`. The manifest populates that column with
+  hand-authored mnemonic strings such as `SYN-CHG-20260831-CAP-700-TERMINAL`, while
+  `ATTRIBUTE_AUTHORITY.md` defines the DV-34 through DV-37 identities as SHA-256 digests. No
+  implementation can reproduce the declared Q05 row order without being told those 30 strings. Is
+  this an oracle fault, a generator fault, or a defect in the frozen expectation, and what is the
+  smallest honest treatment?
+- **Alternatives:** derive the mnemonics from a generating rule; emit them from the generator into
+  `SOURCE` so they become derivable; supersede Q05's `order_by` to a derivable key as D-0010 and
+  D-0011 superseded other Q05 content; carry the mnemonics in a declared label table keyed on an
+  independently computed semantic identity and disclose the residual circularity.
+- **Evidence:** All 30 mnemonics were enumerated and scored against seven candidate generating
+  functions; the best fit reproduces 15 of 30. Three irreducible contradictions remain, the sharpest
+  being that on 2026-08-31, under one `event_class` and one `field_name`, the manifest maps
+  `SYN-SK-BASE_100` to `BASE` but `SYN-SK-PHY_BASE_700` to `CAP-700`, which refutes every
+  token-selection rule. The declared row order is separately unrecoverable: on the same date the
+  `EXACT_ADDITION` block orders `[MKT_ENTRY_714, UNPAIR_NEW]` while the `UNPAIRED_ADDITION` block
+  orders the identical pair inverted, and the declared `member_side` / `member_schedule_key`
+  tiebreakers yield the wrong order, so no total order on any per-key attribute reproduces the
+  manifest. Generator fault is refuted: `SOURCE` carries no label column, `SCHEDULE_KEY_READABLE` is
+  `SYN-READABLE|<key>|<publish_date>`, the four amendment objects are `MODEL_INPUT` contracts keyed
+  on DV-34..37 SHA-256, and `data/SYNTHETIC_DATA_SPEC.md` never contracts a mnemonic. Seventeen live
+  mutations of the Q05 oracle all failed loudly and no silent pass was constructible.
+- **Review:** Independent reviewer `REVIEW-D0018`, which did not author the proposal, returned
+  UPHELD WITH CHANGES. Full report at `build/task_reports/REVIEW-D0018.md`. The reviewer supplied the
+  inverted-block proof above, refuted the generator-fault branch, verified mutation resistance at
+  17 of 17, and proved the semantic key collision-free over the five declared classes with non-null
+  `schedule_key`, with `comparison_date` and `schedule_key` load-bearing. It required four
+  corrections, all accepted and applied: the diagnosis is a manifest/contract conflict on `event_id`
+  rather than a plain non-derivable presentation column, and the D-0010/D-0011 supersession
+  precedent must be recorded as considered and rejected; the claim that candidate, group and member
+  ids are derived is over-stated, because their string templates, the `NN` ordinal rule and the
+  `REMOVED`-before-`ADDED` `-Mk` ordering were all adopted from the manifest; the `semantic_verdict`
+  must stop excluding the five derived `event_id` cells, a real defect under which an ordinal-padding
+  perturbation gave a strict FAIL but a passing semantic verdict; and the ordering circularity must
+  be disclosed in `DEMO_QUESTIONS.md` and the DATA-04b summary.
+- **Decision:** Treat the 30 Q05 `event_id` mnemonics as supplied manifest labels. Carry them in
+  `data/oracles/q05_event_labels.sql`, keyed on the independently computed semantic identity
+  `(comparison_date, event_class, schedule_key, field_name)`, and render any computed event absent
+  from that table as a visible `UNLABELLED|...` id so the table cannot mask an extra, missing or
+  misclassified event. Do not supersede Q05's `order_by`: supersession would touch 30 values, the
+  declared row sequence and the result hash, and replacing the mnemonics with SHA-256 digests would
+  make the demo's most visually explanatory output unreadable on stage. Disclose instead. Of
+  Q05-CANONICAL's 560 cells, 490 are independently recomputed and 65 are supplied (35 `row_id` plus
+  30 `event_id`); the declared row sequence is supplied and, per the evidence above, could never have
+  been verified. The event set, per-pair counts, every `event_class`, `exactness`, `confidence`,
+  schedule/related/member key, `field_name`, `old_value`, `new_value`, `crosses_snapshot_gap`, the
+  candidate/ambiguous/unpaired partition and closure, and the eligibility gate all remain
+  independently verified.
+- **Confidence:** high on non-derivability, which is proved twice by independent argument. High on
+  fail-loud behaviour, which is proved by 17 live mutations. Medium on the disclosure being
+  sufficient for a customer audience; REDTEAM-01 must retest this specific claim.
+- **Affected artifacts/tests:** `data/oracles/q05_event_labels.sql`, `data/run_oracles.py`
+  (`LABEL_COLUMNS["Q05"]` must exclude only the 30 declared-label rows, not the whole column),
+  `data/test_oracles.py` (regression test that an ordinal-padding perturbation fails the semantic
+  verdict), `build/task_reports/DATA-04b.json` summary, and the `DEMO_QUESTIONS.md` Q05 phrase
+  "independently recomputed". `EXPECTED_ANSWERS.yaml` is not edited.
+- **QUERY-UC2 binding:** the label map stays in a shared conformance harness outside both the oracle
+  and the PyRel model. Putting it in the model would embed the frozen answer inside the very artifact
+  whose independence the demo asserts. The RAI query emits the contracted DV-34..37 identity or
+  leaves `event_id` unpopulated; Q05 is compared as an order-free join on the semantic identity for
+  the semantic verdict, with the declared sequence asserted separately as a labelled presentation
+  check; the mnemonics are joined last, in the notebook and agent layer, so the audience still reads
+  `SYN-CHG-20260831-CAP-700-TERMINAL`.
+- **Rollback:** if the disclosed circularity is later judged unacceptable, supersede Q05's `order_by`
+  to a derivable key under a new reviewed decision. That changes the declared sequence and the Q05
+  result hash but no row's content, and the semantic verdict is already order-free.
+- **Status:** accepted.
