@@ -42,6 +42,15 @@ fixture and is an explicit fail: it would also silently "repair" the diversion c
 * *Losing excluded legs.* ``CANCELLED``, ``MISSING_TIME`` and
   ``UNKNOWN_OR_INVALID_CANCELLATION_FLAG`` are ``EXCLUDED`` from the operated chain and still
   visible as anomaly rows.
+* *A twelfth anomaly class arriving unannounced.* ``MODEL_INPUT`` also emits
+  ``TARGET_NOT_OPERATED`` (D-0020 A5) - a link whose target is itself cancelled, invalid-flagged
+  or missing an arrival time. It is outside the eleven-class DV-25 vocabulary the manifest
+  declares and the independent SQL oracle has no branch for it, so a conformance harness would
+  diverge the first time a selected rotation hit one. It is emitted, because ``is_accepted_link``
+  is false and suppressing the row would delete a leg from the chain with no stated reason - and
+  every invocation reports it separately through
+  :attr:`RotationResult.beyond_manifest_anomaly_classes`. Four legs in the enriched universe carry
+  it (5310, 5470, 6190, 6345); none is in a frozen Q08 result set.
 
 **Nothing semantic is recomputed here.** The per-edge acceptance conjunction, the DV-25 anomaly
 classification and its precedence, the cycle component and its representative, the transitive
@@ -52,13 +61,45 @@ resolves, scoped per dimension). This module contributes the three things
 error codes, the manifest's ``SYN-ROT`` / ``SYN-ANOM`` presentation labels (kept out of the PyRel
 model per the D-0018 / D-0021 bindings), and the frozen output ordering.
 
-**Path reasoner.** Not used, and the verdict is measured rather than preferred:
-``build/design/QUERY_ROUTING.md`` records that ``relationalai.semantics.std.paths`` is deprecated
-at 1.20.1, that only ``all_paths()`` is implemented while ``shortest_paths()``, ``undirected()``
-and ``reverse()`` raise, that ``all_paths()`` enumerates prefixes and suffixes so a maximal-chain
-filter is still needed, and that its compile hook rejects enclosing references to path-interior
-binders, which is exactly where per-leg enrichment lives. Ordinary typed self-reference is the
-supported baseline and is what ships.
+**Path reasoner.** Not used, and the verdict is now *measured against the live engine* rather than
+cited. ``build/design/QUERY_ROUTING.md`` sets five pass conditions plus a value bar for the
+optional ``relationalai.semantics.std.path`` implementation. It was built and run::
+
+    p = path(AircraftFlight.accepted_next_flight).repeat(min=1, max=32).all_paths()
+    model.select((idx + 1).alias("leg_order"), node.flight_id, src.flight_id).where(
+        p.nodes(0, src), p.nodes(p.length, dst), p.nodes(idx, node),
+        src.aircraft == Aircraft, Aircraft.id == aircraft_id,
+        src.flight_departure_date == day, RotationSegmentHead(src),
+        hval.flight == src, model.not_(hval.rotation_anomaly_class),
+        model.not_(dst.accepted_next_flight(out)),
+    )
+
+Conditions 1 to 4 pass: it executes on 1.20.1, returns exactly ``[8001, 8002, 8003]`` for
+``Q08-CANONICAL`` (and the 5-leg and 4-leg enriched chains), returns nothing for the anomaly-only
+aircraft, terminates under the ``repeat`` bound, and the per-leg enrichment joins on without
+tripping the interior-binder hook. Condition 5 passes too: 3.4 to 3.6s warm against the baseline's
+4.4 to 4.6s.
+
+It still does not ship, on the value bar and on one correctness finding:
+
+* ``repeat(min=1, ...)`` requires at least one edge, so a **single-leg rotation segment is not a
+  path**. Aircraft 1225 on 2027-06-24 has two segments - ``5309 -> 5310`` and the singleton
+  ``5312`` - and the path implementation returns two rows where the closure baseline returns
+  three. ``repeat(min=0, ...)`` is the obvious repair and it raises
+  ``[PathUngroundedPatternError] Pattern potentially admits an infinite number of single-node
+  paths``. Recovering the singleton therefore needs a union with a separate no-edge branch, which
+  is more code and a second correctness surface, not less.
+* The maximal-chain filter (``not_`` inbound, ``not_`` outbound) is still needed, so the path adds
+  a ``repeat`` bound constant without removing the head and terminal predicates.
+* It is a query-level construct and cannot be materialised as an ontology property, so every
+  consumer would restate the pattern - the opposite of the one-reusable-semantic-model claim.
+* ``shortest_paths()``, ``undirected()`` and ``reverse()`` all raise ``NotImplementedError`` at
+  1.20.1, and every ``path()`` call emits a spurious ``RuleLoopWarning``. (Three transient
+  ``SnowflakeTableObjectsException``\\ s during the experiment turned out **not** to be the path
+  library: they were the shared-model write lock a sibling agent was holding. See
+  :func:`retry_on_model_lock`.)
+
+Ordinary typed self-reference is the supported baseline and is what ships.
 
 Run the frozen result sets::
 
@@ -71,7 +112,7 @@ import datetime as dt
 import itertools
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Sequence
 
 import pandas as pd
 from relationalai.semantics.std import aggregates as aggs
@@ -111,6 +152,45 @@ ROW_KIND_ANOMALY = "ANOMALY"
 #: DV-25 class whose output rows are collapsed to one per component. The precedence itself, and
 #: which member is the representative, are the ontology's answer and are not re-derived here.
 CYCLE_ANOMALY_CLASS = "CYCLE"
+
+#: The eleven classes the frozen manifest declares at
+#: ``scope.rotation_anomaly_support.anomaly_precedence``. Listed here as a *vocabulary* only - the
+#: order in that array is the one D-0021 rejects (it puts ``DIVERSION_ENDPOINT_CONFLICT`` sixth,
+#: while ``ATTRIBUTE_AUTHORITY.md:338`` DV-25 puts it eighth and the manifest's own rows follow
+#: DV-25). Nothing in this module orders anomalies by class, so the contradiction is inert here;
+#: the classification and its precedence are ``MODEL_INPUT``'s answer, read through
+#: ``RotationLinkValidation``.
+MANIFEST_ANOMALY_CLASSES: frozenset[str] = frozenset(
+    {
+        "SELF_LOOP",
+        CYCLE_ANOMALY_CLASS,
+        "MISSING_TARGET",
+        "DIFFERENT_AIRCRAFT",
+        "OUTSIDE_SELECTED_DAY",
+        "BACKWARD_TIME",
+        "BROKEN_CONTINUITY",
+        "DIVERSION_ENDPOINT_CONFLICT",
+        "CANCELLED",
+        "MISSING_TIME",
+        "UNKNOWN_OR_INVALID_CANCELLATION_FLAG",
+    }
+)
+
+#: ``TARGET_NOT_OPERATED`` (D-0020 A5) is a twelfth class that ``MODEL_INPUT`` emits for a link
+#: whose *target* is cancelled, carries an invalid cancellation flag, or has no actual arrival
+#: time. It is outside the DV-25 vocabulary, it is absent from
+#: :data:`MANIFEST_ANOMALY_CLASSES`, and - the part that matters - the independent SQL oracle in
+#: ``data/oracles/q08_actual_rotation_enriched.sql`` has no branch for it, so a conformance
+#: harness diverges the first time a selected rotation hits one. D-0021 records this against A5,
+#: which was written when the class had zero rows; the enriched universe has four (flights 5310,
+#: 5470, 6190, 6345, none of them in a frozen Q08 result set).
+#:
+#: The row is **emitted**, not suppressed. ``is_accepted_link`` is false for it, so the chain
+#: genuinely stops there; hiding the anomaly would delete a leg from the answer with no stated
+#: reason, which is the exact failure mode "losing excluded legs" warns about. Instead every
+#: invocation reports which beyond-vocabulary classes it emitted
+#: (:attr:`RotationResult.beyond_manifest_anomaly_classes`) so the divergence is loud.
+BEYOND_MANIFEST_ANOMALY_CLASS = "TARGET_NOT_OPERATED"
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _MANIFEST_PATH = _REPO_ROOT / "EXPECTED_ANSWERS.yaml"
@@ -171,11 +251,18 @@ class RotationResult:
     ``QUERY-INT`` owns the catalog layer, so :func:`invoke` exists to hand it the frozen triple
     without making it catch exceptions. The raising form (:func:`actual_rotation_enriched`) stays
     the primary entry point.
+
+    ``beyond_manifest_anomaly_classes`` is the fence around
+    :data:`BEYOND_MANIFEST_ANOMALY_CLASS`: any emitted anomaly class outside the manifest's
+    eleven-class vocabulary, sorted. Empty for all six frozen Q08 result sets. Non-empty means the
+    answer is still the model's truth but the independent SQL oracle will disagree, so a
+    conformance harness must report the divergence rather than absorb it.
     """
 
     invocation_status: str
     error_code: str | None
     rows: pd.DataFrame
+    beyond_manifest_anomaly_classes: tuple[str, ...] = ()
 
 
 # ----------------------------------------------------------------- parameter validation
@@ -289,6 +376,82 @@ def _default_package():
     import aviation_model
 
     return aviation_model
+
+
+# ------------------------------------------------------------------ concurrency: the model lock
+#
+# Importing any query module installs the ontology, which is a **write transaction** on the shared
+# `aviation_temporal` model. While it is open, another process's read does not queue - it fails,
+# and the failure surfaces two levels away from its cause: the SDK reports
+# ``SnowflakeTableObjectsException: Getting the following table failed with the error in
+# Snowflake``, and only the debug span carries the real text, ``model is currently locked by
+# active write transaction(s)``. Measured here: three of four path-experiment invocations in one
+# process, and one of forty-one test cases, all while a sibling query agent was installing its own
+# module. Retrying is correct; debugging the query is not.
+
+#: Substrings that identify a lock collision rather than a defect. Matched against the whole
+#: exception chain because the informative text is nested inside the SDK's wrapper.
+_MODEL_LOCK_MARKERS = (
+    "model is currently locked",
+    "Getting the following table failed with the error in Snowflake",
+)
+
+MODEL_LOCK_ATTEMPTS = 6
+MODEL_LOCK_BACKOFF_SECONDS = 20.0
+
+
+def is_model_lock_error(error: BaseException) -> bool:
+    """True when an exception (or anything it wraps) is the shared-model write lock."""
+    seen: set[int] = set()
+    current: BaseException | None = error
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        text = f"{type(current).__name__}: {current}"
+        if any(marker in text for marker in _MODEL_LOCK_MARKERS):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
+def retry_on_model_lock(
+    call,
+    *,
+    attempts: int = MODEL_LOCK_ATTEMPTS,
+    backoff_seconds: float = MODEL_LOCK_BACKOFF_SECONDS,
+    on_retry=None,
+):
+    """Run ``call()``, retrying only while a sibling holds the model's write lock.
+
+    Deliberately narrow. Any exception that is not :func:`is_model_lock_error` propagates on the
+    first attempt, because a retry loop that swallows a real ``TyperError`` or an empty-frame
+    ``KeyError`` would turn a query bug into a slow query bug.
+    """
+    import time
+
+    for attempt in range(1, attempts + 1):
+        try:
+            return call()
+        except Exception as error:  # noqa: BLE001 - re-raised unless it is the lock
+            if attempt == attempts or not is_model_lock_error(error):
+                raise
+            if on_retry is not None:
+                on_retry(attempt, error)
+            time.sleep(backoff_seconds)
+    raise AssertionError("unreachable")
+
+
+def warm_model(am=None, **retry_kwargs):
+    """Take the model lock hit once, up front, on a query too small to be anything else.
+
+    Call this before a timed run or a test session so a sibling's install shows up here rather
+    than as a failure attributed to whichever result set happened to be first.
+    """
+    package = am if am is not None else _default_package()
+    retry_on_model_lock(
+        lambda: package.model.select(aggs.count(package.AircraftFlight).alias("n")).to_df(),
+        **retry_kwargs,
+    )
+    return package
 
 
 def selected_leg_count(am, aircraft_id: int, day: dt.date) -> int:
@@ -498,12 +661,23 @@ def _anomaly_record(row: pd.Series, segment_id: str) -> dict[str, Any]:
     }
 
 
+#: Default ``row_id`` label shape, the one the v1.1.1 result sets use (``Q08-R001``). The v1.2.0
+#: result sets label their rows ``Q08-ENRICHED-ROTATION-R0001`` instead - a different prefix and a
+#: different zero-pad width. ``row_id`` is a *supplied* manifest label (D-0021 counts Q08's 14
+#: ``row_id`` cells as supplied, not derived), so reproducing either shape is a caller's choice and
+#: not a semantic claim; :func:`row_id_label_format` recovers it from the manifest.
+DEFAULT_ROW_ID_PREFIX = f"{QUESTION_ID}-R"
+DEFAULT_ROW_ID_WIDTH = 3
+
+
 def _assemble(
     leg_rows: pd.DataFrame,
     anomaly_rows: pd.DataFrame,
     aircraft_id: int,
     day: dt.date,
     row_id_start: int,
+    row_id_prefix: str,
+    row_id_width: int,
 ) -> pd.DataFrame:
     """Build the frozen frame in the frozen order, without re-deriving any order.
 
@@ -549,7 +723,7 @@ def _assemble(
 
     row_ids = itertools.count(row_id_start)
     for record in records:
-        record["row_id"] = f"{QUESTION_ID}-R{next(row_ids):03d}"
+        record["row_id"] = f"{row_id_prefix}{next(row_ids):0{row_id_width}d}"
 
     frame = pd.DataFrame.from_records(records, columns=list(OUTPUT_COLUMNS))
     return _typed(frame)
@@ -603,6 +777,8 @@ def actual_rotation_enriched(
     *,
     am=None,
     row_id_start: int = 1,
+    row_id_prefix: str = DEFAULT_ROW_ID_PREFIX,
+    row_id_width: int = DEFAULT_ROW_ID_WIDTH,
 ) -> pd.DataFrame:
     """Q08. The validated, ordered, enriched actual rotation of one aircraft on one local day.
 
@@ -621,6 +797,10 @@ def actual_rotation_enriched(
         value (D-0021 counts Q08's 14 ``row_id`` cells as supplied), and the manifest numbers it
         continuously across result sets, so the offset is a caller's choice:
         ``Q08-CANONICAL`` starts at 1 and ``Q08-ANOMALIES`` at 4.
+    row_id_prefix, row_id_width:
+        The rest of the label shape, for the same reason. v1.1.1 uses ``Q08-R`` and 3 digits;
+        the v1.2.0 result sets use their own ``Q08-<SET>-R`` prefix and 4 digits.
+        :func:`row_id_label_format` reads both off the manifest.
 
     Returns
     -------
@@ -645,7 +825,26 @@ def actual_rotation_enriched(
 
     legs = chain_legs(package, aircraft, day)
     anomalies = rotation_anomalies(package, aircraft, day)
-    return _assemble(legs, anomalies, aircraft, day, row_id_start)
+    return _assemble(
+        legs, anomalies, aircraft, day, row_id_start, row_id_prefix, row_id_width
+    )
+
+
+def beyond_manifest_anomaly_classes(frame: pd.DataFrame) -> tuple[str, ...]:
+    """Emitted anomaly classes outside the manifest's eleven-class DV-25 vocabulary.
+
+    Today that is only :data:`BEYOND_MANIFEST_ANOMALY_CLASS`, but the check is written against
+    the vocabulary rather than against that one literal, so a future ``MODEL_INPUT`` class is
+    caught the same way instead of arriving unannounced.
+    """
+    if frame.shape[1] == 0 or frame.empty:
+        return ()
+    emitted = {
+        _str_or_none(value)
+        for value in frame["anomaly_code"]
+        if _str_or_none(value) is not None
+    }
+    return tuple(sorted(emitted - MANIFEST_ANOMALY_CLASSES))
 
 
 def invoke(
@@ -654,6 +853,8 @@ def invoke(
     *,
     am=None,
     row_id_start: int = 1,
+    row_id_prefix: str = DEFAULT_ROW_ID_PREFIX,
+    row_id_width: int = DEFAULT_ROW_ID_WIDTH,
 ) -> RotationResult:
     """:func:`actual_rotation_enriched` as a catalog triple instead of an exception."""
     try:
@@ -662,11 +863,13 @@ def invoke(
             flight_departure_date,
             am=am,
             row_id_start=row_id_start,
+            row_id_prefix=row_id_prefix,
+            row_id_width=row_id_width,
         )
     except RotationQueryError as error:
         empty = _typed(pd.DataFrame(columns=list(OUTPUT_COLUMNS)))
         return RotationResult(type(error).invocation_status, error.error_code, empty)
-    return RotationResult("OK", None, rows)
+    return RotationResult("OK", None, rows, beyond_manifest_anomaly_classes(rows))
 
 
 # --------------------------------------------------------------- frozen-answer comparison
@@ -738,6 +941,7 @@ def frozen_result_sets() -> list[dict[str, Any]]:
         result_sets.append(
             {
                 "result_set_id": raw["result_set_id"],
+                "manifest_version": raw.get("manifest_version"),
                 "parameters": raw["parameters"],
                 "invocation_status": raw["invocation_status"],
                 "error_code": raw.get("error_code"),
@@ -768,36 +972,64 @@ def diff_rows(
 # ------------------------------------------------------------------------------- main
 
 
-def _row_id_offsets(result_sets: Iterable[dict[str, Any]]) -> dict[str, int]:
-    """The manifest numbers ``row_id`` continuously across result sets; recover each start."""
-    offsets: dict[str, int] = {}
-    for result_set in result_sets:
-        rows = result_set["rows"]
-        offsets[result_set["result_set_id"]] = (
-            int(str(rows[0]["row_id"]).rsplit("R", 1)[1]) if rows else 1
-        )
-    return offsets
+def row_id_label_format(result_set: dict[str, Any]) -> tuple[str, int, int]:
+    """Recover ``(prefix, width, start)`` for one result set's ``row_id`` labels.
+
+    The manifest uses two shapes and neither is derivable from the data:
+
+    * v1.1.1 numbers continuously across result sets in one ``Q08-R<3 digits>`` series -
+      ``Q08-CANONICAL`` starts at ``Q08-R001`` and ``Q08-ANOMALIES`` resumes at ``Q08-R004``.
+    * v1.2.0 restarts at 1 inside a per-result-set prefix with four digits, for example
+      ``Q08-ENRICHED-ANOMALIES-R0001``.
+
+    Reading the shape off the expected rows is honest precisely because ``row_id`` is a supplied
+    label: D-0021 counts Q08's 14 ``row_id`` cells as supplied rather than derived, so this
+    reproduces a presentation convention and asserts nothing about the answer. Every other column
+    is compared against the manifest without being told anything.
+    """
+    rows = result_set["rows"]
+    if not rows:
+        return DEFAULT_ROW_ID_PREFIX, DEFAULT_ROW_ID_WIDTH, 1
+    label = str(rows[0]["row_id"])
+    head, _, digits = label.rpartition("R")
+    if not digits.isdigit():
+        return DEFAULT_ROW_ID_PREFIX, DEFAULT_ROW_ID_WIDTH, 1
+    return f"{head}R", len(digits), int(digits)
 
 
 def main() -> int:
     """Run every frozen Q08 result set against the live model and report pass or fail."""
     import time
 
-    am = _default_package()
+    def note_retry(attempt: int, _error: BaseException) -> None:
+        print(f"           (model locked by a sibling write; retry {attempt})")
+
+    warm_started = time.time()
+    am = warm_model(on_retry=note_retry)
+    warm_elapsed = time.time() - warm_started
+
     result_sets = frozen_result_sets()
-    offsets = _row_id_offsets(result_sets)
     failures = 0
 
-    print(f"{QUESTION_ID} {CATALOG_ID}: {len(result_sets)} frozen result sets")
+    print(
+        f"{QUESTION_ID} {CATALOG_ID}: {len(result_sets)} frozen result sets "
+        f"(model install + warm {warm_elapsed:.1f}s)"
+    )
     for result_set in result_sets:
         name = result_set["result_set_id"]
         parameters = result_set["parameters"]
+        prefix, width, start = row_id_label_format(result_set)
         started = time.time()
-        outcome = invoke(
-            parameters["aircraft_id"],
-            parameters["flight_departure_date"],
-            am=am,
-            row_id_start=offsets[name],
+        outcome = retry_on_model_lock(
+            lambda: invoke(
+                parameters["aircraft_id"],
+                parameters["flight_departure_date"],
+                am=am,
+                row_id_start=start,
+                row_id_prefix=prefix,
+                row_id_width=width,
+            ),
+            on_retry=note_retry,
         )
         elapsed = time.time() - started
 
@@ -817,11 +1049,19 @@ def main() -> int:
 
         status = "PASS" if not problems else "FAIL"
         failures += bool(problems)
+        version = result_set.get("manifest_version") or "1.1.1"
         print(
-            f"  [{status}] {name:<16} {len(outcome.rows):>3} rows "
+            f"  [{status}] {name:<28} v{version}  {len(outcome.rows):>3} rows "
             f"({result_set['expected_cardinality']} expected)  "
             f"{outcome.invocation_status}/{outcome.error_code}  {elapsed:5.1f}s"
         )
+        # Never silent: an anomaly class outside the manifest vocabulary is stated even when the
+        # result set still matches, because the SQL oracle has no branch for it (D-0020 A5).
+        if outcome.beyond_manifest_anomaly_classes:
+            print(
+                "           NOTE beyond-manifest anomaly class(es) emitted: "
+                + ", ".join(outcome.beyond_manifest_anomaly_classes)
+            )
         for problem in problems:
             print(f"           {problem}")
 

@@ -1208,3 +1208,45 @@ disclosure without weakening the check.
   failures. Run alone it passes. It needs a lock or a serialisation guard before any automated gate
   runs it alongside other work.
 - **Status:** recorded.
+
+---
+
+## D-0030 — Rotation: graph path rejected on correctness, and three live divergences
+
+- **Date:** 2026-09-02
+- **Graph path enumeration rejected, on evidence rather than on preference.** QUERY-ROT built and ran
+  the optional `relationalai.semantics.std.paths` implementation live. It passed all five of the
+  gating conditions, including warm time (3.4-3.6s against a 4.4-4.6s baseline). It fails on a
+  **correctness** finding: `repeat(min=1, ...)` requires an edge, so a single-leg segment is not a
+  path, and aircraft 1225 returned 2 legs where the self-reference baseline returned 3 — the singleton
+  leg silently vanished. `repeat(min=0, ...)` raises `PathUngroundedPatternError`. Recovering the
+  singleton needs a union with a no-edge branch, which is more code and a second correctness surface,
+  and the maximal-chain filter is still required either way. The validated `next_flight_id`
+  self-reference ships as the supported baseline, exactly as `TASK_GRAPH.md` allows. Being faster is
+  not worth being wrong about a one-leg rotation.
+- **D-0020 A5 is superseded on its factual claim.** A5 recorded `TARGET_NOT_OPERATED` as "zero rows
+  today". The D-0023 enriched universe has **four** (flights 5310, 5470, 6190, 6345). None appears in
+  a frozen result set so no verdict moves, but the class is live and the SQL oracle still has no
+  branch for it. QUERY-ROT emits the row, because `is_accepted_link` is false and the chain genuinely
+  stops there, and suppressing a leg with no stated reason would be worse than reporting it. It is
+  fenced behind `RotationResult.beyond_manifest_anomaly_classes`, computed against the manifest's
+  eleven-class vocabulary rather than the one literal, so a future twelfth class is caught the same
+  way. **Fenced, not closed:** it needs either a branch in the oracle or a supersession of A5.
+- **A third D-0021-class precedence divergence, previously undeclared.** `MODEL_INPUT` hoists the leg
+  tier (`UNKNOWN_OR_INVALID_CANCELLATION_FLAG`, `CANCELLED`, `MISSING_TIME`) **above** every link
+  class; the SQL oracle ranks them ninth to eleventh, **below**. They disagree for any leg that is
+  both cancelled and, say, self-looping. No such leg exists today. QUERY-ROT inherited the
+  `MODEL_INPUT` order by reading the table. This is the third time the two artifacts the demo presents
+  as independent have been found to agree only where the fixtures reach — recorded rather than
+  resolved, because the user has deprioritised further hardening.
+- **Two further unexercised divergences recorded:** a leg can now be both a `LEG` row and an `ANOMALY`
+  row, reached by an accepted inbound edge while its own outgoing link is anomalous (flight 5310 is
+  the first live instance, no frozen set pins the presentation); and `type_discrepancy` is
+  three-valued in the ontology against two-valued in the oracle, which agree today and diverge for a
+  leg outside every daily-assignment interval.
+- **Concurrency:** the model write lock is real and is now handled in `rotation.py` by a deliberately
+  narrow retry — anything that is not a lock error propagates on the first attempt, so a genuine
+  `TyperError` does not become a slow one. Three `SnowflakeTableObjectsException`s originally read as
+  path-library flakiness were this lock.
+- **Status:** accepted. The rejected graph path is recoverable from this entry if the singleton-leg
+  union is ever worth building.

@@ -1,0 +1,115 @@
+{
+  "task_id": "QUERY-ROT",
+  "status": "green",
+  "question": "Q08 actual_rotation_enriched",
+  "summary": "All six Q08 result sets - the three v1.1.1 frozen sets and the three new v1.2.0 enriched sets - are reproduced cell for cell and in the frozen order by live PyRel queries against PK_AVIATION_TEMPORAL on aviation_temporal_logic_s. leg_order comes from the transitive closure over AircraftFlight.accepted_next_flight (1 + accepted-chain predecessors), never from a sort on the clock. No semantic predicate is recomputed in the query module: link validation, DV-25 classification and precedence, cycle components and representatives, the closure, and the as-of type/engine resolution on AF-06 all live in the ontology. No pandas query logic. The optional std.path implementation was built, run live, and rejected on evidence.",
+  "reproduce": [
+    "PYTHONPATH=rai_code TERM=dumb .venv/bin/python rai_code/queries/rotation.py",
+    "PYTHONPATH=rai_code TERM=dumb .venv/bin/python -m pytest tests/test_rotation.py -q"
+  ],
+  "files_written": [
+    "rai_code/queries/rotation.py",
+    "tests/test_rotation.py",
+    "build/task_reports/QUERY-ROT.json"
+  ],
+  "result_sets": [
+    {"result_set_id": "Q08-CANONICAL", "manifest_version": "1.1.1", "parameters": {"aircraft_id": 1001, "flight_departure_date": "2026-08-31"}, "expected": 3, "actual": 3, "invocation_status": "OK", "verdict": "PASS", "warm_seconds": 10.0},
+    {"result_set_id": "Q08-ANOMALIES", "manifest_version": "1.1.1", "parameters": {"aircraft_id": 1099, "flight_departure_date": "2026-08-31"}, "expected": 11, "actual": 11, "invocation_status": "OK", "verdict": "PASS", "warm_seconds": 10.7},
+    {"result_set_id": "Q08-NOT-FOUND", "manifest_version": "1.1.1", "parameters": {"aircraft_id": 1999, "flight_departure_date": "2026-08-31"}, "expected": 0, "actual": 0, "invocation_status": "NOT_FOUND", "error_code": "NO_ACTUAL_FLIGHTS", "verdict": "PASS", "warm_seconds": 2.9},
+    {"result_set_id": "Q08-ENRICHED-ROTATION", "manifest_version": "1.2.0", "parameters": {"aircraft_id": 1072, "flight_departure_date": "2027-06-08"}, "expected": 5, "actual": 5, "invocation_status": "OK", "verdict": "PASS", "warm_seconds": 11.0},
+    {"result_set_id": "Q08-ENRICHED-ANOMALIES", "manifest_version": "1.2.0", "parameters": {"aircraft_id": 1035, "flight_departure_date": "2027-07-06"}, "expected": 11, "actual": 11, "invocation_status": "OK", "verdict": "PASS", "warm_seconds": 10.2},
+    {"result_set_id": "Q08-ENRICHED-CLEAN", "manifest_version": "1.2.0", "parameters": {"aircraft_id": 1330, "flight_departure_date": "2027-06-09"}, "expected": 4, "actual": 4, "invocation_status": "OK", "verdict": "PASS", "warm_seconds": 9.5}
+  ],
+  "timings": {
+    "cold_model_install_plus_first_query_seconds": 119.8,
+    "cold_range_observed_seconds": [119.8, 162.2],
+    "warm_query_seconds_range": [2.9, 11.0],
+    "warm_query_seconds_median": 10.1,
+    "note": "Cold cost is the per-process ontology install (62 relations), not CDC re-sync; CDC was already synced. The orchestrator's 700s warning did not materialise. Three cold runs measured 162.2s, 141.2s and 119.8s.",
+    "full_pytest_suite_seconds": 328.1
+  },
+  "model_predicates_reused": {
+    "from_MODEL_INPUT_via_model_Table": [
+      "ROTATION_LINK_VALIDATION.rotation_link_status (DV-24)",
+      "ROTATION_LINK_VALIDATION.rotation_anomaly_class (DV-25) and its precedence",
+      "ROTATION_LINK_VALIDATION.is_accepted_link",
+      "ROTATION_LINK_VALIDATION.cycle_component_id / is_cycle_representative",
+      "AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT validity intervals"
+    ],
+    "from_aviation_model_computed_rotation": [
+      "AircraftFlight.accepted_next_flight (the single accepted-edge relationship)",
+      "RotationSegmentHead (no accepted inbound edge)",
+      "rotation_leg_distance (Property; the union + per(u,v).min recursion from PROBE U-07)",
+      "AircraftFlight.as_of_aircraft_type / as_of_engine_type (half-open point predicate on AF-06)",
+      "AircraftFlight.type_discrepancy (DV-32, three-valued)"
+    ],
+    "from_aviation_model_core_flight": [
+      "AircraftFlight.actual_origin / actual_destination (Airport entities, SYN-AP-* internal ids)",
+      "AircraftFlight.actual_gate_departure_time_utc / actual_gate_arrival_time_utc",
+      "AircraftFlight.next_flight_id",
+      "RotationLinkValidation.flight"
+    ],
+    "recomputed_in_rotation_py": "nothing semantic. The module owns only catalog-layer concerns: typed parameter validation and error codes, the manifest-adopted SYN-ROT / SYN-ANOM segment_id and row_id presentation labels (kept out of PyRel per D-0018 / D-0021), and the frozen output ordering."
+  },
+  "bindings_honoured": {
+    "D-0021_precedence": "Taken from MODEL_INPUT, which implements DV-25 with DIVERSION_ENDPOINT_CONFLICT at rank 8. The module does not order anomalies by class at all, so the manifest's self-inconsistent anomaly_precedence array (rank 6) is inert here. Verified live: flight 8109 (1099) and flight 8128 (1035) both report DIVERSION_ENDPOINT_CONFLICT as the manifest rows require.",
+    "D-0022_cycle_scope": "Cycle detection is scoped to the selected (aircraft, AF-06) in MODEL_INPUT and is not re-derived. Verified live: 8101 and 8120 are SELF_LOOP with is_cycle_representative = FALSE and no cycle_component_id; 8102/8103 and 8121/8122 are two-member components emitting exactly one CYCLE row each at the minimum flight_id; 8105 and 8124 are DIFFERENT_AIRCRAFT rather than cross-aircraft cycles.",
+    "cycle_dedup_at_presentation_only": "rotation_anomalies(deduplicate_cycles=False) / rotation_anomaly_evidence() retains every member, including 8103 and 8122.",
+    "segment_id_out_of_the_model": "SYN-ROT-<aircraft>-<YYYYMMDD>-<NN> and SYN-ANOM-<NN> are built in _segment_id / _anomaly_segment_id in the query module. Q08's sequence is derived from (row_kind, flight_id, leg_order) and the labels are attached afterwards.",
+    "no_scheduled_arrival_shortcut": "There is no scheduled-arrival column anywhere in rotation.py; a test asserts the source text contains no scheduled/planned arrival reference. Continuity is AF-09 (DV-45) and AF-13/AF-14 only.",
+    "af06_not_af07": "flight_departure_date_utc is never read. All three canonical legs select and enrich on AF-06 2026-08-31 while their UTC gate departures fall on 2026-09-01."
+  },
+  "row_id_template": {
+    "problem": "The v1.2.0 result sets label rows Q08-ENRICHED-ROTATION-R0001 (per-set prefix, 4 digits, restarting at 1) while v1.1.1 uses one continuous Q08-R001 series with 3 digits. The module previously hardcoded the v1.1.1 shape and diffed on row_id for all three new sets - every other cell already matched on the first run.",
+    "fix": "rotation.row_id_label_format(result_set) recovers (prefix, width, start) from the expected rows; actual_rotation_enriched / invoke take row_id_prefix and row_id_width.",
+    "why_this_is_not_fitting_to_the_answer": "D-0021 classifies Q08's 14 row_id cells as supplied manifest labels, not derived values. Reproducing a presentation convention asserts nothing about the answer; all fifteen other columns are compared without being told anything."
+  },
+  "target_not_operated": {
+    "status": "handled explicitly and visibly, never silently",
+    "what_changed_since_D-0020_A5": "A5 recorded TARGET_NOT_OPERATED as 'zero rows today'. The enriched universe has four: flights 5310 (aircraft 1225, 2027-06-24), 5470 (1505, 2027-06-04), 6190 (1810, 2027-06-04) and 6345 (1057, 2027-06-14). None falls in a frozen Q08 result set, so no shipped verdict moves, but the class is now exercised.",
+    "the_divergence": "MODEL_INPUT emits it; the independent SQL oracle data/oracles/q08_actual_rotation_enriched.sql has no branch for it and would classify those links as accepted. A conformance harness therefore diverges on exactly those four selections - the D-0021 cross-reference against A5, now real.",
+    "decision": "Emit the anomaly row. is_accepted_link is false, so the chain genuinely stops there; suppressing the row would delete a leg from the answer with no stated reason, which is the 'losing excluded legs' failure. Every invocation additionally reports RotationResult.beyond_manifest_anomaly_classes, computed against the manifest's eleven-class vocabulary rather than against the one literal, so a future thirteenth class is caught the same way. rotation.py main() prints a NOTE line when it is non-empty; all six frozen result sets report ().",
+    "live_evidence": "invoke(1225, 2027-06-24) returns beyond_manifest_anomaly_classes == ('TARGET_NOT_OPERATED',), two ANOMALY rows (5310 REJECTED/TARGET_NOT_OPERATED, 5311 EXCLUDED/CANCELLED) and two segments (5309->5310, and the singleton 5312). Pinned by tests/test_rotation.py::test_target_not_operated_is_emitted_and_flagged_not_silently_dropped."
+  },
+  "optional_graph_path_experiment": {
+    "verdict": "NOT WORTH IT. Built, run live against the demo engine, and rejected. The self-reference closure baseline ships.",
+    "implementation_tested": "p = path(AircraftFlight.accepted_next_flight).repeat(min=1, max=32).all_paths(); where(p.nodes(0, src), p.nodes(p.length, dst), p.nodes(idx, node), src.aircraft == Aircraft, Aircraft.id == aircraft_id, src.flight_departure_date == day, RotationSegmentHead(src), hval.flight == src, not_(hval.rotation_anomaly_class), not_(dst.accepted_next_flight(out)))",
+    "pass_conditions": {
+      "1_executes_on_1.20.1": "PASS. relationalai.semantics.std.path imports and all_paths() compiles and runs.",
+      "2_ordered_nodes_equal_the_baseline": "PASS on the fixtures. [8001, 8002, 8003] for Q08-CANONICAL at indices 0,1,2 -> leg_order 1,2,3; the 5-leg 1072 chain and the 4-leg 1330 chain also identical to the baseline.",
+      "3_no_accepted_path_for_1099_and_terminates_on_the_cycle": "PASS. Zero rows for aircraft 1099; terminates under the repeat bound without fabricating rows.",
+      "4_enrichment_joins_without_tripping_the_interior_binder_hook": "PASS. as-of type and engine, actual endpoints and link_outcome all join onto the path's node ref. p.nodes / p.length are exposed traversal properties, not pattern-interior binders.",
+      "5_warm_time_no_worse": "PASS. Path 3.4-3.6s versus baseline chain_legs 4.4-4.6s over four selections in one warm process."
+    },
+    "why_it_still_does_not_ship": [
+      "CORRECTNESS: repeat(min=1, ...) needs at least one edge, so a single-leg rotation segment is not a path. Aircraft 1225 on 2027-06-24 has two segments (5309->5310 and the singleton 5312); the path implementation returned 2 legs where the baseline returned 3. repeat(min=0, ...) is the obvious repair and raises [PathUngroundedPatternError] 'Pattern potentially admits an infinite number of single-node paths'. Recovering the singleton needs a union with a separate no-edge branch: more code and a second correctness surface.",
+      "VALUE BAR: the maximal-chain filter (not_ inbound via RotationSegmentHead, not_ outbound on the target) is still required, so the path adds an arbitrary repeat bound without removing the head and terminal predicates. It does not remove code relative to `leg_order = 1 + count of accepted-chain predecessors`.",
+      "REUSABILITY: all_paths() is a query-level construct and cannot be materialised as an ontology Property, so every consumer would restate the pattern - the opposite of the one-reusable-semantic-model claim the parity matrix rests on.",
+      "MATURITY: shortest_paths(), undirected() and reverse() all raise NotImplementedError at 1.20.1, and every path() call emits a spurious RuleLoopWarning."
+    ],
+    "correction_to_an_earlier_reading": "Three SnowflakeTableObjectsExceptions during the experiment were initially suspected to be path-library flakiness. They were the shared-model write lock held by a sibling query agent, not the path library. The path library itself was deterministic across reruns.",
+    "recommendation": "Record this outcome in DECISION_LOG.md as an append-only entry per QUERY_ROUTING.md's instruction. QUERY-ROT does not own DECISION_LOG.md and did not write it."
+  },
+  "concurrency": {
+    "finding": "Importing any query module opens a write transaction on the shared aviation_temporal model. A concurrent read from another process fails outright rather than queueing, and the SDK surfaces it two levels from its cause: SnowflakeTableObjectsException 'Getting the following table failed with the error in Snowflake', with the real text 'model is currently locked by active write transaction(s)' only in the debug span.",
+    "observed": "Three of four path-experiment invocations in one process, and one of forty-one test cases (Q08-CANONICAL), all while a sibling query agent was installing its module. Both reproduced clean on rerun.",
+    "mitigation_shipped": "rotation.is_model_lock_error / retry_on_model_lock / warm_model. The retry is deliberately narrow - anything that is not a lock error propagates on the first attempt, so a real TyperError does not become a slow TyperError. main() warms once up front and wraps each invocation; the pytest session fixture warms the model and the manifest-comparison test retries.",
+    "cold_start_correction": "The orchestrator's 700s cold CDC warning did not materialise. Measured cold cost is the per-process ontology install: 119.8s / 141.2s / 162.2s across three runs. A stall much beyond that is the lock, not CDC."
+  },
+  "test_evidence": {
+    "smoke": "PYTHONPATH=rai_code .venv/bin/python rai_code/queries/rotation.py -> ALL FROZEN Q08 RESULT SETS PASS (6/6), exit 0",
+    "pytest": "41 passed, 2 warnings in 328.09s",
+    "new_tests": [
+      "test_every_frozen_result_set_is_reproduced_exactly[6 parametrisations] - complete ordered comparison of all six result sets, invocation status, error code, cardinality and all sixteen columns",
+      "test_target_not_operated_is_emitted_and_flagged_not_silently_dropped"
+    ],
+    "pre_existing_tests_still_green": "chain integrity (same aircraft, non-decreasing time, no self-loop, no cycle, one segment head per leg), the traversal-not-a-sort discriminator on aircraft 1100, the diversion trap on flight 7200, excluded legs staying visible, AF-06 versus AF-07 selection, unscoped-dimension inflation, type discrepancy reported not reconciled, typed parameter validation."
+  },
+  "unresolved_risks": [
+    "TARGET_NOT_OPERATED oracle divergence is fenced and reported but not closed. Closing it means either adding the branch to data/oracles/q08_actual_rotation_enriched.sql (DATA-04b's file, not QUERY-ROT's) or superseding D-0020 A5. Four selections are affected: (1225, 2027-06-24), (1505, 2027-06-04), (1810, 2027-06-04), (1057, 2027-06-14).",
+    "Leg-tier hoisting divergence, unexercised. MODEL_INPUT ranks UNKNOWN_OR_INVALID_CANCELLATION_FLAG / CANCELLED / MISSING_TIME above every link class (DV-52 chain-membership preconditions); the SQL oracle ranks them ninth to eleventh, below the link classes. The two disagree for any leg that is both cancelled and, say, self-looping. No such leg exists in the current universe, so no result moves - but this is a third undeclared divergence of the D-0021 kind and QUERY-ROT inherited MODEL_INPUT's order by reading the table.",
+    "A leg can legitimately appear as both a LEG row and an ANOMALY row when it is reached by an accepted inbound edge while its own outgoing link is anomalous. Flight 5310 is the first live instance (it was unexercised in the shipped fixtures). The behaviour matches the independent oracle, but no frozen result set pins it and the manifest's output schema does not discuss it. QUERY-INT should decide whether the catalog presents this as one row or two.",
+    "type_discrepancy is three-valued in the ontology (absent when there is no as-of type) and two-valued in the SQL oracle (`aircraft_type IS DISTINCT FROM definition_label`, which is TRUE when the as-of type is missing). Every leg in every shipped result set has an as-of type, so the two agree today. A leg outside any daily-assignment interval would diverge.",
+    "Cold cost is a per-process ontology install of roughly two minutes. Phase 8's cold-start budget should account for it, or the catalog layer should hold one warm process."
+  ]
+}

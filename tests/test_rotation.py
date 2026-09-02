@@ -58,10 +58,19 @@ UTC_DAY = dt.date(2026, 9, 1)
 
 @pytest.fixture(scope="session")
 def am():
-    """The loaded ontology package. One ``Model`` per process, deliberately (PROBE N-02)."""
+    """The loaded ontology package. One ``Model`` per process, deliberately (PROBE N-02).
+
+    ``warm_model`` takes the shared-model write-lock collision here rather than inside whichever
+    test runs first. Importing a query module is a write transaction on ``aviation_temporal``, and
+    a concurrent read fails outright rather than queueing - it arrives as
+    ``SnowflakeTableObjectsException: Getting the following table failed with the error in
+    Snowflake``, with ``model is currently locked by active write transaction(s)`` only in the
+    debug span. Without this, a sibling agent's install fails one arbitrary test case and the
+    failure reads like a query defect.
+    """
     import aviation_model
 
-    return aviation_model
+    return rotation.warm_model(aviation_model)
 
 
 @pytest.fixture(scope="session")
@@ -131,8 +140,92 @@ def test_manifest_shape_is_what_this_module_targets(manifest):
         "Q08-CANONICAL",
         "Q08-ANOMALIES",
         "Q08-NOT-FOUND",
+        "Q08-ENRICHED-ROTATION",
+        "Q08-ENRICHED-ANOMALIES",
+        "Q08-ENRICHED-CLEAN",
     ]
-    assert [rs["expected_cardinality"] for rs in manifest["result_sets"]] == [3, 11, 0]
+    assert [rs["expected_cardinality"] for rs in manifest["result_sets"]] == [
+        3,
+        11,
+        0,
+        5,
+        11,
+        4,
+    ]
+
+
+@pytest.mark.parametrize(
+    "result_set_id",
+    [
+        "Q08-CANONICAL",
+        "Q08-ANOMALIES",
+        "Q08-NOT-FOUND",
+        "Q08-ENRICHED-ROTATION",
+        "Q08-ENRICHED-ANOMALIES",
+        "Q08-ENRICHED-CLEAN",
+    ],
+)
+def test_every_frozen_result_set_is_reproduced_exactly(am, result_set_id):
+    """Every Q08 result set, v1.1.1 and v1.2.0 alike, cell for cell and in the frozen order.
+
+    The v1.2.0 sets label their rows with a different ``row_id`` template
+    (``Q08-ENRICHED-CLEAN-R0001`` rather than ``Q08-R001``). ``row_id`` is a supplied manifest
+    label under D-0021, so :func:`rotation.row_id_label_format` reads that template off the
+    expected rows; every other one of the sixteen columns is compared without being told anything.
+    """
+    frozen = next(
+        rs for rs in rotation.frozen_result_sets() if rs["result_set_id"] == result_set_id
+    )
+    prefix, width, start = rotation.row_id_label_format(frozen)
+    outcome = rotation.retry_on_model_lock(
+        lambda: rotation.invoke(
+            frozen["parameters"]["aircraft_id"],
+            frozen["parameters"]["flight_departure_date"],
+            am=am,
+            row_id_start=start,
+            row_id_prefix=prefix,
+            row_id_width=width,
+        )
+    )
+    assert outcome.invocation_status == frozen["invocation_status"]
+    assert outcome.error_code == frozen["error_code"]
+    assert list(outcome.rows.columns) == list(rotation.OUTPUT_COLUMNS)
+    assert len(outcome.rows) == frozen["expected_cardinality"]
+    assert rotation.diff_rows(rotation.canonical_rows(outcome.rows), frozen["rows"]) == []
+    # No shipped result set touches a beyond-vocabulary anomaly class; if one ever does, the
+    # comparison above would still pass while the SQL oracle silently disagreed.
+    assert outcome.beyond_manifest_anomaly_classes == ()
+
+
+def test_target_not_operated_is_emitted_and_flagged_not_silently_dropped(am):
+    """D-0020 A5's twelfth class is real in the enriched universe and must never be quiet.
+
+    Flight 5310 (aircraft 1225, 2027-06-24) points at 5311, which is itself cancelled, so
+    ``MODEL_INPUT`` rejects the link as ``TARGET_NOT_OPERATED``. The class is outside the
+    manifest's eleven-class DV-25 vocabulary and the independent SQL oracle has no branch for it,
+    so this selection is exactly where a conformance harness would diverge. The row is emitted -
+    ``is_accepted_link`` is false, so the chain genuinely stops there - and the divergence is
+    reported rather than absorbed.
+    """
+    outcome = rotation.invoke(1225, dt.date(2027, 6, 24), am=am)
+    assert outcome.invocation_status == "OK"
+    assert outcome.beyond_manifest_anomaly_classes == ("TARGET_NOT_OPERATED",)
+
+    flagged = outcome.rows[outcome.rows["anomaly_code"] == "TARGET_NOT_OPERATED"]
+    assert list(flagged["flight_id"]) == [5310]
+    assert list(flagged["row_kind"]) == [rotation.ROW_KIND_ANOMALY]
+    assert list(flagged["link_outcome"]) == ["REJECTED"]
+
+    # The refused link ends its segment; 5312 starts a new one rather than being absorbed.
+    legs = legs_only(outcome.rows)
+    assert sorted(zip(legs["flight_id"], legs["leg_order"])) == [
+        (5309, 1),
+        (5310, 2),
+        (5312, 1),
+    ]
+    assert outcome.rows[outcome.rows["flight_id"] == 5311]["anomaly_code"].tolist() == [
+        "CANCELLED"
+    ]
 
 
 def test_q08_canonical_is_the_complete_frozen_result_set(canonical):
