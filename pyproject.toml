@@ -21,3 +21,6 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "data"]
+markers = [
+    "live: exercises the live Snowflake demo database and requires the demo role",
+]

@@ -756,3 +756,72 @@ Separately, DATA-04b records a point of dissent worth preserving: the review's t
 correction described "unique across all 35 rows" as a claim to be fixed, but that phrasing appears in
 no DATA-04b artifact. The precise uniqueness statement was added, not corrected. REDTEAM-01 should not
 cite it as a defect that shipped.
+
+---
+
+## D-0019 — `CODE_RESOLUTION` binding strategy for the ontology
+
+- **Date:** 2026-09-02
+- **Trigger:** DATA-04a built `MODEL_INPUT.CODE_RESOLUTION` at 546,494 rows, 3.8 times the whole
+  SOURCE layer, of which roughly 122,000 are `INVALID_INPUT` for legitimately null raw codes.
+- **Question:** Must MODEL-01 bind the row-scoped resolution table, given that its size is the single
+  most likely cause of a slow CDC sync and a slow cold start?
+- **Evidence:** The size is contract-correct, not a defect: `SOURCE_CONTRACT.md` defines
+  `resolution_id` as `SHA-256(domain, source_object, DV-46 source_row_token, field_role, raw_code,
+  method)`, which is row-scoped by construction, and the contract explicitly requires the stable
+  result to exist even at zero candidates. A distinct-code projection `CODE_RESOLUTION_CODE` exists at
+  390 rows. Every other MODEL_INPUT object already carries its own resolved target id and resolution
+  status columns, so the ontology's link semantics — a concept link only at `EXACT` cardinality one —
+  do not require the row-scoped grain. PROBE-01 measured model indexing as scaling with bound tables
+  and rules rather than rows (a 48,000-row model indexed in 34.3s), which weakens but does not settle
+  the concern, because CDC sync cost is a different quantity from indexing cost.
+- **Decision (provisional, measurement-gated):** MODEL-01 binds `CODE_RESOLUTION_CODE` for link
+  semantics and does not bind the row-scoped `CODE_RESOLUTION` by default. Before that exclusion is
+  treated as permanent, MODEL-01 must run one timed experiment binding the row-scoped table and record
+  the sync and indexing delta in `build/task_reports/MODEL-01.json`. If the measured cost is
+  acceptable, bind both and delete this exclusion; if it is not, the exclusion stands with the
+  measurement as its evidence. Do not decide this by intuition in either direction.
+- **Retained:** the row-scoped table stays materialized and reachable from SQL, so the NF-X01 code
+  resolution truth table and any audit of a specific ambiguous code remain answerable.
+- **Confidence:** medium. The link semantics argument is solid; the performance premise is unmeasured,
+  which is exactly why the decision is gated on a measurement rather than taken now.
+- **Rollback:** bind the row-scoped table in `sources.py`; no semantic change, only cost.
+- **Status:** accepted provisionally, pending the MODEL-01 measurement.
+
+---
+
+## D-0020 — Seven contract ambiguities resolved in the canonical model-input layer
+
+- **Date:** 2026-09-02
+- **Trigger:** DATA-04a reached seven points where `SOURCE_CONTRACT.md` and `ATTRIBUTE_AUTHORITY.md`
+  do not determine a single treatment. Per the orchestration protocol these were resolved
+  provisionally rather than escalated, with the uncertainty made visible in a status or confidence
+  column in every case.
+- **Decisions, as implemented and each visible in output:**
+  - **A1.** The DV-08 resolution *status token* is a watched value, so
+    `UNRESOLVED_NULL_CONFIGURATION -> UNRESOLVED_MISSING_CONFIGURATION` mints a second audit
+    assignment. This is the literal reading of "the type-resolution outcome of AH-13". DV-33 remains
+    `UNKNOWN_STATE` under either reading, so no as-of answer moves.
+  - **A2.** `aircraft_state` is `UNKNOWN_STATE` only when every one of AH-17 through AH-31 is null,
+    because DV-33 is defined per dimension, not per attribute.
+  - **A3.** Key-shift compatibility components are signature-scoped, matching DV-36's own identity
+    definition. The failure mode is bounded in the safe direction: it can only over-merge into a LOW
+    confidence ambiguous group, and can never assert a false `CANDIDATE_UNIQUE`.
+  - **A4.** A definition functional-dependency violation keeps the subseries row with
+    `definition_status='AMBIGUOUS_DEFINITION'` and null definition fields: identity is kept, the
+    definition is not invented. Zero rows today.
+  - **A5.** New typed rotation anomaly `TARGET_NOT_OPERATED`, ranked below `BROKEN_CONTINUITY`, for a
+    rotation target that is itself cancelled or missing a time. Zero rows today.
+  - **A6.** Unmatched actual and passenger observations live in `FULFILLMENT_AMBIGUOUS_GROUP` at member
+    grain with a null `group_id`, because that contract row is where "unmatched observations retain a
+    deterministic identity plus reason" is written.
+  - **A7.** AH-32 true or null quarantines the event as `NOT_FOR_USE_EVENT` or
+    `UNKNOWN_ELIGIBILITY_FLAG`, mirroring the explicit AM-15 rule. Zero rows today.
+- **Confidence:** high for A1, A2, A6 and A7, which follow the literal contract text. Medium for A3,
+  A4 and A5, which are unexercised by the shipped fixtures and therefore untested by data.
+- **Affected artifacts/tests:** `data/model_input/*.sql`, `data/test_model_input.py`. A4, A5 and A7
+  produce zero rows against the current fixture universe; REDTEAM-01 must treat "implemented but
+  unexercised" as distinct from "verified" when auditing them.
+- **Rollback:** each is a localized SQL branch with its own status token; reverting one does not
+  disturb the others.
+- **Status:** accepted provisionally.

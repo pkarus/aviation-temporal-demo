@@ -1,0 +1,1018 @@
+{
+  "task_id": "DATA-04a",
+  "status": "passed",
+  "build_version": "model-input-v1",
+  "summary": "Canonical temporal model-input layer in PK_AVIATION_TEMPORAL.MODEL_INPUT: 26 SOURCE_CONTRACT.md canonical objects plus 11 declared derivations, built idempotently with CREATE OR REPLACE and proven live.",
+  "commands": [
+    ".venv/bin/python data/build_model_input.py --apply",
+    ".venv/bin/python data/build_model_input.py --verify"
+  ],
+  "artifacts": [
+    "data/model_input/00_setup.sql",
+    "data/model_input/10_reference.sql",
+    "data/model_input/15_passenger_source.sql",
+    "data/model_input/20_code_resolution.sql",
+    "data/model_input/30_aircraft.sql",
+    "data/model_input/31_aircraft_assignments.sql",
+    "data/model_input/40_schedule.sql",
+    "data/model_input/41_schedule_changes.sql",
+    "data/model_input/50_passenger.sql",
+    "data/model_input/60_actual_flight.sql",
+    "data/model_input/70_fulfillment.sql",
+    "data/model_input/90_metadata.sql",
+    "data/build_model_input.py",
+    "data/test_model_input.py",
+    "build/task_reports/DATA-04a.json"
+  ],
+  "contract_objects_built": {
+    "AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT": {
+      "table": "AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT",
+      "row_count": 97983
+    },
+    "AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT": {
+      "table": "AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT",
+      "row_count": 97979
+    },
+    "AIRCRAFT_ELIGIBLE": {
+      "table": "AIRCRAFT_ELIGIBLE",
+      "row_count": 999
+    },
+    "AIRCRAFT_EVENT_ELIGIBLE": {
+      "table": "AIRCRAFT_EVENT_ELIGIBLE",
+      "row_count": 48000
+    },
+    "AIRCRAFT_EVENT_QUARANTINE": {
+      "table": "AIRCRAFT_EVENT_QUARANTINE",
+      "row_count": 0
+    },
+    "AIRCRAFT_FLIGHT": {
+      "table": "AIRCRAFT_FLIGHT",
+      "row_count": 3900
+    },
+    "AIRCRAFT_TYPE_DEFINITION": {
+      "table": "AIRCRAFT_TYPE_DEFINITION",
+      "row_count": 1999
+    },
+    "CODE_RESOLUTION": {
+      "table": "CODE_RESOLUTION",
+      "row_count": 546494
+    },
+    "CODE_RESOLUTION_CANDIDATE": {
+      "table": "CODE_RESOLUTION_CANDIDATE",
+      "row_count": 424605
+    },
+    "ENGINE_TYPE_DEFINITION": {
+      "table": "ENGINE_TYPE_DEFINITION",
+      "row_count": 1999
+    },
+    "FULFILLMENT_AMBIGUOUS_GROUP": {
+      "table": "FULFILLMENT_AMBIGUOUS_GROUP",
+      "row_count": 23887
+    },
+    "FULFILLMENT_CANDIDATE": {
+      "table": "FULFILLMENT_CANDIDATE",
+      "row_count": 1
+    },
+    "FULFILLMENT_EXACT": {
+      "table": "FULFILLMENT_EXACT",
+      "row_count": 4
+    },
+    "PASSENGER_FLIGHT_CANONICAL": {
+      "table": "PASSENGER_FLIGHT_CANONICAL",
+      "row_count": 19996
+    },
+    "PASSENGER_FLIGHT_INVALID": {
+      "table": "PASSENGER_FLIGHT_INVALID",
+      "row_count": 1
+    },
+    "PASSENGER_SOURCE_LINEAGE": {
+      "table": "PASSENGER_SOURCE_LINEAGE",
+      "row_count": 19998
+    },
+    "PASSENGER_SOURCE_QUARANTINE": {
+      "table": "PASSENGER_SOURCE_QUARANTINE",
+      "row_count": 1
+    },
+    "ROTATION_LINK_VALIDATION": {
+      "table": "ROTATION_LINK_VALIDATION",
+      "row_count": 3900
+    },
+    "ROUTE": {
+      "table": "ROUTE",
+      "row_count": 11
+    },
+    "ROUTE_STATE": {
+      "table": "ROUTE_STATE",
+      "row_count": 12030
+    },
+    "ROUTE_STATE_LINEAGE": {
+      "table": "ROUTE_STATE_LINEAGE",
+      "row_count": 60076
+    },
+    "SCHEDULE_AMENDMENT_CANDIDATE": {
+      "table": "SCHEDULE_AMENDMENT_CANDIDATE",
+      "row_count": 1
+    },
+    "SCHEDULE_AMENDMENT_GROUP": {
+      "table": "SCHEDULE_AMENDMENT_GROUP",
+      "row_count": 1
+    },
+    "SCHEDULE_AMENDMENT_GROUP_MEMBER": {
+      "table": "SCHEDULE_AMENDMENT_GROUP_MEMBER",
+      "row_count": 12029
+    },
+    "SCHEDULE_CANONICAL_OBSERVATION": {
+      "table": "SCHEDULE_CANONICAL_OBSERVATION",
+      "row_count": 69998
+    },
+    "SCHEDULE_EXACT_CHANGE": {
+      "table": "SCHEDULE_EXACT_CHANGE",
+      "row_count": 12040
+    }
+  },
+  "contract_objects_not_built": {},
+  "additional_objects": {
+    "AIRLINE_CURRENT": {
+      "reason": "ONTOLOGY_DESIGN.md G-04: v1 Airline identity is AL-01 while the source grain is (AL-01, AL-02).",
+      "row_count": 100
+    },
+    "AIRPORT_CURRENT": {
+      "reason": "ONTOLOGY_DESIGN.md G-03: v1 Airport identity is AP-01 while the source grain is (AP-01, AP-02).",
+      "row_count": 45
+    },
+    "CODE_RESOLUTION_CODE": {
+      "reason": "Declared derivation: the closed method map evaluated once per distinct raw code.",
+      "row_count": 390
+    },
+    "CODE_RESOLUTION_CODE_CANDIDATE": {
+      "reason": "Declared derivation: code-level candidate identities behind CODE_RESOLUTION_CANDIDATE.",
+      "row_count": 392
+    },
+    "CODE_RESOLUTION_INPUT": {
+      "reason": "Declared derivation: the row-scoped raw-code inputs of the closed method map.",
+      "row_count": 546494
+    },
+    "FULFILLMENT_COMPATIBILITY": {
+      "reason": "Declared derivation: the bipartite actual/passenger compatibility graph behind DV-40 and DV-41.",
+      "row_count": 3
+    },
+    "MONTH_END_CALENDAR": {
+      "reason": "ONTOLOGY_DESIGN.md section 5.5: bounded month-end date entity for the Q03 as-of rule.",
+      "row_count": 600
+    },
+    "PASSENGER_PLANNED_LEG": {
+      "reason": "Declared derivation: ordered planned station sequence legs for fulfillment endpoint compatibility.",
+      "row_count": 19998
+    },
+    "PASSENGER_SOURCE_OBSERVATION": {
+      "reason": "Declared derivation: typed PF/PH union carrying DV-43, DV-46, DV-22 and DV-47..DV-51.",
+      "row_count": 20000
+    },
+    "SCHEDULE_AMENDMENT_SIDE": {
+      "reason": "Declared derivation: exact removals/additions with their typed candidate signature and eligibility verdict.",
+      "row_count": 12031
+    },
+    "SCHEDULE_COMPARISON": {
+      "reason": "ONTOLOGY_DESIGN.md section 1.2: DV-34 ScheduleComparison is a Concept, not a per-invocation parameter.",
+      "row_count": 7
+    }
+  },
+  "evidence": {
+    "gates": [
+      {
+        "gate_id": "HG-01",
+        "description": "DV-43 grammar reproduces every SS-40 normalized row hash in SOURCE",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-01",
+        "description": "Aircraft master to Aircraft: duplicate AM-01 is a hard source gate failure",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-02",
+        "description": "AIRCRAFT_ELIGIBLE is one row per AM-01",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-03",
+        "description": "AIRCRAFT_EVENT_ELIGIBLE is one row per AH-01",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-04",
+        "description": "DV-04 audit assignment identity is unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-05",
+        "description": "DV-05 daily assignment identity is unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-06",
+        "description": "Exactly one final relevant observation per (aircraft, dimension, date)",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-07",
+        "description": "At most one daily assignment per (dimension, aircraft, valid_from)",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-08",
+        "description": "AircraftType definition FD holds for every non-null AC-05",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-09",
+        "description": "EngineType definition FD holds for every non-null AC-14 (AC-08/AC-09 excluded)",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-10",
+        "description": "AIRPORT_CURRENT is one row per AP-01",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-11",
+        "description": "AIRLINE_CURRENT is one row per AL-01",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-12",
+        "description": "CODE_RESOLUTION resolution_id is unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-13",
+        "description": "Raw code to reference identity: zero/one/many maps to unresolved/exact/ambiguous and only one creates a link",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-14",
+        "description": "CODE_RESOLUTION_CANDIDATE row count equals DV-11 candidate_count per resolution",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-15",
+        "description": "SCHEDULE_CANONICAL_OBSERVATION is at most one row per (SS-01, SS-03)",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-16",
+        "description": "DV-13 route_state_key is unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-17",
+        "description": "SCHEDULE_EXACT_CHANGE grain (DV-34, SS-01, change_kind, field_name) is unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-18",
+        "description": "DV-20 passenger_flight_key is unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-19",
+        "description": "PASSENGER_SOURCE_LINEAGE grain (DV-20, source_system, DV-46) is unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-20",
+        "description": "PASSENGER_FLIGHT_INVALID grain (source_system, stable_source_row_id) is unique and never null",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-21",
+        "description": "AIRCRAFT_FLIGHT is one row per AF-01",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-22",
+        "description": "ROTATION_LINK_VALIDATION grain (AF-01, target_token) is unique with no nullable identity",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-23",
+        "description": "Actual flight to passenger flight: zero-or-one confirmed plan in v1",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-24",
+        "description": "Exact and heuristic fulfillment never cover the same actual leg",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-25",
+        "description": "DV-39 / DV-40 / DV-42 identities are unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-26",
+        "description": "DV-35 / DV-36 / DV-37 identities are unique",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-27",
+        "description": "MONTH_END_CALENDAR has 600 distinct real month ends",
+        "expected": "600",
+        "observed": "600",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MG-28",
+        "description": "DV-44 quarantine keys are unique in both quarantine tables",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-01",
+        "description": "Every daily assignment interval has positive width",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-02",
+        "description": "Daily assignment intervals never overlap inside (dimension, aircraft)",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-03",
+        "description": "No daily assignment escapes its aircraft existence interval",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-04",
+        "description": "Every RouteState knowledge interval has positive width",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-05",
+        "description": "RouteState knowledge intervals never overlap inside one SS-01",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-06",
+        "description": "Source unknown-future sentinel 9999-12-31 never reaches a derived bound",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-07",
+        "description": "Model open sentinel 9999-01-01 is used for open daily assignments",
+        "expected": "PRESENT",
+        "observed": "PRESENT",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-08",
+        "description": "The model open sentinel never appears as an interval start",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-09",
+        "description": "No RouteState or exact change references an ineligible snapshot date",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "TG-10",
+        "description": "Operating bounds stay inclusive and are never converted to an exclusive model bound",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "XG-01",
+        "description": "Concurrent open RouteStates on one route are preserved, not collapsed",
+        "expected": "predicate",
+        "observed": "1339",
+        "status": "passed"
+      },
+      {
+        "gate_id": "XG-02",
+        "description": "More than one route carries concurrent states at the same knowledge date",
+        "expected": "predicate",
+        "observed": "10",
+        "status": "passed"
+      },
+      {
+        "gate_id": "HG-02",
+        "description": "DV-43 of the frozen null-ID forward observation matches the frozen known answer",
+        "expected": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+        "observed": "a16873ded9c8aac21b72bd99247cb6301784c3fe6001e378aa6872fa5c8c7ad7",
+        "status": "passed"
+      },
+      {
+        "gate_id": "HG-03",
+        "description": "Every contracted FLOAT input to DV-43 is integral, so CANON_FLOAT is exact here",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "HG-04",
+        "description": "No contracted TIME or TIMESTAMP_NTZ input carries a sub-second component",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "HG-05",
+        "description": "DV-46 is never built from an unqualified nullable ID",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-01",
+        "description": "Before first event: no dimension is date-visible for aircraft 1004 on 2019-06-30",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-02",
+        "description": "Before first event: aircraft 1004 nonetheless exists on 2019-06-30",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-03",
+        "description": "End-of-life boundary is exclusive: nothing is date-visible for 1002 on 2024-07-01",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-04",
+        "description": "The day before end of life stays fully covered for 1002",
+        "expected": "4",
+        "observed": "4",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-05",
+        "description": "Same-day ordering: four ordered status audit observations for 1001 on 2020-06-01",
+        "expected": "4",
+        "observed": "4",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-06",
+        "description": "Date-visible state is the final same-day observation (AH-01 101011)",
+        "expected": "101011",
+        "observed": "101011",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-07",
+        "description": "An irrelevant event (AH-01 101020) mints no assignment in any dimension",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-08",
+        "description": "Missing configuration opens dimension-specific UNKNOWN_STATE gaps for 1002",
+        "expected": "4",
+        "observed": "4",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-09",
+        "description": "A -> B -> A survives: two adjacent Storage to In Service audit pairs for 1001",
+        "expected": "2",
+        "observed": "2",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-10",
+        "description": "One of those spells is same-day with zero duration",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-11",
+        "description": "A null-to-value watched transition remains an audit assignment (AH-01 101021)",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-12",
+        "description": "A value-to-null watched transition remains an audit assignment (AH-01 101023)",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-13",
+        "description": "A same-day repeat of the previous value mints nothing (AH-01 101022)",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-14",
+        "description": "An intraday null followed by a same-day value invents no daily unknown gap",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-15",
+        "description": "Incomplete and missing snapshots create zero exact changes and zero route states",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-16",
+        "description": "Reappearance after a proven absence is labelled on the RouteState segment",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-17",
+        "description": "Reappearance is also labelled on the exact presence addition",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-18",
+        "description": "Repeated unchanged complete snapshots coalesce into one RouteState",
+        "expected": "5",
+        "observed": "5",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-19",
+        "description": "A post-gap comparison exposes the skipped calendar dates and invents no date inside them",
+        "expected": "2026-10-12,2026-10-19",
+        "observed": "2026-10-12,2026-10-19",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-20",
+        "description": "A unique candidate pair is never also an ambiguous group member",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-21",
+        "description": "Quarantine invents no identity: no quarantined passenger row had a stable source ID",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-22",
+        "description": "Invalid passenger observations never become canonical passenger flights",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-23",
+        "description": "Every accepted rotation link independently satisfies all five validation conditions",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-24",
+        "description": "Every typed rotation anomaly class is exercised by the 1099 fixture day",
+        "expected": "11",
+        "observed": "11",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-25",
+        "description": "Each cycle component has exactly one representative row",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-26",
+        "description": "Exact fulfillment stays separate from heuristic and ambiguous evidence",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-27",
+        "description": "One passenger service can be fulfilled by many actual legs",
+        "expected": "predicate",
+        "observed": "2",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-28",
+        "description": "Marketing and operating carrier roles stay separate on RouteState",
+        "expected": "predicate",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-29",
+        "description": "Codeshare-only physical service is visibly unresolved, never guessed",
+        "expected": "UNRESOLVED_PHYSICAL_SERVICE",
+        "observed": "UNRESOLVED_PHYSICAL_SERVICE",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-30",
+        "description": "An INVALID_ROUTE_KEY observation yields no RouteState: only the one route-valid snapshot does",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-31",
+        "description": "An INVALID_ROUTE_KEY observation still produces exact schedule-key change evidence",
+        "expected": "2",
+        "observed": "2",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-32",
+        "description": "Five raw observations carry an INVALID_ROUTE_KEY and none of them mint a Route",
+        "expected": "5000",
+        "observed": "5000",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MD-01",
+        "description": "Every MODEL_INPUT column carries a Field-ID or declared-derivation comment",
+        "expected": "800",
+        "observed": "800",
+        "status": "passed"
+      },
+      {
+        "gate_id": "MD-02",
+        "description": "Change tracking is ON for every MODEL_INPUT table bound by MODEL-01",
+        "expected": "0 untracked",
+        "observed": "0 untracked",
+        "status": "passed"
+      }
+    ],
+    "row_counts_and_fingerprints": [
+      {
+        "OBJECT_NAME": "AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT",
+        "ROW_COUNT": 97983,
+        "CONTENT_FINGERPRINT": "-3620438292773271605"
+      },
+      {
+        "OBJECT_NAME": "AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT",
+        "ROW_COUNT": 97979,
+        "CONTENT_FINGERPRINT": "3874604131426580810"
+      },
+      {
+        "OBJECT_NAME": "AIRCRAFT_ELIGIBLE",
+        "ROW_COUNT": 999,
+        "CONTENT_FINGERPRINT": "5725907801980372519"
+      },
+      {
+        "OBJECT_NAME": "AIRCRAFT_EVENT_ELIGIBLE",
+        "ROW_COUNT": 48000,
+        "CONTENT_FINGERPRINT": "-1634119750444143168"
+      },
+      {
+        "OBJECT_NAME": "AIRCRAFT_EVENT_QUARANTINE",
+        "ROW_COUNT": 0,
+        "CONTENT_FINGERPRINT": "0"
+      },
+      {
+        "OBJECT_NAME": "AIRCRAFT_FLIGHT",
+        "ROW_COUNT": 3900,
+        "CONTENT_FINGERPRINT": "7536910980487041816"
+      },
+      {
+        "OBJECT_NAME": "AIRCRAFT_TYPE_DEFINITION",
+        "ROW_COUNT": 1999,
+        "CONTENT_FINGERPRINT": "8004717431463538085"
+      },
+      {
+        "OBJECT_NAME": "AIRLINE_CURRENT",
+        "ROW_COUNT": 100,
+        "CONTENT_FINGERPRINT": "-4695883634176986942"
+      },
+      {
+        "OBJECT_NAME": "AIRPORT_CURRENT",
+        "ROW_COUNT": 45,
+        "CONTENT_FINGERPRINT": "-6014060821862028559"
+      },
+      {
+        "OBJECT_NAME": "CODE_RESOLUTION",
+        "ROW_COUNT": 546494,
+        "CONTENT_FINGERPRINT": "7149506964317772131"
+      },
+      {
+        "OBJECT_NAME": "CODE_RESOLUTION_CANDIDATE",
+        "ROW_COUNT": 424605,
+        "CONTENT_FINGERPRINT": "7370127791767854462"
+      },
+      {
+        "OBJECT_NAME": "CODE_RESOLUTION_CODE",
+        "ROW_COUNT": 390,
+        "CONTENT_FINGERPRINT": "-1829900796584240011"
+      },
+      {
+        "OBJECT_NAME": "CODE_RESOLUTION_CODE_CANDIDATE",
+        "ROW_COUNT": 392,
+        "CONTENT_FINGERPRINT": "-3315280653020497607"
+      },
+      {
+        "OBJECT_NAME": "CODE_RESOLUTION_INPUT",
+        "ROW_COUNT": 546494,
+        "CONTENT_FINGERPRINT": "-7284772500359833752"
+      },
+      {
+        "OBJECT_NAME": "ENGINE_TYPE_DEFINITION",
+        "ROW_COUNT": 1999,
+        "CONTENT_FINGERPRINT": "-1399123743762907003"
+      },
+      {
+        "OBJECT_NAME": "FULFILLMENT_AMBIGUOUS_GROUP",
+        "ROW_COUNT": 23887,
+        "CONTENT_FINGERPRINT": "-8926925215994573536"
+      },
+      {
+        "OBJECT_NAME": "FULFILLMENT_CANDIDATE",
+        "ROW_COUNT": 1,
+        "CONTENT_FINGERPRINT": "2437748900378102505"
+      },
+      {
+        "OBJECT_NAME": "FULFILLMENT_COMPATIBILITY",
+        "ROW_COUNT": 3,
+        "CONTENT_FINGERPRINT": "-6563408484660414469"
+      },
+      {
+        "OBJECT_NAME": "FULFILLMENT_EXACT",
+        "ROW_COUNT": 4,
+        "CONTENT_FINGERPRINT": "-7322504605247706847"
+      },
+      {
+        "OBJECT_NAME": "MONTH_END_CALENDAR",
+        "ROW_COUNT": 600,
+        "CONTENT_FINGERPRINT": "468628094306515227"
+      },
+      {
+        "OBJECT_NAME": "PASSENGER_FLIGHT_CANONICAL",
+        "ROW_COUNT": 19996,
+        "CONTENT_FINGERPRINT": "-6053218723061213438"
+      },
+      {
+        "OBJECT_NAME": "PASSENGER_FLIGHT_INVALID",
+        "ROW_COUNT": 1,
+        "CONTENT_FINGERPRINT": "-250373943849646748"
+      },
+      {
+        "OBJECT_NAME": "PASSENGER_PLANNED_LEG",
+        "ROW_COUNT": 19998,
+        "CONTENT_FINGERPRINT": "2344892109090620066"
+      },
+      {
+        "OBJECT_NAME": "PASSENGER_SOURCE_LINEAGE",
+        "ROW_COUNT": 19998,
+        "CONTENT_FINGERPRINT": "8256504358323927933"
+      },
+      {
+        "OBJECT_NAME": "PASSENGER_SOURCE_OBSERVATION",
+        "ROW_COUNT": 20000,
+        "CONTENT_FINGERPRINT": "-768332567333473566"
+      },
+      {
+        "OBJECT_NAME": "PASSENGER_SOURCE_QUARANTINE",
+        "ROW_COUNT": 1,
+        "CONTENT_FINGERPRINT": "-668713599099502663"
+      },
+      {
+        "OBJECT_NAME": "ROTATION_LINK_VALIDATION",
+        "ROW_COUNT": 3900,
+        "CONTENT_FINGERPRINT": "3754449804575593023"
+      },
+      {
+        "OBJECT_NAME": "ROUTE",
+        "ROW_COUNT": 11,
+        "CONTENT_FINGERPRINT": "-5929714410729392447"
+      },
+      {
+        "OBJECT_NAME": "ROUTE_STATE",
+        "ROW_COUNT": 12030,
+        "CONTENT_FINGERPRINT": "-3724913196585186277"
+      },
+      {
+        "OBJECT_NAME": "ROUTE_STATE_LINEAGE",
+        "ROW_COUNT": 60076,
+        "CONTENT_FINGERPRINT": "-4133670891120722084"
+      },
+      {
+        "OBJECT_NAME": "SCHEDULE_AMENDMENT_CANDIDATE",
+        "ROW_COUNT": 1,
+        "CONTENT_FINGERPRINT": "-1442981603029866872"
+      },
+      {
+        "OBJECT_NAME": "SCHEDULE_AMENDMENT_GROUP",
+        "ROW_COUNT": 1,
+        "CONTENT_FINGERPRINT": "-5619508619125744863"
+      },
+      {
+        "OBJECT_NAME": "SCHEDULE_AMENDMENT_GROUP_MEMBER",
+        "ROW_COUNT": 12029,
+        "CONTENT_FINGERPRINT": "-4675628154774558256"
+      },
+      {
+        "OBJECT_NAME": "SCHEDULE_AMENDMENT_SIDE",
+        "ROW_COUNT": 12031,
+        "CONTENT_FINGERPRINT": "9042192206148857558"
+      },
+      {
+        "OBJECT_NAME": "SCHEDULE_CANONICAL_OBSERVATION",
+        "ROW_COUNT": 69998,
+        "CONTENT_FINGERPRINT": "5664637330556752921"
+      },
+      {
+        "OBJECT_NAME": "SCHEDULE_COMPARISON",
+        "ROW_COUNT": 7,
+        "CONTENT_FINGERPRINT": "4283165958677461269"
+      },
+      {
+        "OBJECT_NAME": "SCHEDULE_EXACT_CHANGE",
+        "ROW_COUNT": 12040,
+        "CONTENT_FINGERPRINT": "2422765990205907786"
+      }
+    ],
+    "column_metadata": {
+      "TOTAL_COLUMNS": 800,
+      "COMMENTED_COLUMNS": 800
+    },
+    "annotation": {
+      "columns_commented": 800,
+      "tables_annotated": 37,
+      "traced_to_source_field_id": 363,
+      "traced_to_declared_derivation": 437
+    },
+    "consistency_diagnostics": {
+      "q05_window_exact_change_rows": "22",
+      "q05_window_candidate_evidence_rows": "13",
+      "q03_month_ends_2015_2024": "120",
+      "q07_both_clock_eligible_states": "4",
+      "inner_join_loss_events": "2",
+      "concurrent_route_states_sfo_lax_20260831": "1339",
+      "open_daily_assignments_using_model_sentinel": "3992"
+    }
+  },
+  "declared_ambiguities": [
+    {
+      "id": "A1",
+      "question": "Is the per-dimension DV-08 resolution status token itself part of the watched set, or only the resolved target?",
+      "chosen": "The full status token is watched, so UNRESOLVED_NULL_CONFIGURATION -> UNRESOLVED_MISSING_CONFIGURATION mints a second assignment.",
+      "why": "SOURCE_CONTRACT.md says the watched set includes 'the type-resolution outcome of AH-13'. Both readings leave DV-33 as UNKNOWN_STATE, so no as-of answer changes.",
+      "visible_as": "AIRCRAFT_DIMENSION_*_ASSIGNMENT.dimension_resolution_status"
+    },
+    {
+      "id": "A2",
+      "question": "When is the multi-attribute aircraft_state dimension UNKNOWN_STATE?",
+      "chosen": "Only when every one of AH-17..AH-31 is null on the date-visible observation.",
+      "why": "DV-33 is defined per dimension, not per attribute; a partially populated state is a known state with absent facts.",
+      "visible_as": "AIRCRAFT_DIMENSION_DAILY_ASSIGNMENT.dimension_query_status"
+    },
+    {
+      "id": "A3",
+      "question": "How are key-shift compatibility components scoped?",
+      "chosen": "Signature-scoped: all removals and additions sharing one (SS-04, SS-06, SS-10, SS-11) signature and participating in at least one overlapping-range pair form one component.",
+      "why": "DV-36 defines its own identity as (comparison, typed signature, sorted removed keys, sorted added keys). The rule can only over-merge into a LOW-confidence ambiguous group; it can never assert a false CANDIDATE_UNIQUE.",
+      "visible_as": "SCHEDULE_AMENDMENT_GROUP.amendment_candidate_class / amendment_confidence"
+    },
+    {
+      "id": "A4",
+      "question": "Does a definition-FD violation drop the subseries or keep an attribute-free row?",
+      "chosen": "Keep one row per subseries with definition_status = AMBIGUOUS_DEFINITION and null definition fields, so no definition is invented and no identity disappears.",
+      "why": "The contract forbids an invented node link, not the identity itself. Zero rows are ambiguous in the shipped fixtures, so this branch is currently unexercised.",
+      "visible_as": "AIRCRAFT_TYPE_DEFINITION.definition_status / ENGINE_TYPE_DEFINITION.definition_status"
+    },
+    {
+      "id": "A5",
+      "question": "What happens when a rotation target leg is itself cancelled or missing times?",
+      "chosen": "A new typed anomaly TARGET_NOT_OPERATED, ranked below BROKEN_CONTINUITY.",
+      "why": "P0-11.3 keeps cancelled and missing-time legs out of the strict operated chain; the contract's five link conditions do not name the target's own operability. Zero rows hit this branch in the shipped fixtures.",
+      "visible_as": "ROTATION_LINK_VALIDATION.rotation_anomaly_class"
+    },
+    {
+      "id": "A6",
+      "question": "Where do unmatched actual and passenger observations live?",
+      "chosen": "In FULFILLMENT_AMBIGUOUS_GROUP at member grain with a null group_id, member_class UNMATCHED_ACTUAL / UNMATCHED_PASSENGER and a reason.",
+      "why": "SOURCE_CONTRACT.md attaches 'unmatched observations retain a deterministic source/business identity plus reason' to that same contract row.",
+      "visible_as": "FULFILLMENT_AMBIGUOUS_GROUP.member_class / unmatched_reason"
+    },
+    {
+      "id": "A7",
+      "question": "Does an event whose AH-32 not_for_use is true or null stay eligible?",
+      "chosen": "No. It is quarantined with reason NOT_FOR_USE_EVENT or UNKNOWN_ELIGIBILITY_FLAG, mirroring the explicit AM-15 rule.",
+      "why": "AH-32 is contracted as an 'event eligibility/quality flag' and AM-15 states that null is not silently treated as false. Zero rows hit this branch in the shipped fixtures.",
+      "visible_as": "AIRCRAFT_EVENT_QUARANTINE.quarantine_reason"
+    }
+  ],
+  "timings_seconds": {
+    "00_setup.sql": 10.981,
+    "10_reference.sql": 8.669,
+    "15_passenger_source.sql": 8.515,
+    "20_code_resolution.sql": 18.682,
+    "30_aircraft.sql": 13.731,
+    "31_aircraft_assignments.sql": 10.761,
+    "40_schedule.sql": 18.523,
+    "41_schedule_changes.sql": 13.379,
+    "50_passenger.sql": 8.414,
+    "60_actual_flight.sql": 4.923,
+    "70_fulfillment.sql": 10.539,
+    "90_metadata.sql": 31.832,
+    "annotate_columns": 21.473,
+    "verify": 35.397,
+    "wall_total": 215.82
+  },
+  "open_issues": [],
+  "notes": [
+    "CODE_RESOLUTION is row-scoped as the contract requires (resolution_id includes the DV-46 source row token), so it is by far the largest object at ~546k rows, of which ~122k are INVALID_INPUT results for legitimately null raw codes. MODEL-01 should decide deliberately whether to bind it at full grain or to bind CODE_RESOLUTION_CODE plus the per-object resolved id/status columns that every other table already carries.",
+    "AIRCRAFT_EVENT_QUARANTINE is empty. Every quarantine branch is implemented (MISSING_REQUIRED_FIELD, UNKNOWN_FUTURE_EVENT_DATE, UNKNOWN_ELIGIBILITY_FLAG, NOT_FOR_USE_EVENT, INELIGIBLE_OR_UNKNOWN_AIRCRAFT, EVENT_BEFORE_EXISTENCE, EVENT_ON_OR_AFTER_END_OF_LIFE) but the shipped fixtures contain no ineligible aircraft event, so those branches are unexercised by data. The passenger quarantine path is exercised (1 row).",
+    "No ROUTE_STATE is open. The final eligible snapshot 2026-10-26 is declared present and complete with zero rows, which proves absence for every schedule key, so every knowledge segment closes. This is a fixture consequence, not a derivation defect: HT-18 multi-open is demonstrated at a knowledge date (1339 concurrent states on SFO->LAX at 2026-08-31), and the model open sentinel is exercised by 3992 open daily aircraft assignments.",
+    "Filler schedules disappear at 2026-09-07, which is a complete snapshot carrying only four rows. That produces 12012 exact presence removals and 12012 unpaired removals at that comparison. It is outside every frozen Q05 and Q06 window and is the contract-correct reading of a complete snapshot."
+  ]
+}
