@@ -1,12 +1,15 @@
 """uc1.py - Q01 to Q04 of the aviation temporal demo, as live PyRel queries.
 
-Four questions over the aircraft surface, all four of them answered by the *same* shared
-temporal predicate layer in ``aviation_model.temporal``:
+Five questions over the aircraft surface, all of them answered by the *same* shared temporal
+predicate layer in ``aviation_model.temporal``:
 
 * **Q01** ``aircraft_as_of`` - reconstruct one aircraft at one instant across four
   independently clocked dimensions, each carrying its own DV-33 status.
 * **Q02** ``status_reversion_spells`` - every ``In Service -> Storage -> In Service`` spell on
   the *audit* stream, including the same-day zero-day spell the daily projection loses.
+* **Q02F** ``fleet_storage_spell_distribution`` - the same spell derivation with the
+  per-aircraft filter removed, bucketed by duration against a joined bucket dimension (D-0026,
+  manifest v1.2.0).
 * **Q03** ``month_end_fleet_composition`` - in-service count per exact aircraft type at every
   month end over ten years, from **one** query joined against a materialized calendar.
 * **Q04** ``type_engine_histories`` - the type stream and the engine stream side by side,
@@ -43,10 +46,15 @@ Run it::
 
     PYTHONPATH=rai_code .venv/bin/python rai_code/queries/uc1.py
 
-The first query in a fresh interpreter pays a 100 to 270 second full-model sync; warm queries
-are 2.5 to 13 seconds. Only ever build one ``Model`` per process - a second one makes the free
+The first query in a fresh interpreter pays a roughly 130 second full-model sync; warm queries
+are 3 to 9 seconds. Only ever build one ``Model`` per process - a second one makes the free
 ``distinct(...)`` raise ``[Ambiguous model]`` (PROBE N-02) - which is why this module imports
 the package's single ``aviation_model.model`` and never constructs its own.
+
+Do not run two query modules against this model concurrently. Building the model is a write
+transaction and a concurrent reader **errors** rather than waiting, with
+``prepareIndex: model is currently locked``. :func:`warm_model` retries through it; ``main()``
+calls it first.
 """
 
 from __future__ import annotations
@@ -69,6 +77,56 @@ from relationalai.semantics.std import datetime as rdt
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_PATH = REPO_ROOT / "EXPECTED_ANSWERS.yaml"
+
+
+# ---------------------------------------------------------------------------------
+# Model warm-up, and the concurrency hazard it exists for
+# ---------------------------------------------------------------------------------
+
+_LOCK_MARKERS = ("model is currently locked", "prepareindex")
+
+
+def warm_model(*, attempts: int = 8, delay: float = 30.0) -> float:
+    """Pay the one-off model sync up front, retrying while another process holds the lock.
+
+    Two facts, both measured rather than assumed, and both of which look like the other one if
+    you only see a stalled terminal:
+
+    * **The sync is about 130 seconds, not ten minutes.** Measured here at 122.8s on an already
+      ``READY`` engine and independently at 133.5s by the UC2 agent. PROBE U-12's 631s figure
+      includes nine minutes of engine *provisioning* from ``SUSPENDED``; once the engine is up,
+      the model sync alone is roughly two minutes. Warm queries are 3 to 9 seconds.
+    * **Building the model is a write transaction, and a concurrent reader errors rather than
+      waiting.** Importing ``aviation_model`` in a second process while a first is still
+      indexing fails with ``prepareIndex: model is currently locked``. UC2 lost two runs to this
+      and spent the time debugging a query that was fine. If you see that message it is another
+      process, not your query.
+
+    Returns the elapsed seconds so a caller can report cold versus warm honestly.
+    """
+    import time
+
+    started = time.time()
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            am.model.select(aggs.count(am.Aircraft).alias("n")).to_df()
+            return time.time() - started
+        except Exception as exc:  # noqa: BLE001 - re-raised below unless it is the lock
+            message = str(exc).lower()
+            if not any(marker in message for marker in _LOCK_MARKERS):
+                raise
+            last = exc
+            print(
+                f"model locked by another process, retry {attempt + 1}/{attempts} "
+                f"in {delay:.0f}s",
+                flush=True,
+            )
+            time.sleep(delay)
+    raise RuntimeError(
+        f"model still locked after {attempts} attempts over "
+        f"{time.time() - started:.0f}s"
+    ) from last
 
 
 # ---------------------------------------------------------------------------------
@@ -216,6 +274,13 @@ _NORMALISERS: Mapping[str, Callable[[Any], Any]] = {
     "return_sequence": _to_int,
     "storage_days": _to_int,
     "same_day": _to_bool,
+    # Q02F
+    "bucket_order": _to_int,
+    "duration_bucket": _to_str,
+    "spell_count": _to_int,
+    "aircraft_count": _to_int,
+    "minimum_storage_days": _to_int,
+    "maximum_storage_days": _to_int,
     # Q03
     "month_end": _to_date,
     "in_service_aircraft_count": _to_int,
@@ -253,6 +318,8 @@ def _finalise(
     order_by: Sequence[str],
     question_id: str,
     row_id_start: int,
+    row_id_prefix: str | None = None,
+    row_id_width: int = 3,
 ) -> pd.DataFrame:
     """The frozen columns, in the frozen order, with the manifest ``row_id`` stamped last.
 
@@ -266,6 +333,12 @@ def _finalise(
     the frozen ``null`` cells silently become ``NaN`` floats, so a null and a zero-ish float
     stop being distinguishable and ``2`` is reported as ``2.0``. Keeping Python scalars means
     the frame compares against the YAML exactly as parsed.
+
+    ``row_id_prefix`` and ``row_id_width`` exist because the manifest labels two generations of
+    result set differently: the v1.1.1 sets are ``<QID>-R<nnn>`` (``Q01-R001``) while every
+    v1.2.0 set is ``<RESULT_SET_ID>-R<nnnn>`` (``Q01-ENRICHED-MID-STORAGE-R0001``). ``row_id`` is
+    a supplied manifest label rather than a derived value, so the caller states the convention
+    and the comparison then checks it rather than assuming it.
     """
     payload_columns = [name for name in columns if name != "row_id"]
     frame = pd.DataFrame(list(rows), columns=payload_columns, dtype=object)
@@ -273,8 +346,11 @@ def _finalise(
         frame = frame.sort_values(
             list(order_by), kind="stable", na_position="last"
         ).reset_index(drop=True)
+    prefix = row_id_prefix or question_id
     frame.insert(
-        0, "row_id", [f"{question_id}-R{row_id_start + i:03d}" for i in range(len(frame))]
+        0,
+        "row_id",
+        [f"{prefix}-R{row_id_start + i:0{row_id_width}d}" for i in range(len(frame))],
     )
     return frame[list(columns)]
 
@@ -322,6 +398,18 @@ Q02_ORDER_BY = (
     "storage_event_id",
     "return_event_id",
 )
+
+Q02F_COLUMNS = (
+    "row_id",
+    "bucket_order",
+    "duration_bucket",
+    "spell_count",
+    "aircraft_count",
+    "minimum_storage_days",
+    "maximum_storage_days",
+)
+Q02F_ORDER_BY = ("bucket_order",)
+Q02F_SCOPE_ENUM = ("FLEET",)
 
 Q03_COLUMNS = (
     "row_id",
@@ -558,6 +646,8 @@ def aircraft_as_of(
     as_of_date: dt.date | str,
     *,
     row_id_start: int = 1,
+    row_id_prefix: str | None = None,
+    row_id_width: int = 3,
     strict: bool = False,
 ) -> pd.DataFrame:
     """Q01 - reconstruct one aircraft at one instant. Exactly one row, always.
@@ -628,7 +718,72 @@ def aircraft_as_of(
         order_by=Q01_ORDER_BY,
         question_id="Q01",
         row_id_start=row_id_start,
+        row_id_prefix=row_id_prefix,
+        row_id_width=row_id_width,
     )
+
+
+# ---------------------------------------------------------------------------------
+# Q02 / Q02F - the shared storage-spell derivation
+# ---------------------------------------------------------------------------------
+
+
+def _spell_bindings(tag_prefix: str) -> tuple[Any, Any, tuple]:
+    """The ``In Service -> Storage -> In Service`` spell, bound once for Q02 and Q02F.
+
+    Returns ``(storage_ref, return_ref, conditions)``. The caller adds its own scope - Q02 a
+    single ``Aircraft.id`` equality, Q02F nothing at all - and its own projection. Factoring it
+    here is not tidiness: ``data/oracles/q02f_fleet_spell_distribution.sql`` states that the
+    fleet derivation is "byte-for-byte the Q02 derivation with the per-aircraft filter removed,
+    so the two answers cannot disagree about what a spell is", and two copies of these clauses
+    would put that guarantee at the mercy of a future edit to one of them.
+
+    Three separately named refs over ``AircraftStatusAudit``, the **audit** stream and never the
+    daily projection. The daily stream keeps only the final relevant observation per aircraft,
+    dimension and date, so aircraft 1001's four same-day observations on 2020-06-01 (row
+    sequences 5, 10, 20, 30 -> Maintenance, In Service, Storage, In Service) collapse to one and
+    the zero-day spell at sequences 20 and 30 disappears with no error at all.
+
+    ``event_ordinal`` is the shared dense DV-03 ordinal per (aircraft, dimension) over
+    ``(AH-05, AH-03, AH-04, AH-01)``, which reduces "the previous assignment" and "the next
+    qualifying assignment" from a four-column lexicographic comparison to one integer
+    comparison.
+
+    The return leg is the **minimal** later In Service, bound with the HAVING-style ``:=``
+    pattern. The SQL oracle instead takes the immediate successor and requires it to be In
+    Service; the two definitions differ only when a Storage is followed by some third status
+    before service resumes. Measured live over the whole fleet they agree exactly - 439 spells
+    either way, out of 442 Storage observations that follow an In Service - so the frozen
+    answers do not discriminate between them. The minimal-successor form is kept because it is
+    the one that cannot pair a Storage with a later spell's return, which is what holds Q02
+    down to two rows for aircraft 1001.
+    """
+    tag = f"{tag_prefix}_{next(_ref_counter)}"
+    storage = am.AuditAssignment.ref(f"{tag}_storage")
+    prior = am.AuditAssignment.ref(f"{tag}_prior")
+    ret = am.AuditAssignment.ref(f"{tag}_return")
+
+    first_return = aggs.min(ret.event_ordinal).per(storage)
+
+    conditions = (
+        # the Storage observation
+        am.AircraftStatusAudit(storage),
+        storage.aircraft == am.Aircraft,
+        storage.aircraft_status_code == am.STATUS_STORAGE,
+        # its immediate predecessor must be In Service
+        am.AircraftStatusAudit(prior),
+        prior.aircraft == am.Aircraft,
+        prior.aircraft_status_code == am.STATUS_IN_SERVICE,
+        prior.event_ordinal == storage.event_ordinal - 1,
+        # the minimal later In Service observation
+        am.AircraftStatusAudit(ret),
+        ret.aircraft == am.Aircraft,
+        ret.aircraft_status_code == am.STATUS_IN_SERVICE,
+        ret.event_ordinal > storage.event_ordinal,
+        return_ordinal := first_return,
+        ret.event_ordinal == return_ordinal,
+    )
+    return storage, ret, conditions
 
 
 # ---------------------------------------------------------------------------------
@@ -636,7 +791,13 @@ def aircraft_as_of(
 # ---------------------------------------------------------------------------------
 
 
-def status_reversion_spells(aircraft_id: int, *, row_id_start: int = 1) -> pd.DataFrame:
+def status_reversion_spells(
+    aircraft_id: int,
+    *,
+    row_id_start: int = 1,
+    row_id_prefix: str | None = None,
+    row_id_width: int = 3,
+) -> pd.DataFrame:
     """Q02 - every ``In Service -> Storage -> In Service`` spell, on the **audit** stream.
 
     Reading the daily projection here is the fatal mistake. The daily stream keeps only the
@@ -669,12 +830,7 @@ def status_reversion_spells(aircraft_id: int, *, row_id_start: int = 1) -> pd.Da
     stream carries no timestamps, so intraday elapsed time does not exist to be derived.
     """
     aircraft_id = _require_aircraft_id(aircraft_id)
-    tag = f"{next(_ref_counter)}"
-    storage = am.AuditAssignment.ref(f"q02_storage_{tag}")
-    prior = am.AuditAssignment.ref(f"q02_prior_{tag}")
-    ret = am.AuditAssignment.ref(f"q02_return_{tag}")
-
-    first_return = aggs.min(ret.event_ordinal).per(storage)
+    storage, ret, spell = _spell_bindings("q02")
 
     frame = (
         am.model.select(
@@ -688,25 +844,7 @@ def status_reversion_spells(aircraft_id: int, *, row_id_start: int = 1) -> pd.Da
             rdt.date.diff("day", storage.event_date, ret.event_date).alias("storage_days"),
             (storage.event_date == ret.event_date).alias("same_day"),
         )
-        .where(
-            am.Aircraft.id == aircraft_id,
-            # the Storage observation
-            am.AircraftStatusAudit(storage),
-            storage.aircraft == am.Aircraft,
-            storage.aircraft_status_code == am.STATUS_STORAGE,
-            # its immediate predecessor must be In Service
-            am.AircraftStatusAudit(prior),
-            prior.aircraft == am.Aircraft,
-            prior.aircraft_status_code == am.STATUS_IN_SERVICE,
-            prior.event_ordinal == storage.event_ordinal - 1,
-            # the minimal later In Service observation
-            am.AircraftStatusAudit(ret),
-            ret.aircraft == am.Aircraft,
-            ret.aircraft_status_code == am.STATUS_IN_SERVICE,
-            ret.event_ordinal > storage.event_ordinal,
-            return_ordinal := first_return,
-            ret.event_ordinal == return_ordinal,
-        )
+        .where(am.Aircraft.id == aircraft_id, *spell)
         .to_df()
     )
 
@@ -717,6 +855,183 @@ def status_reversion_spells(aircraft_id: int, *, row_id_start: int = 1) -> pd.Da
         order_by=Q02_ORDER_BY,
         question_id="Q02",
         row_id_start=row_id_start,
+        row_id_prefix=row_id_prefix,
+        row_id_width=row_id_width,
+    )
+
+
+# ---------------------------------------------------------------------------------
+# Q02F - fleet_storage_spell_distribution
+# ---------------------------------------------------------------------------------
+
+# (bucket_order, duration_bucket, minimum_days, maximum_days). The bounds are the
+# specification 12.2 item 13 duration buckets, inclusive at both ends, and they tile the
+# non-negative integers with no gap and no overlap. The open top bucket is closed at ten
+# thousand years of storage rather than left unbounded, because a bucket dimension has to be a
+# finite set of rows to be joinable and because the maximum spell in the fixture is 1,091 days.
+_Q02F_BUCKETS: tuple[tuple[int, str, int, int], ...] = (
+    (1, "ZERO_DAYS", 0, 0),
+    (2, "DAYS_1_TO_7", 1, 7),
+    (3, "DAYS_8_TO_30", 8, 30),
+    (4, "DAYS_31_TO_90", 31, 90),
+    (5, "DAYS_91_TO_365", 91, 365),
+    (6, "DAYS_366_TO_730", 366, 730),
+    (7, "DAYS_OVER_730", 731, 3_652_500),
+)
+
+_bucket_concept: Any = None
+
+
+def storage_spell_bucket() -> Any:
+    """The Q02F duration bucket, as a materialized joinable dimension. Built once per process.
+
+    This deliberately mirrors Q03's ``MonthEnd``. Q03's frozen trap is "an approach that only
+    works because the interval is regular"; the bucket bounds here are *deliberately* irregular
+    (0, 1-7, 8-30, 31-90, 91-365, 366-730, 731+), which is precisely why they cannot be a
+    computed step function and have to be data. Making them a concept turns the classification
+    into a single inequality join - ``minimum_days <= storage_days <= maximum_days`` - so the
+    whole distribution is one query rather than seven bucket-shaped queries, and the same query
+    would answer a completely different set of buckets.
+
+    It lives in this module rather than in ``aviation_model`` because it is question-private
+    presentation: ``QUERY_ROUTING.md`` puts "the per-question output column names" and the
+    result-set ordering on the catalog side of the boundary, and a storage-duration bucket
+    label is the same kind of thing. Nothing temporal is defined here - the spell itself comes
+    from :func:`_spell_bindings`, which is shared with Q02.
+
+    Construction is lazy so that importing this module for Q01, Q03 or Q04 does not pay the
+    re-index cost of a concept those questions never read. ``model.data`` drops any row with a
+    null or an empty string anywhere in the frame (PROBE N-01), so the frame is built from the
+    literal tuple above and is null-free by construction; the row count is asserted after the
+    define for exactly that reason.
+    """
+    global _bucket_concept
+    if _bucket_concept is not None:
+        return _bucket_concept
+
+    from relationalai.semantics import Integer, String
+
+    bucket = am.model.Concept(
+        "Q02FStorageSpellBucket", identify_by={"bucket_order": Integer}
+    )
+    bucket.duration_bucket = am.model.Property(
+        f"{bucket} is labelled {String:duration_bucket}"
+    )
+    bucket.minimum_days = am.model.Property(f"{bucket} starts at {Integer:minimum_days}")
+    bucket.maximum_days = am.model.Property(f"{bucket} ends at {Integer:maximum_days}")
+
+    rows = am.model.data(
+        pd.DataFrame(
+            list(_Q02F_BUCKETS),
+            columns=["bucket_order", "duration_bucket", "minimum_days", "maximum_days"],
+        )
+    )
+    am.model.define(
+        entry := bucket.new(bucket_order=rows.bucket_order),
+        entry.duration_bucket(rows.duration_bucket),
+        entry.minimum_days(rows.minimum_days),
+        entry.maximum_days(rows.maximum_days),
+    )
+
+    _bucket_concept = bucket
+    _assert_buckets_present(bucket)
+    return bucket
+
+
+def _assert_buckets_present(bucket: Any) -> None:
+    """Fail loudly if the bucket dimension is not there, because the failure mode is silence.
+
+    Two separate ways it can be missing, and both give an empty Q02F rather than an error:
+
+    * ``model.data`` drops every row with a null or an empty string anywhere in the frame
+      (PROBE N-01). The frame here is null-free by construction, so this is the cheap regression
+      guard on that.
+    * **A sibling process rebuilt the model.** This concept is added to the shared named model
+      by a query module rather than by ``aviation_model``, so a concurrent process that imports
+      ``aviation_model`` alone rewrites the model definition without it. Observed live: Q02F
+      returned seven correct rows and then, later in the same pytest session, an empty frame,
+      while a sibling query agent was running. The proper fix is for the bucket dimension to
+      live in ``aviation_model``; until it does, this check turns a silently empty answer into a
+      named one.
+    """
+    loaded = am.model.select(aggs.count(bucket).alias("n")).to_df()
+    found = int(loaded.iloc[0]["n"]) if len(loaded) and loaded.shape[1] else 0
+    if found != len(_Q02F_BUCKETS):
+        raise AssertionError(
+            f"Q02F bucket dimension holds {found} rows, expected {len(_Q02F_BUCKETS)}. "
+            "Either model.data() dropped rows, or another process rebuilt the shared model "
+            "without this query-module-local concept. Re-run this module alone."
+        )
+
+
+def fleet_storage_spell_distribution(
+    aircraft_scope: str = "FLEET",
+    *,
+    row_id_start: int = 1,
+    row_id_prefix: str | None = None,
+    row_id_width: int = 4,
+) -> pd.DataFrame:
+    """Q02F - the storage-spell duration distribution over the whole fleet. One query.
+
+    D-0026: Q02's frozen parameter schema takes a non-nullable ``aircraft_id`` and may not be
+    widened, so the fleet-wide view ships as its own question with its own parameter shape. The
+    spell derivation is the identical :func:`_spell_bindings` with the per-aircraft filter
+    simply not applied, so Q02 and Q02F cannot disagree about what a spell is.
+
+    ``spell_count`` counts spells and ``aircraft_count`` counts *distinct aircraft*, and they
+    differ in three of the seven buckets (38 vs 35, 89 vs 86, 163 vs 160) because one aircraft
+    can contribute several spells to one bucket. That difference is the built-in check on
+    Silent Corruption #4: an ``aircraft_count`` equal to ``spell_count`` in every bucket means
+    the distinct wrapper was lost and the aggregate is counting spell tuples, not aircraft.
+
+    Every bucket in the frozen answer is non-empty, so the inner join is not hiding an empty
+    one. Were a bucket ever to go empty it would drop out rather than report zero, which is the
+    right behaviour here for the same reason it is in Q03: the manifest freezes observed
+    buckets, not a completed grid.
+    """
+    _require_enum(aircraft_scope, "aircraft_scope", Q02F_SCOPE_ENUM, "INVALID_AIRCRAFT_SCOPE")
+
+    from relationalai.semantics.std import numbers
+
+    bucket = storage_spell_bucket()
+    _assert_buckets_present(bucket)
+    storage, ret, spell = _spell_bindings("q02f")
+    # ``date.diff`` yields the runtime's narrow INT while ``min``/``max`` declare their output
+    # as the core ``Integer`` (INT128), and ``model2lqp._translate_aggregate`` asserts the two
+    # are the same type. Measured live: ``min(TypeName.INT) had output type of
+    # TypeName.INT128``, raised at compile time and not silently. ``numbers.integer`` widens the
+    # input to match. ``count`` is exempt from that assertion, which is why ``spell_count``
+    # never hit it.
+    storage_days = numbers.integer(
+        rdt.date.diff("day", storage.event_date, ret.event_date)
+    )
+
+    frame = (
+        am.model.select(
+            bucket.bucket_order.alias("bucket_order"),
+            bucket.duration_bucket.alias("duration_bucket"),
+            aggs.count(storage).per(bucket).alias("spell_count"),
+            aggs.count(am.model.distinct(am.Aircraft)).per(bucket).alias("aircraft_count"),
+            aggs.min(storage_days).per(bucket).alias("minimum_storage_days"),
+            aggs.max(storage_days).per(bucket).alias("maximum_storage_days"),
+        )
+        .where(
+            *spell,
+            bucket.minimum_days <= storage_days,
+            storage_days <= bucket.maximum_days,
+        )
+        .to_df()
+    )
+
+    payload_columns = [name for name in Q02F_COLUMNS if name != "row_id"]
+    return _finalise(
+        _records(frame, payload_columns),
+        columns=Q02F_COLUMNS,
+        order_by=Q02F_ORDER_BY,
+        question_id="Q02F",
+        row_id_start=row_id_start,
+        row_id_prefix=row_id_prefix,
+        row_id_width=row_id_width,
     )
 
 
@@ -731,6 +1046,8 @@ def month_end_fleet_composition(
     status: str = am.STATUS_IN_SERVICE,
     *,
     row_id_start: int = 1,
+    row_id_prefix: str | None = None,
+    row_id_width: int = 3,
 ) -> pd.DataFrame:
     """Q03 - in-service count per exact type at every month end. **One** query, not 120.
 
@@ -792,6 +1109,8 @@ def month_end_fleet_composition(
         order_by=Q03_ORDER_BY,
         question_id="Q03",
         row_id_start=row_id_start,
+        row_id_prefix=row_id_prefix,
+        row_id_width=row_id_width,
     )
 
 
@@ -800,7 +1119,13 @@ def month_end_fleet_composition(
 # ---------------------------------------------------------------------------------
 
 
-def type_engine_histories(aircraft_id: int, *, row_id_start: int = 1) -> pd.DataFrame:
+def type_engine_histories(
+    aircraft_id: int,
+    *,
+    row_id_start: int = 1,
+    row_id_prefix: str | None = None,
+    row_id_width: int = 3,
+) -> pd.DataFrame:
     """Q04 - the type stream and the engine stream side by side, never aligned.
 
     One concept plus a ``dimension`` discriminator, filtered - not two concepts unioned. The
@@ -860,6 +1185,8 @@ def type_engine_histories(aircraft_id: int, *, row_id_start: int = 1) -> pd.Data
         order_by=Q04_ORDER_BY,
         question_id="Q04",
         row_id_start=row_id_start,
+        row_id_prefix=row_id_prefix,
+        row_id_width=row_id_width,
     )
 
 
@@ -880,6 +1207,12 @@ CATALOG: Mapping[str, dict[str, Any]] = {
         "order_by": Q02_ORDER_BY,
         "parameters": ("aircraft_id",),
     },
+    "Q02F": {
+        "callable": fleet_storage_spell_distribution,
+        "columns": Q02F_COLUMNS,
+        "order_by": Q02F_ORDER_BY,
+        "parameters": ("aircraft_scope",),
+    },
     "Q03": {
         "callable": month_end_fleet_composition,
         "columns": Q03_COLUMNS,
@@ -894,7 +1227,10 @@ CATALOG: Mapping[str, dict[str, Any]] = {
     },
 }
 
-UC1_QUESTION_IDS = ("Q01", "Q02", "Q03", "Q04")
+# Q02F is the v1.2.0 fleet-wide sibling of Q02 (D-0026). It is an aircraft-history question
+# with no owner in QUERY_ROUTING.md, which was written against manifest v1.1.1 and predates it;
+# UC2 owns Q05 to Q07 and ROT owns Q08, so it belongs here.
+UC1_QUESTION_IDS = ("Q01", "Q02", "Q02F", "Q03", "Q04")
 
 
 def load_manifest() -> dict[str, Any]:
@@ -932,10 +1268,27 @@ def expected_frame(question_id: str, result_set: Mapping[str, Any]) -> pd.DataFr
 
 def row_id_base(result_set: Mapping[str, Any], question_id: str) -> int:
     """The manifest's own ``row_id`` base for a result set, defaulting to 1 when empty."""
+    return row_id_convention(result_set, question_id)[0]
+
+
+def row_id_convention(
+    result_set: Mapping[str, Any], question_id: str
+) -> tuple[int, str, int]:
+    """``(start, prefix, width)`` read off the manifest's own first ``row_id``.
+
+    Two conventions are live at once. The v1.1.1 result sets label rows ``<QID>-R<nnn>``
+    (``Q01-R001``, ``Q03-R132``) and every v1.2.0 result set labels them
+    ``<RESULT_SET_ID>-R<nnnn>`` (``Q01-ENRICHED-MID-STORAGE-R0001``). ``row_id`` is a supplied
+    manifest label, not a derived value - ``DEMO_QUESTIONS.md`` says so under D-0018 and the
+    independent SQL oracles do not emit it either - so the convention is read from the frozen
+    answer and then reproduced, and the cell-by-cell comparison is what checks it. A zero-row
+    result set has no label to read and no rows to stamp.
+    """
     rows = result_set.get("rows") or []
     if not rows:
-        return 1
-    return int(str(rows[0]["row_id"]).rsplit("-R", 1)[1])
+        return 1, question_id, 3
+    label, digits = str(rows[0]["row_id"]).rsplit("-R", 1)
+    return int(digits), label, len(digits)
 
 
 def compare(actual: pd.DataFrame, expected: pd.DataFrame) -> list[str]:
@@ -966,7 +1319,10 @@ def run_result_set(question_id: str, result_set: Mapping[str, Any]) -> tuple[str
     entry = CATALOG[question_id]
     parameters = dict(result_set.get("parameters") or {})
     kwargs = {name: parameters[name] for name in entry["parameters"] if name in parameters}
-    kwargs["row_id_start"] = row_id_base(result_set, question_id)
+    start, prefix, width = row_id_convention(result_set, question_id)
+    kwargs["row_id_start"] = start
+    kwargs["row_id_prefix"] = prefix
+    kwargs["row_id_width"] = width
     expected_status = result_set.get("invocation_status")
     expected_code = result_set.get("error_code")
 
@@ -1001,8 +1357,11 @@ def run_result_set(question_id: str, result_set: Mapping[str, Any]) -> tuple[str
 
 
 def main() -> int:
-    """Run all nine frozen UC1 result sets against the live engine and print a summary."""
+    """Run every frozen UC1 result set against the live engine and print a summary."""
     import time
+
+    cold = warm_model()
+    print(f"model sync {cold:.1f}s", flush=True)
 
     questions = frozen_questions()
     verdicts: list[tuple[str, str, int, float, list[str]]] = []

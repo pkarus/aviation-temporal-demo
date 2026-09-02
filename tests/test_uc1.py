@@ -1,4 +1,4 @@
-"""test_uc1.py - QUERY-UC1 live gate for Q01 to Q04.
+"""test_uc1.py - QUERY-UC1 live gate for Q01 to Q04 plus Q02F.
 
 Every test here fires real PyRel queries at the live ``PK_AVIATION_TEMPORAL`` model under
 ``RAI_DEMO_AVIATION_TEMPORAL`` on the ``aviation_temporal_logic_s`` reasoner and compares the
@@ -16,7 +16,7 @@ The first query in the process pays a 100 to 270 second full-model sync, so the 
 ``uc1`` fixture exists to pay it once. One ``Model`` per process, deliberately: a second one
 makes the free ``distinct(...)`` raise ``[Ambiguous model]`` (PROBE N-02).
 
-Coverage beyond the nine result sets, one test per boundary the frozen answers exist to pin:
+Coverage beyond the frozen result sets, one test per boundary the frozen answers exist to pin:
 
 * before the first assignment versus outside existence (the two absence statuses),
 * the exclusive end-of-life bound (``<`` and not ``<=``),
@@ -52,9 +52,16 @@ DB = "PK_AVIATION_TEMPORAL"
 
 @pytest.fixture(scope="module")
 def uc1():
-    """The query module, with the ontology loaded. One ``Model`` per process."""
+    """The query module, with the ontology loaded and synced. One ``Model`` per process.
+
+    ``warm_model()`` pays the ~130 second sync once and retries through
+    ``prepareIndex: model is currently locked``, which is what a *concurrent* process building
+    the same model raises at a reader. Without it the first parametrised case absorbs the sync
+    and a colliding sibling turns into a spurious test failure.
+    """
     from queries import uc1 as module
 
+    module.warm_model()
     return module
 
 
@@ -70,7 +77,7 @@ def questions(uc1, manifest):
 
 @pytest.fixture(scope="module")
 def result_sets(questions):
-    """``{result_set_id: (question_id, result_set)}`` for the nine UC1 result sets."""
+    """``{result_set_id: (question_id, result_set)}`` for every UC1 result set."""
     index = {}
     for question_id, question in questions.items():
         for result_set in question["result_sets"]:
@@ -115,39 +122,49 @@ def test_output_schemas_match_the_frozen_manifest(uc1, questions):
 def test_frozen_row_ids_are_a_contiguous_ascending_run(uc1, questions):
     """``row_id`` is a supplied manifest label (D-0018), so the numbering itself is the check.
 
-    Each function stamps ``<QID>-R<n:03d>`` from ``row_id_start``; this asserts the frozen
-    labels really are that contiguous run, so the generated sequence is verified rather than
-    assumed to agree.
+    Each function stamps ``<prefix>-R<n:0width>`` from ``row_id_start``. Two conventions are
+    live at once: the v1.1.1 sets use ``<QID>-R<nnn>`` (``Q01-R001``) and every v1.2.0 set uses
+    ``<RESULT_SET_ID>-R<nnnn>`` (``Q01-ENRICHED-MID-STORAGE-R0001``). Both are read off the
+    manifest rather than hardcoded, and this test is what proves the read is faithful.
     """
     for question_id, question in questions.items():
         for result_set in question["result_sets"]:
             rows = result_set.get("rows") or []
             if not rows:
                 continue
-            base = uc1.row_id_base(result_set, question_id)
-            expected = [f"{question_id}-R{base + i:03d}" for i in range(len(rows))]
+            base, prefix, width = uc1.row_id_convention(result_set, question_id)
+            expected = [f"{prefix}-R{base + i:0{width}d}" for i in range(len(rows))]
             assert [row["row_id"] for row in rows] == expected, result_set["result_set_id"]
+            assert prefix in (question_id, result_set["result_set_id"])
 
 
-# --------------------------------------------------------------------------- the nine
+# ------------------------------------------------------------------- every frozen result set
 
 
-@pytest.mark.parametrize(
-    "result_set_id",
-    [
-        "Q01-CANONICAL",
-        "Q01-BEFORE-FIRST",
-        "Q01-UNKNOWN-GAP",
-        "Q01-EOL-BOUNDARY",
-        "Q01-INVALID-AIRCRAFT-ID",
-        "Q02-CANONICAL",
-        "Q02-NO-SPELLS",
-        "Q03-CANONICAL",
-        "Q04-CANONICAL",
-    ],
-)
+def _all_result_set_ids() -> list[str]:
+    """Every UC1 result set id, read from the manifest at collection time.
+
+    Parametrising off the manifest rather than off a hardcoded list is deliberate: manifest
+    v1.2.0 added thirteen result sets to Q01 to Q04 plus the whole of Q02F, and a hardcoded
+    list would have gone on passing nine tests while silently covering none of them.
+    """
+    import yaml
+
+    with (REPO_ROOT / "EXPECTED_ANSWERS.yaml").open(encoding="utf-8") as handle:
+        manifest = yaml.safe_load(handle)
+    from queries.uc1 import UC1_QUESTION_IDS
+
+    return [
+        result_set["result_set_id"]
+        for question in manifest["questions"]
+        if question["question_id"] in UC1_QUESTION_IDS
+        for result_set in question["result_sets"]
+    ]
+
+
+@pytest.mark.parametrize("result_set_id", _all_result_set_ids())
 def test_frozen_result_set_reproduced_exactly(uc1, result_sets, result_set_id):
-    """The complete result set, cell by cell, in the frozen order. All nine invocations."""
+    """The complete result set, cell by cell, in the frozen order. Every invocation."""
     question_id, result_set = result_sets[result_set_id]
     verdict, problems = uc1.run_result_set(question_id, result_set)
     assert verdict == "PASS", f"{result_set_id}: " + "; ".join(problems[:12])
@@ -341,12 +358,17 @@ def test_q02_keeps_repeated_a_b_a_as_three_assignments(uc1):
     assert list(frame["storage_days"]) == [45, 0]
     assert [bool(x) for x in frame["same_day"]] == [False, True]
 
+    # Two spells need at least three In Service observations on the audit stream: the one
+    # before the first Storage, the return that is also the run-up to the second, and the
+    # second return. The bound is ``>=`` and not ``==`` deliberately - the exact count is
+    # fixture-dependent (it was 3 before the D-0023 enrichment and is 4 after) while the claim
+    # under test, that a globally repeated status value is not collapsed, is not.
     ordinals = sql(
         f"SELECT COUNT(*) AS N FROM {DB}.MODEL_INPUT.AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT "
         "WHERE AIRCRAFT_ID = 1001 AND DIMENSION = 'aircraft_status' "
         "AND AIRCRAFT_STATUS_CODE = 'In Service'"
     )
-    assert int(ordinals[0]["N"]) == 3
+    assert int(ordinals[0]["N"]) >= 3
 
 
 def test_q02_empty_is_an_answer(uc1):
@@ -367,8 +389,8 @@ def test_q02_pairing_agrees_with_the_sql_oracle_fleet_wide(uc1):
     ``status_reversion_spells`` pairs each Storage with the *minimal* later In Service, which is
     the question's "next qualifying" wording; ``q02_status_reversion_spells.sql`` uses ``LEAD``,
     which additionally requires the *immediate* successor to be In Service. The two semantics
-    can differ in principle, so this asserts they do not differ on this fixture: exactly two
-    qualifying spells exist fleet-wide, both on aircraft 1001.
+    can differ in principle, so this asserts they do not differ on this fixture, and it does so
+    fleet-wide through Q02F rather than by looping RAI over several hundred aircraft.
     """
     rows = sql(
         f"""
@@ -384,23 +406,17 @@ def test_q02_pairing_agrees_with_the_sql_oracle_fleet_wide(uc1):
         )
         SELECT COUNT_IF(PREV = 'In Service' AND ST = 'Storage'
                         AND NXT = 'In Service') AS LEAD_SPELLS,
-               COUNT_IF(PREV = 'In Service' AND ST = 'Storage'
-                        AND NXT IS NOT NULL AND NXT <> 'In Service') AS DIVERGENT
+               (SELECT COUNT(*) FROM (
+                  SELECT (SELECT MIN(r.D) FROM s r
+                          WHERE r.AIRCRAFT_ID = st.AIRCRAFT_ID AND r.D > st.D
+                            AND r.ST = 'In Service') AS RET
+                  FROM w st
+                  WHERE st.PREV = 'In Service' AND st.ST = 'Storage'
+                ) x WHERE x.RET IS NOT NULL) AS MIN_LATER_SPELLS
         FROM w
         """
     )
-    assert int(rows[0]["LEAD_SPELLS"]) == 2
-    assert int(rows[0]["DIVERGENT"]) == 0
-
-    aircraft = sql(
-        f"SELECT DISTINCT AIRCRAFT_ID FROM {DB}.MODEL_INPUT.AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT "
-        "WHERE DIMENSION = 'aircraft_status' AND AIRCRAFT_STATUS_CODE = 'Storage' "
-        "ORDER BY AIRCRAFT_ID"
-    )
-    total = 0
-    for record in aircraft:
-        total += len(uc1.status_reversion_spells(int(record["AIRCRAFT_ID"])))
-    assert total == 2
+    assert int(rows[0]["LEAD_SPELLS"]) == int(rows[0]["MIN_LATER_SPELLS"]) == 439
 
 
 # --------------------------------------------------------------------------- Q03 boundaries
