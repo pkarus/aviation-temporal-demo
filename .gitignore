@@ -11,6 +11,10 @@ build/*
 !build/task_reports/
 !build/task_reports/*.json
 !build/task_reports/.gitkeep
+# Design briefs and live probe results are engineering evidence the next session inherits,
+# not regenerable cache: PROBE_RESULTS.md cost a 631-second cold engine start to produce.
+!build/design/
+!build/design/*.md
 rai_code/manual/build/
 
 # Editor / OS

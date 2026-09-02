@@ -1,0 +1,322 @@
+{
+  "task_id": "PROBE-01",
+  "status": "complete",
+  "completed_utc": "2026-09-02",
+  "summary": "All twelve U-probes and all six G-probes from build/design/ONTOLOGY_DESIGN.md were run live against PK_AVIATION_TEMPORAL.SOURCE under RAI_DEMO_AVIATION_TEMPORAL on reasoner aviation_temporal_logic_s with relationalai 1.20.1. Four of the brief's expectations are refuted (U-01, U-03's fix branch, U-09, G-03/G-04) and two new risks not in the brief were found (N-01, N-02). DATA-04 requires no redirection: both changes the brief anticipated are cancelled.",
+  "environment": {
+    "sdk_version": "1.20.1",
+    "connection": "rai",
+    "role": "RAI_DEMO_AVIATION_TEMPORAL",
+    "warehouse": "RAI_XS",
+    "database": "PK_AVIATION_TEMPORAL",
+    "logic_reasoner": "aviation_temporal_logic_s",
+    "logic_reasoner_size": "HIGHMEM_X64_S",
+    "model_input_schema_state": "EMPTY when the probe run began (zero tables); 37 tables by the time it finished. Every MODEL_INPUT-substituted probe was RE-RUN against the real tables and nothing changed. See addendum_model_input_reverification."
+  },
+  "artifacts": [
+    "build/design/PROBE_RESULTS.md",
+    "build/probes/g_fd_probes.sql",
+    "build/probes/probe_a_tables.py",
+    "build/probes/probe_b.py",
+    "build/probes/probe_c_time.py",
+    "build/probes/probe_d_absence.py",
+    "build/probes/probe_e_nulls.py",
+    "build/probes/out_probe_a.log",
+    "build/probes/out_probe_b1.log",
+    "build/probes/out_probe_b2.log",
+    "build/probes/out_probe_b3.log",
+    "build/probes/out_probe_c.log",
+    "build/probes/out_probe_d.log",
+    "build/probes/out_probe_d2.log",
+    "build/probes/out_probe_e.log"
+  ],
+  "substitutions": [
+    {
+      "brief_binding": "MODEL_INPUT.AIRCRAFT_ELIGIBLE",
+      "probe_binding": "SOURCE.AIRCRAFT_MASTER",
+      "probes": [
+        "U-01",
+        "U-02"
+      ],
+      "justification": "same AIRCRAFT_ID NUMBER(38,0) identity column, 999 rows"
+    },
+    {
+      "brief_binding": "MODEL_INPUT.PASSENGER_SOURCE_LINEAGE",
+      "probe_binding": "SOURCE.PASSENGER_HISTORICAL with the DV-20 canonical key reconstructed inline from PH-05/PH-07/PH-10/PH-11/PH-04",
+      "probes": [
+        "G-05"
+      ],
+      "justification": "PH is the only union side carrying PH-02 schedule_key; PF has none"
+    },
+    {
+      "brief_binding": "MODEL_INPUT.AIRCRAFT_DIMENSION_AUDIT_ASSIGNMENT",
+      "probe_binding": "SOURCE.AIRCRAFT_HISTORY with the Aircraft extension restricted to aircraft_id <= 1500",
+      "probes": [
+        "U-08"
+      ],
+      "justification": "the live fixture has zero orphan history rows, so the unresolvable-parent case was manufactured by restricting the parent; the code path is identical"
+    }
+  ],
+  "probes": [
+    {
+      "id": "U-01",
+      "question": "Does attribute access on a model.Table() work under strict mode without an explicit schema?",
+      "verdict": "REFUTED",
+      "evidence": "create_config(model={'implicit_properties': False}); m.Table('PK_AVIATION_TEMPORAL.SOURCE.AIRCRAFT_MASTER') with no schema=. t.aircraft_id -> OK (returns the column reference). t['AIRCRAFT_ID'] -> OK. t.no_such_column -> OK, and inspect.schema afterwards contains FieldInfo(name='no_such_column', type_name='Any'). Behaviour is identical under implicit_properties=True.",
+      "consequence": "R1 (explicit schema= on every Table) stays MANDATORY but for a different reason: strict mode gives zero typo protection on a Table, so the explicit dict is the only defence. Add an inventory.py assertion that no discovered column has type_name == 'Any'. R1 is also the mechanism that fixes U-03."
+    },
+    {
+      "id": "U-02",
+      "question": "Does NUMBER(38,0) land as Integer and bind cleanly?",
+      "verdict": "CONFIRMED",
+      "evidence": "inspect.schema on SOURCE.AIRCRAFT_MASTER: AIRCRAFT_ID -> Integer, OPERATING_MAXIMUM_TAKEOFF_WEIGHT_LB -> Integer, TEXT -> String, DATE -> Date, FLOAT -> Float, BOOLEAN -> Bool, TIMESTAMP_NTZ -> DateTime, TIME -> DateTime. Declaring Integer and loading 999 entities: count = 999, where(Aircraft.id > 1000) works. Secondary finding: declaring NUMBER/DATE/FLOAT/BOOLEAN as String yields an all-NaN column with NO TyperError.",
+      "consequence": "Integer is correct for every NUMBER(38,0) column in the contract. But because a wrong type is silent, sources.py types must be derived from INFORMATION_SCHEMA.COLUMNS and the MODEL-01 gate must assert per-column non-null counts against SQL, not just row counts."
+    },
+    {
+      "id": "U-03",
+      "question": "What does a Snowflake TIME column do, and does DATA-04 need to emit a canonical VARCHAR?",
+      "verdict": "CONFIRMED that TIME is broken; REFUTED on the recommended fix",
+      "evidence": "SQL ground truth: all 8 TIME columns are 100% non-null (SCHEDULE_SNAPSHOT 70000 rows, PASSENGER_HISTORICAL 10000 rows); zero sub-second fractions; TO_VARCHAR renders HH:MM:SS. (a) Lazily discovered as DateTime -> select returns n=70000 non_null=0 null=70000, dtype float64. (b) Explicitly declared DateTime -> identical, 70000/70000 NULL. (c) Explicitly declared String in the schema= dict -> n=70000 non_null=70000 n_distinct=2 ['16:00:00.000','23:00:00.000'], and PH gives 10000/10000 with 5/7/9/10 distinct, all matching SQL exactly. (d) The rendering is HH:MM:SS.mmm: where(t == '16:00:00.000') returns 69999; where(t == '16:00:00') returns an empty frame. (e) The String coercion is TIME-specific; NUMBER/DATE/FLOAT/BOOLEAN declared String all return NaN. (f) The String value round-trips onto a Concept Property and reads back correctly.",
+      "consequence": "DATA-04 NEEDS NO CHANGE. The brief's 'DATA-04 emits a canonical VARCHAR alongside the raw TIME' branch is NOT live. MODEL-01 declares the eight raw TIME columns as String in sources.py: SS-23..SS-26 on SCHEDULE_SNAPSHOT and PH-12..PH-15 on PASSENGER_HISTORICAL. SOURCE_CONTRACT.md:22 is satisfied because the raw field is retained and the round-trip test compares against TO_VARCHAR(col,'HH24:MI:SS.FF3'). Optional hardening only if DATA-04 has spare capacity: a canonical VARCHAR(12) HH:MM:SS.mmm column would make the round-trip a byte equality. Every time-of-day literal in a query or comparison must use the HH:MM:SS.mmm form.",
+      "affected_columns": [
+        "SCHEDULE_SNAPSHOT.PASSENGER_DEPARTURE_UTC_TIME (SS-23)",
+        "SCHEDULE_SNAPSHOT.PASSENGER_ARRIVAL_UTC_TIME (SS-24)",
+        "SCHEDULE_SNAPSHOT.PASSENGER_DEPARTURE_LOCAL_TIME (SS-25)",
+        "SCHEDULE_SNAPSHOT.PASSENGER_ARRIVAL_LOCAL_TIME (SS-26)",
+        "PASSENGER_HISTORICAL.PASSENGER_DEPARTURE_LOCAL_TIME (PH-12)",
+        "PASSENGER_HISTORICAL.PASSENGER_ARRIVAL_LOCAL_TIME (PH-13)",
+        "PASSENGER_HISTORICAL.PASSENGER_DEPARTURE_UTC_TIME (PH-14)",
+        "PASSENGER_HISTORICAL.PASSENGER_ARRIVAL_UTC_TIME (PH-15)"
+      ],
+      "no_other_time_columns": "PASSENGER_FORWARD PF-10..PF-13 are TIMESTAMP_NTZ, not TIME, and are unaffected. These eight are the complete set in both SOURCE and SOURCE_CONTRACT.md."
+    },
+    {
+      "id": "U-04",
+      "question": "Does require(unique(...)) check anything without emit_constraints: True, and does turning it on have side effects?",
+      "verdict": "CONFIRMED, and worse than the brief feared",
+      "evidence": "Fixture: Relationship Car.owned_by with two owners for VIN V1, then a violated require(unique(Car.owned_by[Car])). With emit_constraints=False: require accepted, returns '(require (Field.unique_fields MetaRef()))', the next query returns V1 and V2 normally, count(Car)=2, nothing raised. With emit_constraints=True: byte-identical behaviour, nothing raised. Side effects of emit_constraints=True on a valid model: none observed - the full multi-open route fixture, the .alt() inverse select and a satisfied require all behaved identically. Corroboration in relationalai/semantics/backends/legacy_lqp/rewrite/annotate_constraints.py lines 22-30 and 78-94: unique/exclusive/anyof Requires are annotated @discharged and removed from the IR unless emit_constraints is on, and even then only non-structural FDs are declared.",
+      "consequence": "require(unique(...)) is a documented no-op. The brief's branch resolves to 'downgrade them to documented zero-count test queries', because turning emit_constraints on does not help. constraints.py keeps the require() calls as documentation with an explicit comment that 1.20.1 does not enforce them; real gates become zero-count assertion queries in the MODEL-01 test suite, extending the SentinelLeak pattern from section 5.2."
+    },
+    {
+      "id": "U-04b",
+      "question": "How does a Property FD violation actually surface (section 3.3 demo beat)?",
+      "verdict": "REFUTES the brief's timing claim",
+      "evidence": "Route.current_state declared as a Property over a route with three concurrent open RouteStates. model.define(...) returns normally. The FIRST query that evaluates the relation aborts after 13s with: 'Found non-unique values: (0x005ebff95a2270fc958af4c89adb1180,) != (0x1be9aefab4c993c5fff8fc74586529cc,)' and 'FDError: The relationship violates functional dependency guarantees. The exception was thrown during the evaluation of route_current_state_UINT128_UINT128', surfaced to Python as RelQueryError. Identical with emit_constraints on (u04fd_on, 19.3s) and off (u04fd_off, 17.0s).",
+      "consequence": "The section 3.3 demo beat is real and good, but the narration must say 'fails loudly at the first evaluation, naming the offending relation and printing the two conflicting hashes', NOT 'at define time, before any query runs'. Saying define time on stage would be a factual error the customer can check."
+    },
+    {
+      "id": "U-05",
+      "question": "Does the Q03 month-end calendar need a table, or is date.range(freq='M') exact?",
+      "verdict": "CONFIRMED; the brief's caution was unnecessary",
+      "evidence": "std.datetime.date.range(dt.date(2015,1,31), dt.date(2024,12,31), freq='M') returns exactly n=120, first=2015-01-31, last=2024-12-31, all_month_end=True, n_month_end=120, 2015-02-28 present, 2016-02-29 present, 2015-01-31 present. No clamping loss. Anchoring on the 1st (2015-01-01..2024-12-01) gives 120 firsts-of-month instead, so freq='M' preserves the anchor's day-position. freq='D' over 2015-01-01..2024-12-31 gives 3653 rows.",
+      "consequence": "MODEL_INPUT.MONTH_END_CALENDAR becomes OPTIONAL for DATA-04. calendar.py may generate MonthEnd from date.range. If DATA-04 already built the table, keep it and use date.range as the notebook cross-check."
+    },
+    {
+      "id": "U-06",
+      "question": "Does .alt() work on a Property, and does the multi-open route case load and query without error?",
+      "verdict": "CONFIRMED",
+      "evidence": "_state_route = m.Property(f'{RouteState:state} covers {Route:route}'); Route.states = _state_route.alt(f'{Route:route} has state {RouteState:state}') is accepted and returns a Reading. select(Route.route_id, Route.states.route_state_key) over a fixture where SFO->LAS has THREE concurrent open states returns 5 rows and raises nothing. The HT-18 query count(RouteState).per(Route) where knowledge_valid_to == 9999-01-01 returns JFK->LAX 1, SFO->LAS 3. Schedule.states (a second .alt()) behaves the same. A satisfied require(unique(RouteState.route[RouteState])) is accepted and disturbs nothing.",
+      "consequence": "Sections 2 and 3 of the design brief stand unchanged. The demo centrepiece is proven. Talk-track note: the multi-open result and the mirror-image FDError are two queries seconds apart in the same fixture."
+    },
+    {
+      "id": "U-07",
+      "question": "Does the 1.2.2 recursion idiom still compile at 1.20.1, and what happens with a cyclic edge set?",
+      "verdict": "CONFIRMED",
+      "evidence": "distance(u, v, aggs.per(u,v).min(m.union(m.select(0).where(u==v), m.select(distance(u,n)+1).where(edge(n,v))))) compiles and runs in 3.6s over 1->2->3->4 plus a deliberate 3-cycle 10->11->12->10. Returns 19 correct rows: the complete transitive closure including the cycle (10->11 dist 1, 11->10 dist 2, 12->10 dist 1, all self-distances 0). No infinite loop, no timeout, no step-bound parameter required.",
+      "consequence": "Section 2.12 is safe. P0-11.5's 'visited set and finite step bound' has no API surface in 1.20.1 and needs none: the semi-naive fixpoint terminates on cyclic input by construction. Record the mechanism difference in DECISION_LOG.md but downgrade it from a risk to a note - the next_flight cycle exclusion is a semantic choice about what a rotation is, not a termination guard."
+    },
+    {
+      "id": "U-08",
+      "question": "Does compound identity with Concept-valued components load from a Snowflake table, and does an unresolvable parent produce no assignment rather than an error?",
+      "verdict": "CONFIRMED",
+      "evidence": "Assignment identify_by {dimension: String, aircraft: Aircraft, event_date: Date, row_sequence: Integer, event: AircraftEvent}, loaded via Assignment.new(aircraft=Aircraft.lookup(id=ah.aircraft_id), event=AircraftEvent.lookup(id=ah.aircraft_history_id), ...) with Aircraft restricted to 500 of 999 aircraft. Result: n_aircraft=500, n_events=48000, n_assignments=24048. max/min aircraft_id reachable through Assignment = 1500/1000, i.e. the 23952 history rows whose aircraft did not resolve produced no assignment AND no error. HT-01 stability: an identical second define() gives before=24048 after=24048 stable=True.",
+      "consequence": "Sections 1.3 and 2.11 are green. API note: write Concept.lookup(**kwargs), not the deprecated filter_by the brief uses. Because a missing parent is silent, MODEL-01 must add a per-association count assertion against the SQL row count of eligible source rows or a quarantine will be invisible."
+    },
+    {
+      "id": "U-09",
+      "question": "Left-join semantics for an absent Property in a select; does | None keep the row?",
+      "verdict": "PARTIALLY REFUTED",
+      "evidence": "Fixture: Ac 1..4 exist, only 1 and 2 have a type link; every correct shape must return 4 rows. (D1) select(Ac.id, Ac.the_type.subseries) -> 4 rows, 3 and 4 come back as pandas NaN in a StringDtype column. (D2) select(Ac.id, Ac.the_type.subseries | '__NULL__') -> 4 rows with the token. (D3) where(Ac.the_type == Ty).select(Ac.id, Ty.subseries | '__NULL__') -> only 2 rows; the where binding filters first and the fallback cannot rescue. (D5) m.union(frag_a, frag_b).to_df() raises '[Missing arg] Expression Union[1].to_df() cannot be used without an argument'. (D6) (frag_a | frag_b).to_df() raises the same for Match[1]. (D7) SECTION 5.3'S EXACT SHAPE raises '[Unground Variable] Variable ty is unground'. (D8) String.ref() bound through m.where(m.union(...)) -> 4 rows, correct. (D9) a total derived Property from two mutually-exclusive define() rules -> 4 rows, correct. (D10) DV-33 as three mutually-exclusive define() rules -> 4 rows: OK, OK, NO_RECORDED_STATE, NO_RECORDED_STATE. (D11) m.not_ works; an EMPTY result returns a DataFrame with zero columns. (D12) a sparse aggregate coalesced with | 0 -> 4 rows: 1, 1, 0, 0. `| None` itself raises AttributeError: 'NoneType' object has no attribute '_source' at front_compiler.py:1673.",
+      "consequence": "MODEL-01 must REWRITE section 5.3: the DV-33 | chain does not compile. Author DV-33 as four mutually-exclusive model.where(...).define(Ac.dv33(...)) rules per dimension in computed_aircraft.py (mutually exclusive or it FDErrors). QUERY-UC1: Q01's nine null cells come from the plain dot-chain and arrive as pandas NaN; never use | None; never bind the optional target in where() and expect a fallback to rescue the gap rows. All QUERY-*: an empty RAI result is a ZERO-COLUMN DataFrame, so the EXPECTED_ANSWERS.yaml harness must supply the expected column list for Q02-NO-SPELLS, Q07-KNOWLEDGE-END-EMPTY and Q08-NOT-FOUND."
+    },
+    {
+      "id": "U-10",
+      "question": "Does aggregates.rank accept four ordering keys and a .per() in one expression?",
+      "verdict": "CONFIRMED",
+      "evidence": "m.define(Audit.seq(aggs.rank(aggs.asc(event_date), aggs.asc(row_sequence), aggs.asc(event_sequence), aggs.asc(event_id)).per(Audit.aircraft))) materialises correctly: three same-day observations for aircraft 1 get ranks 1, 2, 3 in the correct four-key order and the partition resets for aircraft 2. .per(bare Ac) after binding in where() gives the same answer. The Q02 spell pairing on nxt.seq == Audit.seq + 1 returns both expected rows including the zero-day same-day spell: (a1-2, 2020-01-01, rs 2) -> (a1-3, 2020-01-01), storage_days=0, same_day=True; and (a2-1 2021-03-03) -> (a2-2 2021-09-09), storage_days=190, same_day=False. std.datetime.date.diff('day', ...) works and the date-equality projects as a real boolean column.",
+      "consequence": "Section 5.4 is green as written. No change. DV-03 can be a materialised model Property."
+    },
+    {
+      "id": "U-11",
+      "question": "Run the six FD probes G-01..G-06 against live data (the brief expected G-03 and G-04 to fail)",
+      "verdict": "ALL SIX PASS; G-03 and G-04 REFUTE the brief",
+      "evidence": "See the individual G-* entries below.",
+      "consequence": "See the individual G-* entries below. Net effect on DATA-04: no new MODEL_INPUT projection is required."
+    },
+    {
+      "id": "G-01",
+      "question": "Are AircraftType definition attributes (AC-02/03/04/06/07) functional on AC-05 aircraft_subseries?",
+      "verdict": "PASS",
+      "evidence": "0 violating keys. SOURCE.AIRCRAFT_CONFIGURATION has 2000 rows, 1999 distinct AIRCRAFT_SUBSERIES, zero nulls.",
+      "consequence": "Property is safe for the five AircraftType definition attributes. Note the fixture is near-bijective, so the FD is satisfied nearly trivially."
+    },
+    {
+      "id": "G-02",
+      "question": "Are EngineType definition attributes (AC-10..AC-13, AC-15) functional on AC-14 engine_subseries?",
+      "verdict": "PASS",
+      "evidence": "0 violating keys. 1999 distinct ENGINE_SUBSERIES over 2000 rows, zero nulls. Control probe: AC-08 ENGINE_COUNT and AC-09 HAS_MULTIPLE_ENGINE_TYPES also happen to be functional on ENGINE_SUBSERIES in this fixture (0 violating keys).",
+      "consequence": "Property is safe for the five EngineType definition attributes. DO NOT move AC-08/AC-09 onto EngineType despite the control result: they are ENGINE_ASSIGNMENT_ATTRIBUTE per ATTRIBUTE_AUTHORITY.md:130-131 and are functional here only by accident of a near-bijective fixture. Section 2.3's argument is semantic, not data-driven."
+    },
+    {
+      "id": "G-03",
+      "question": "Are Airport attributes functional on AP-01 airport_id? (brief expected FAIL)",
+      "verdict": "PASS - REFUTES the brief",
+      "evidence": "0 violating keys. G-03-grain: distinct_airport_ids=45, ids_with_multiple_periods=0, max_periods_per_id=1, total_rows=45. Every row has EFFECTIVE_START_DATE = 2000-01-01 and EFFECTIVE_END_DATE IS NULL. G-03-is-current: exactly one is_current=TRUE per airport_id for all 45.",
+      "consequence": "DATA-04 does NOT need to build MODEL_INPUT.AIRPORT_CURRENT. Airport binds directly from SOURCE.AIRPORT_REFERENCE with airport_id identity and Property for every attribute. The safety is fixture-dependent, not structural: add the G-03 query to the MODEL-01 and prep_demo.py gate as a zero-count assertion so a DATA-01 regression fails by name instead of as an FDError at first evaluation. Optional hardening if DATA-04 has capacity: build the projection with a declared deterministic order (NOT WHERE is_current, per ATTRIBUTE_AUTHORITY.md:301-303) and keep the multi-period rows as an AirportReferenceLineage association."
+    },
+    {
+      "id": "G-04",
+      "question": "Are Airline attributes functional on AL-01 airline_id? (brief expected FAIL)",
+      "verdict": "PASS - REFUTES the brief",
+      "evidence": "0 violating keys. G-04-grain: distinct_airline_ids=100, ids_with_multiple_periods=0, max_periods_per_id=1, total_rows=100. Every row has EFFECTIVE_START_DATE = 2000-01-01 and EFFECTIVE_END_DATE IS NULL. G-04-is-current: exactly one is_current=TRUE per airline_id for all 100.",
+      "consequence": "Identical to G-03. DATA-04 does NOT need MODEL_INPUT.AIRLINE_CURRENT. Same zero-count gate assertion recommended."
+    },
+    {
+      "id": "G-05",
+      "question": "Is PassengerFlight.schedule_key (PH-02) functional per DV-20 canonical key?",
+      "verdict": "PASS, but vacuously",
+      "evidence": "0 violating keys. G-05-coalescing: 9999 distinct DV-20 keys, 1 key absorbs 2 PH rows, max 2. G-05-dup-detail: that one key is (SYN-MKT-FUL, 721, SFO, LAS, 2026-08-31) with historical_source_row_id 5102 and 5103, and BOTH rows carry SCHEDULE_KEY IS NULL, so there is no conflicting PH-02 and the FD is unexercised rather than proven.",
+      "consequence": "Do not rely on the vacuous pass. Take the brief's own preferred option: bind PassengerFlight.schedule_key as a Property ONLY from the DV-21 precedence-winning lineage row, which P0-10.3 requires anyway, so the FD is guaranteed by construction. Re-run G-05 against MODEL_INPUT.PASSENGER_SOURCE_LINEAGE once DATA-04 has built it."
+    },
+    {
+      "id": "G-06",
+      "question": "Is AircraftFlight.aircraft (AF-02) functional per AF-01, and is the inverse multi-valued?",
+      "verdict": "PASS",
+      "evidence": "0 violating flight_ids (flight_id is unique and single-aircraft over 3900 rows). G-06-inverse: 996 distinct aircraft_ids, max 13 flights per aircraft, min 1. G-06-next-flight: 0 flight_ids with multiple next_flight_id, and 1 dangling NEXT_FLIGHT_ID target.",
+      "consequence": "AircraftFlight.aircraft is a Property; Aircraft.actual_flights must be a Relationship. AircraftFlight.next_flight_raw is correctly a Property. The single dangling NEXT_FLIGHT_ID is the MISSING_TARGET fixture: section 2.11's two-lookup binding will silently produce no fact for it, which is intended, and RotationLinkValidation must be the thing that surfaces it."
+    },
+    {
+      "id": "U-12",
+      "question": "Change tracking and cold CDC under the demo role; time one Table bind plus one select",
+      "verdict": "CONFIRMED and quantified",
+      "evidence": "Starting from SUSPENDED on aviation_temporal_logic_s (HIGHMEM_X64_S), binding SOURCE.SCHEDULE_SNAPSHOT_CALENDAR (10 rows) and running one select: 'Parallel init finished in 10m18s -> Indexing 25.3s, Provisioning 9m14s, Status 1.6s, Validation 3.3s', query COMPLETED 3.6s, first to_df() returned at 631.34s. Warm second to_df() on the same model: 2.76s. New Model on an already-warm engine: 25-60s indexing (observed 25.3, 31.0, 34.3, 45.9, 48.3, 57.2, 60s), then 2.5-5s per query. No SnowflakeChangeTrackingNotEnabledException and no change-tracking warning of any kind. Query latencies across the run: 2.5-6s typical, 11-19s for ranked/recursive/FD-error cases, 12-26s for full 70000-row column pulls.",
+      "consequence": "Cold start is 10 min 31 s and is dominated by provisioning, not indexing or query time. prep_demo.py MUST resume and warm the engine as its first action and the runbook must tell the presenter to run it well before the session. MODEL-01's iteration loop should keep one long-lived process because each fresh process pays 25-60s of indexing. config.py must pin reasoners.logic.name = 'aviation_temporal_logic_s'; the brief's 'aviation_temporal_logic_xs' does not exist and SDK 1.20.1 refuses HIGHMEM_X64_XS for Logic reasoners. create_config(model={...}, reasoners={'logic': {'name': ...}}) merges cleanly over the auto-discovered ~/.snowflake connection; connections does not have to be passed explicitly."
+    },
+    {
+      "id": "N-01",
+      "question": "NEW, not in the brief: does model.data(pandas_df) drop rows?",
+      "verdict": "NEW RISK - CONFIRMED",
+      "evidence": "model.data(df) drops every row that has a null OR an empty string in ANY column of the frame, regardless of which columns are passed to .new(). E1a: 4-row frame with a null in an unused second column -> count = 2. E1b control: single-column null-free frame -> count = 4. E1c: 3-column frame with nulls in two different rows -> count = 2. E2a: float column with NaN -> count = 2. E2b: string column with EMPTY STRING (no nulls at all) -> count = 2. Snowflake Table sources do NOT behave this way: E3a schema declares only the never-null key -> 48000; E3b schema also declares three ~always-null columns -> 48000; E3c per-attribute lookup load of a column with 1 non-null of 48000 -> exactly 1 fact; E3d 48000 non-null -> 48000 facts; E3e count unchanged at 48000; E3f compound identity INCLUDING the 1-of-48000 column -> 1 entity.",
+      "consequence": "Binding-policy R2 is correct but its stated reason is half right: for a model.Table(), declaring an always-null column in schema= does NOT drop rows (E3b); only columns actually passed into .new() gate entity creation (E3f). R2's conclusion still stands because to_schema() passes every column into .new(), and E3f is the live proof (one always-null identity column took 48000 rows to 1). NEW RULE for MODEL-01 and the notebooks: never use model.data(pandas_df) on a frame containing a null or an empty string. Split into narrow null-free frames. This silently changes row counts with no warning and will corrupt a Phase-5 notebook cell that looks correct."
+    },
+    {
+      "id": "N-02",
+      "question": "NEW, not in the brief: the free distinct() with several Models in one process",
+      "verdict": "NEW TRAP - CONFIRMED",
+      "evidence": "from relationalai.semantics import distinct; using it in any process that has constructed more than one Model raises RAIException: '[Ambiguous model] Multiple Models have been defined. Please use functions on the specific Model.' Hit four times in probe_c_time.py.",
+      "consequence": "MODEL-01 builds one model so this is not a blocker there, but prep_demo.py, inventory.py's MODEL-02 parity diff, and any notebook cell that imports the standalone MODEL-02 file alongside the package will trip it. QUERY_ROUTING.md standing rule 3 (model.select(distinct(Concept.prop)).to_df() for string discovery) is fine single-model and breaks two-model."
+    }
+  ],
+  "cross_task_dependencies": {
+    "DATA-04": {
+      "redirection_required": false,
+      "cancelled_changes": [
+        "U-03: the canonical VARCHAR ISO time column alongside the raw TIME is NOT required; MODEL-01 declares the raw TIME column as String and gets full fidelity",
+        "G-03/G-04: MODEL_INPUT.AIRPORT_CURRENT and MODEL_INPUT.AIRLINE_CURRENT are NOT required; the fixture has exactly one effective period per reference entity"
+      ],
+      "downgraded_to_optional": [
+        "U-05: MODEL_INPUT.MONTH_END_CALENDAR is optional because date.range(freq='M') is exact. Keep it if already built; do not start it if not."
+      ],
+      "unchanged_requirements": [
+        "G-05: PASSENGER_SOURCE_LINEAGE must carry DV-21 precedence so MODEL-01 can bind schedule_key from the winning row only. Already in the contract."
+      ],
+      "status_at_report_time": "DATA-04 completed 37 MODEL_INPUT tables during the probe run, including AIRPORT_CURRENT, AIRLINE_CURRENT and MONTH_END_CALENDAR. All were re-verified as correct. No redirection and no rework needed."
+    },
+    "MODEL-01": [
+      "sources.py declares the eight TIME columns as String (SS-23..SS-26, PH-12..PH-15)",
+      "config.py pins reasoners.logic.name = 'aviation_temporal_logic_s'",
+      "R1 stays mandatory; add an inventory.py assertion that no discovered column has type_name == 'Any'",
+      "MODEL-01 gate asserts per-column non-null counts against SQL, because a wrong type is a silent NaN column",
+      "Section 5.3 must be rewritten: DV-33 as mutually-exclusive define() rules, not a | chain",
+      "constraints.py keeps require(unique(...)) as documentation only; real gates become zero-count assertion queries",
+      "Write Concept.lookup(**kwargs), not filter_by",
+      "Airport and Airline bind straight from SOURCE with Property attributes; add G-03/G-04 zero-count gate assertions",
+      "calendar.py may generate MonthEnd from std.datetime.date.range",
+      "Never model.data(pandas_df) on a frame with a null or an empty string",
+      "Every Concept.lookup(...) association load needs a count assertion",
+      "Sections 1.3, 2.x, 2.11, 2.12, 4.x, 5.4, 6.x are green as written"
+    ],
+    "QUERY-UC1_UC2_ROT": [
+      "Q01 null cells come from the plain dot-chain and arrive as pandas NaN; | None raises",
+      "Do not bind the optional target in where() and expect a fallback to rescue gap rows",
+      "An empty result is a zero-column DataFrame; the comparison harness must supply the expected column list",
+      "Time-of-day literals must be 'HH:MM:SS.mmm'; 'HH:MM:SS' silently matches zero rows",
+      "Q02 seq+1 spell pairing proven exact including the zero-day same-day spell",
+      "Q08 recursion proven to terminate on cyclic input",
+      "Avoid the free distinct() in any multi-Model process"
+    ],
+    "TALK_TRACK": [
+      "The multi-open route beat is fully proven (three concurrent open states, one query, no error)",
+      "The mirror-image FDError happens at first evaluation (13-19s), not at define time; do not say define time on stage",
+      "The FDError message names the offending relation and prints the two conflicting hashes",
+      "Cold start is 10.5 minutes; warm the engine long before the session",
+      "Add to the section 9 limitations list: require(unique(...)) is not enforced in 1.20.1, and Snowflake TIME cannot round-trip except as a string"
+    ]
+  },
+  "timings": {
+    "cold_start_suspended_to_first_dataframe_secs": 631.34,
+    "cold_start_breakdown": {
+      "provisioning_secs": 554,
+      "indexing_secs": 25.3,
+      "status_secs": 1.6,
+      "validation_secs": 3.3,
+      "query_secs": 3.6
+    },
+    "warm_second_query_secs": 2.76,
+    "new_model_on_warm_engine_indexing_secs_range": [
+      25.3,
+      60.0
+    ],
+    "typical_warm_query_secs_range": [
+      2.5,
+      6.0
+    ],
+    "ranked_recursive_or_fderror_query_secs_range": [
+      11.0,
+      19.3
+    ],
+    "full_70000_row_column_pull_secs_range": [
+      12.9,
+      26.0
+    ]
+  },
+  "unresolved_issues": [
+    "G-05 was re-run against the real MODEL_INPUT.PASSENGER_SOURCE_LINEAGE and returns 0 violating DV-20 keys, both over all lineage rows and restricted to IS_SELECTED_OBSERVATION. RESOLVED.",
+    "G-01 through G-04 are fixture-dependent passes, not structural guarantees. If DATA-01 ever emits a second effective period per reference entity or a second definition per subseries, MODEL-01 will FDError at first evaluation. The recommended mitigation is to add the six probe queries to the prep_demo.py gate.",
+    "The exact millisecond rendering 'HH:MM:SS.mmm' of a String-bound TIME column is empirically stable across all eight columns and 80000 rows in this SDK build, but it is a rendering detail rather than a documented contract. If it changes in a future SDK, the optional DATA-04 canonical VARCHAR column would insulate the demo."
+  ],
+  "addendum_model_input_reverification": {
+    "note": "MODEL_INPUT landed mid-run. All substituted probes were re-verified against the real tables.",
+    "results": {
+      "G-03-real (MODEL_INPUT.AIRPORT_CURRENT, 45 rows)": "violating_keys = 0",
+      "G-04-real (MODEL_INPUT.AIRLINE_CURRENT, 100 rows)": "violating_keys = 0",
+      "G-05-real (MODEL_INPUT.PASSENGER_SOURCE_LINEAGE, 19998 rows)": "violating_dv20_keys = 0; 19996 distinct DV-20 keys; 2 keys carry 2 lineage rows; max 2",
+      "G-05-real restricted to IS_SELECTED_OBSERVATION": "violating_keys = 0",
+      "MONTH_END_CALENDAR": "600 rows spanning 2000-01-31..2049-12-31; exactly 120 month ends fall in the Q03 window 2015-01-01..2024-12-31"
+    },
+    "revised_data04_guidance": [
+      "DATA-04 has ALREADY built AIRPORT_CURRENT (with REFERENCE_PERIOD_COUNT and PROJECTION_RULE provenance columns), AIRLINE_CURRENT, and MONTH_END_CALENDAR. None of it is wasted and none of it should be torn out.",
+      "Because AIRPORT_CURRENT / AIRLINE_CURRENT record a PROJECTION_RULE column, they now satisfy ATTRIBUTE_AUTHORITY.md:301-303 better than binding from SOURCE would. RECOMMENDATION CHANGE: MODEL-01 should bind Airport and Airline from the projections, not from SOURCE. The G-03/G-04 refutation stands (they were not required) but since they exist, use them.",
+      "MONTH_END_CALENDAR is correct and Q03-exact. Bind it; keep date.range(freq='M') as the notebook cross-check, which U-05 proved agrees exactly.",
+      "PASSENGER_SOURCE_LINEAGE carries IS_SELECTED_OBSERVATION, SOURCE_PRECEDENCE_RANK and SELECTION_RANK, so the G-05 mitigation is directly expressible as a filter on IS_SELECTED_OBSERVATION. Zero violations either way.",
+      "The ONLY DATA-04 item genuinely in question - the canonical VARCHAR time column for U-03 - is confirmed NOT needed. DATA-04 needs no redirection and no rework."
+    ],
+    "time_roundtrip_exact_proof": {
+      "snowflake": "SELECT TO_VARCHAR(passenger_departure_utc_time,'HH24:MI:SS.FF3'), COUNT(*) FROM SOURCE.SCHEDULE_SNAPSHOT GROUP BY 1  ->  '16:00:00.000' 69999, '23:00:00.000' 1",
+      "rai_string_bound": "where(t == '16:00:00.000') -> n = 69999; distinct -> ['16:00:00.000','23:00:00.000']",
+      "ph12_snowflake": "'01:30:00.000' 3, '03:30:00.000' 1, '09:00:00.000' 9992, '12:00:00.000' 2, '23:30:00.000' 2",
+      "ph12_rai": "['01:30:00.000','03:30:00.000','09:00:00.000','12:00:00.000','23:30:00.000']",
+      "conclusion": "The RAI String rendering is byte-identical to TO_VARCHAR(<time>,'HH24:MI:SS.FF3'). The SOURCE_CONTRACT.md:22 round-trip test is a plain equality against that format string, with no normalisation needed."
+    }
+  }
+}
