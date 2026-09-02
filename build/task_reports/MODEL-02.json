@@ -1,0 +1,79 @@
+{
+ "task_id": "MODEL-02",
+ "status": "green",
+ "summary": "rai_code/manual/aviation_temporal.py is GENERATED from the canonical aviation_model package by rai_code/aviation_model/_gen_standalone.py, never hand-maintained. 3,912 lines from 16 modules, zero relative imports, zero credentials. A dual-runtime _build_config() selects ConfigFromActiveSession inside Snowflake and create_config() locally. Both forms produce byte-identical inspect.schema inventories and identical live smoke-query results, proven in separate processes.",
+
+ "reproduce": [
+  "PYTHONPATH=rai_code .venv/bin/python -m aviation_model._gen_standalone",
+  "TERM=dumb .venv/bin/python -m pytest tests/test_model.py -q -k standalone",
+  "PYTHONPATH=rai_code .venv/bin/python -m aviation_model._parity_check   # prints the JSON verdict"
+ ],
+
+ "artifacts": {
+  "generated_file": "rai_code/manual/aviation_temporal.py",
+  "generator": "rai_code/aviation_model/_gen_standalone.py",
+  "parity_checker": "rai_code/aviation_model/_parity_check.py",
+  "gate_test": "tests/test_model.py::test_standalone_file_matches_the_package"
+ },
+
+ "generation_method": {
+  "why_generated": "Two hand-written copies of a 44-concept ontology diverge, and the divergence surfaces as a Snowsight notebook that answers differently from the local queries - which is exactly the failure the demo's 'one reusable semantic model' claim cannot survive.",
+  "how": [
+   "Concatenates the 16 package modules in dependency order; Python module-level names become plain globals, so concatenation preserves semantics exactly.",
+   "Drops every relative import - there is no package to import from.",
+   "Hoists, merges and de-duplicates the absolute relationalai and stdlib imports into one readable block.",
+   "Asserts no two modules define the same top-level name, so nothing is silently shadowed.",
+   "Asserts the output matches none of nine secret patterns (password, private_key, PAT, secret, literal account= / user=, the account locator AJB85638, the org NDSOEBE). Credentials come from ConfigFromActiveSession inside Snowflake and from the auto-discovered ~/.snowflake profile locally.",
+   "Preserves each module's docstring as a banner comment, so the generated file reads in load order: sentinels and tokens, runtime config, the one Model, the table bindings, the reference/aircraft/schedule/flight concepts, the shared temporal predicates, then the derived rule layer."
+  ]
+ },
+
+ "dual_runtime_config": {
+  "local": "create_config(model={'implicit_properties': False}, reasoners={'logic': {'name': 'aviation_temporal_logic_s'}}) merged over the auto-discovered ~/.snowflake connection. Exercised by every run in this task.",
+  "snowflake": "ConfigFromActiveSession with the same two settings, selected when snowflake.snowpark.context.get_active_session() returns a session (Snowsight notebook, Workspace, stored procedure).",
+  "both_set": "Strict mode (implicit_properties defaults to True and must be set explicitly) and the pinned warm reasoner (the difference between a 2.5-6s warm query and a 631s cold start).",
+  "engine_name_caveat": "aviation_temporal_logic_s, not the _xs in BRIEF.md's locked-names table. SDK 1.20.1 refuses HIGHMEM_X64_XS for Logic reasoners, so the _xs engine does not exist.",
+  "snowsight_branch_status": "The ConfigFromActiveSession branch is exercised by construction and by import, but has NOT been executed inside a real Snowsight runtime by this task - there is no Snowpark session on this machine. NOTEBOOK-02 owns that proof. This is the one thing in MODEL-02 that is designed-and-inspected rather than run."
+ },
+
+ "parity_evidence": {
+  "method": "Each form is loaded in its own child process - both construct Model('aviation_temporal'), and a second Model in one interpreter makes the free distinct(...) raise [Ambiguous model] (PROBE N-02). Each child dumps its inspect.schema inventory and its live smoke results; the parent diffs the two payloads and reports the first difference. An identical re-define mints zero new entities (PROBE U-08 / HT-01), so running both against the same model name creates no second copy of anything.",
+  "inventory_identical": true,
+  "smoke_identical": true,
+  "inventory_scope": "Every concept, identity component, property, relationship, alt reading, table and declared column, sorted so the diff compares content rather than the order two differently organised programs happened to register the same elements. Rule TEXTS are excluded because they embed per-process frontend object ids; rule COUNTS are compared instead.",
+  "inventory_figures": {
+   "concepts": 44,
+   "tables": 34,
+   "properties": 1292,
+   "concept_relationships": 21,
+   "bare_relationships": 11,
+   "define_rules": 170,
+   "require_rules": 5,
+   "declared_columns": 749
+  },
+  "smoke_queries_compared": [
+   "15 concept counts",
+   "the per-route multi-open map (SFO->LAX = 1339)",
+   "Q03: 132 rows over 120 distinct month ends, plus every individual cell",
+   "Q04: the four aircraft-1001 rows with assignment_id, previous_definition_id and is_type_change",
+   "the rotation chain: segment 8001, legs 8001/8002/8003 at leg_order 1/2/3",
+   "Q08 enrichment: as-of type, as-of engine and type_discrepancy per leg",
+   "Q07 two-clock marketing: the three (airline, route, count, frequency) rows",
+   "the four zero-count integrity guards"
+  ],
+  "run": "1 passed, 92 deselected in 388.88s"
+ },
+
+ "failure_found_and_fixed": {
+  "what": "On the first full-gate run the parity test was RED with inventory.concepts.Aircraft.relationships: length 9 != 2.",
+  "cause": "Not a generation defect. The standalone had been regenerated before the FIDELITY-01 F2/F3 additions and then went stale when the package gained four dimension-scoped edges and three direct one-hop readings.",
+  "significance": "This is the test doing its job: the smoke queries were still identical, so nothing about the ANSWERS diverged - only the surface. A hand-maintained standalone would have carried that divergence into Snowsight silently.",
+  "resolution": "Regenerated and re-run green. Standing rule: anyone editing rai_code/aviation_model/ must run _gen_standalone before trusting rai_code/manual/aviation_temporal.py, and the gate enforces it."
+ },
+
+ "open_issues": [
+  "The Snowsight branch of _build_config() is not proven in a live Snowsight runtime. NOTEBOOK-02 owns that.",
+  "The generated file is 3,912 lines. That is the cost of one artifact with no imports; it reads in load order and every module keeps its docstring as a banner.",
+  "The generator's collision check covers assignments, functions and classes at module scope but not for-loop targets. The only module-scope loop is the seven weekday flags in computed_schedule.py, whose targets (_weekday, _flag_column) appear nowhere else."
+ ]
+}

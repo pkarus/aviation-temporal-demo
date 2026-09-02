@@ -1001,3 +1001,146 @@ disclosure without weakening the check.
   and this decision agrees, but on a stated principle rather than on which artifact happened to be
   written first.
 - **Status:** accepted; DATA-04a to implement and prove zero movement.
+
+---
+
+## D-0023 — Fleet lifecycle enrichment by additive supersession
+
+- **Date:** 2026-09-02
+- **Trigger:** The user directed that the data be designed to make the ontology and the eight queries
+  produce interesting results, rather than merely to satisfy fixtures. The fidelity audit had measured
+  how badly the current data fails that: `aircraft_state` averages 1.005 versions per aircraft with
+  only 2 of 999 above one, the entire live status vocabulary is `In Service` 1001 / `Storage` 3 /
+  `Maintenance` 2, golden question 2 has essentially no population outside its anchored fixture,
+  exact fulfilment holds 4 rows of 3,900 legs, and `schedule_key` is non-null on 1 of 19,996
+  passenger flights.
+- **Question:** Can the population be enriched without editing any frozen expected answer?
+- **Decision:** Yes, and the enrichment is therefore **purely additive**. `EXPECTED_ANSWERS.yaml`
+  moves 1.1.1 to 1.2.0 by **adding 24 new result sets and changing nothing existing**. No expected
+  value is edited. `data/SYNTHETIC_DATA_SPEC.md` is superseded by
+  `data/SYNTHETIC_DATA_SPEC_V2.md` at 2.0.0 and the generated manifest moves 1.1.1 to 1.2.0.
+- **The mechanism, which is what makes this safe:** all enrichment is confined to a time window and
+  identifier range that no frozen expectation can observe. Aircraft enrichment requires
+  `start_of_life >= 2025-01-01`, placing it structurally outside `Q03-CANONICAL`'s
+  2015-01-31..2024-12-31 window. Schedule enrichment is confined to 2027 snapshot dates, outside
+  `Q05`/`Q06`/`Q07-CANONICAL`'s August 2026 knowledge dates and 2026-09-07 operating date. All new
+  actual-flight dates are in 2027, so `Q08-NOT-FOUND` stays empty. Richness is demonstrated through
+  **new parameter values for the same eight queries**, never by changing an old answer.
+- **Four load-bearing preservation claims, each with a named assertion:** `Q03-CANONICAL` stays 132
+  rows over 120 month ends, which is the only whole-population dependency in the manifest;
+  `Q05-CANONICAL` stays 35 rows with adjacent-pair counts 7/5/9/14; `Q06` and `Q07` retain their
+  declared result-set SHA-256 digests; `Q08-NOT-FOUND` stays empty.
+- **What the enrichment delivers:** state versions per aircraft from 1.005 to 8.57 across 993
+  aircraft; 437 closed status spells across 256 aircraft with durations spread from 0 to 1,091 days
+  and 737 aircraft deliberately having none; a ten-year fleet series with a readable shape, one type
+  declining to zero while another enters and crosses it, a retirement wave and a storage-and-recovery
+  wave, against a flat control type; 200 aircraft changing type and 305 re-engining, including the
+  headline case of both on different dates; all eight Q05 event classes populated at a minimum of 6;
+  marketing and operating market answers that differ at the demo endpoint because two new marketing
+  carriers are operated by an incumbent already on the route; two-clock result sets that differ in
+  exactly 4 rows when either clock moves; 609 rotations with a 5 percent anomaly rate cycling all
+  eleven codes; and exact fulfilment from 4 rows to 700.
+- **Row budget:** 145,054 to 182,029, inside the declared 100k-350k band, largest table 124,636.
+  `AIRCRAFT_HISTORY` **falls** from 48,000 to 30,233, because 48 days of `SYN-TYPE-FILL-NNN` churn per
+  aircraft is replaced by ten years of real events. That is the clearest evidence that this is a
+  structural improvement rather than added volume.
+- **Confidence:** high that the design is additive, because the isolation argument is structural
+  rather than probabilistic. **Low that the predicted counts are exact**: every number above is
+  derived from a deterministic model of the specified rules, not from a generator run. They are
+  predictions with an arithmetic derivation, and implementation must measure them.
+- **Affected artifacts/tests:** `data/generate_synthetic_data.py`, `data/SYNTHETIC_DATA_SPEC_V2.md`,
+  `EXPECTED_ANSWERS.yaml` (additive only), the oracles, `MODEL_INPUT`, and a full `SOURCE` reload.
+- **Rollback:** the generator is seed-deterministic and the loader reproduces `SOURCE` from it in
+  about four minutes, so reverting is a checkout of the previous generator plus a reload. The frozen
+  1.1.1 result sets are untouched throughout and remain the regression baseline.
+- **Status:** accepted; implementation must prove every preservation claim by measurement before the
+  additive result sets are trusted.
+
+---
+
+## D-0024 — Carry nine of the customer's versioned aircraft attributes
+
+- **Date:** 2026-09-02
+- **Trigger:** `NEO4J_FIDELITY_AUDIT.md` deviation A4: the customer's `AIRCRAFT_STATE` carries roughly
+  38 versioned attributes and our source carried roughly 20, so point-in-time reconstruction could not
+  return `base_state`, `base_region`, `noise_certification`, `has_winglets` and others at all.
+- **Decision:** Add nine watched columns as AH-34 through AH-42, taking the contracted column count
+  from 195 to 204: `base_state`, `base_region`, `storage_location_type`, `noise_certification`,
+  `has_winglets`, `aircraft_registration_country`, `transponder_miscode`, `maximum_landing_weight_lb`,
+  `operating_empty_weight_lb`. Attribute coverage goes from roughly 20 of 38 to roughly 29 of 38, with
+  every remaining omission named rather than silently absent.
+- **Why these nine:** `noise_certification` is derived from the engine, so a re-engine visibly changes
+  a regulatory attribute, which is the single best justification for the two dimensions being
+  independent. The two weights give the quarterly state republication a real payload, which is what
+  lifts state versions to 8.57 while still exercising consecutive-equality suppression on three
+  quarters of observations.
+- **Deliberately not carried, with reasons recorded in the spec:** both physical dimensions, which are
+  immutable constant columns no query touches; MZFW and maximum payload, which retell the AH-41/42
+  story a third and fourth time; the three free-text modifier strings; and all seven master-side
+  descriptors, which D-0005 already assigned.
+- **What keeps it additive:** for the six anchored aircraft all nine columns are constant across all 24
+  events, so no anchored aircraft can gain a state version, and none of the nine appears in any frozen
+  output schema.
+- **Confidence:** high. **Named risk:** the nine columns widen the watched set, which changes version
+  minting; only the constant-anchor-payload rule keeps that additive, and implementation must verify it
+  rather than assume it.
+- **Status:** accepted.
+
+---
+
+## D-0025 — Extend the snapshot calendar into 2027
+
+- **Date:** 2026-09-02
+- **Decision:** Add 26 snapshot-calendar dates in 2027: 24 eligible and complete, one incomplete and
+  one missing, so the enriched schedule block exercises presence, completeness and gap semantics on
+  its own dates without touching the 2026 calendar any frozen expectation reads.
+- **Consequence:** `SCHEDULE_SNAPSHOT` grows from 70,000 to 124,636 rows, a 78 percent increase, and
+  the enriched Q05 does roughly five times the v1 comparison work on `RAI_XS`. The spec carries a
+  tuning knob: the 2,000-key stable core is 50,000 of the new rows and halves cleanly to a 162,029-row
+  total if the comparison proves too slow.
+- **Status:** accepted.
+
+---
+
+## D-0026 — Q02 fleet-wide distribution needs a new result set, not a widened frozen parameter
+
+- **Date:** 2026-09-02
+- **Trigger:** ENRICH-01 flagged that Q02 cannot express a fleet-wide spell distribution through its
+  frozen non-nullable `aircraft_id` parameter, and asked for an explicit accept-or-reject rather than
+  assuming the answer.
+- **Question:** A fleet-wide spell distribution is exactly the "interesting result" the user asked for,
+  but reaching it appears to require relaxing a frozen parameter schema.
+- **Decision:** Do not widen the frozen parameter schema. Add a **new** result set with its own
+  parameter shape in which the aircraft selector is optional, leaving every frozen Q02 result set and
+  its non-nullable contract exactly as they are. This keeps the change inside the same additive
+  supersession as D-0023 rather than mutating a frozen schema, and the two coexist: the per-aircraft
+  form stays the contracted answer and the fleet form is a new, separately identified question.
+- **Rejected alternative:** relaxing `aircraft_id` to nullable in place. It would alter a frozen
+  parameter contract that four passing result sets depend on, to gain something a new result set
+  delivers at no risk.
+- **Status:** accepted.
+
+---
+
+## D-0027 — D-0019's performance premise is refuted by measurement
+
+- **Date:** 2026-09-02
+- **Trigger:** D-0019 excluded the row-scoped `CODE_RESOLUTION` (546,494 rows) from the ontology on the
+  stated suspicion that its size would dominate CDC sync and cold start, and made that exclusion
+  provisional and gated on MODEL-01 taking one measurement rather than settling it by intuition.
+- **Measurement:** binding the row-scoped table takes the model from 34 objects and 749 columns to 37
+  objects and 778 columns, adding 1,517,593 rows. First query 18.24s baseline versus 18.42s with it
+  bound. Warm 2.68 / 2.41 baseline versus 2.62 / 2.52. **Delta 0.18 seconds**, which is inside the
+  warm-query noise band.
+- **Decision:** the premise is refuted. By D-0019's own terms the exclusion does not stand, and the
+  row-scoped table should be bound. MODEL-01 left the exclusion in place because reversing it requires
+  adding a concept rather than regenerating, and recorded the number instead; that was the right call
+  under a "land it, do not restructure" instruction. **Binding it is now a follow-up, not a decision
+  still open.**
+- **Caveat, stated because it limits the claim:** this measures marginal cost on sources that are
+  already CDC-synced. It is not a cold first-ever sync of 1.5 million rows, and it should not be cited
+  as evidence about that case.
+- **Value of having gated it:** the intuition was wrong by two orders of magnitude relative to the
+  concern. Had the exclusion been accepted on plausibility, the demo would have permanently omitted a
+  contract object for no measured benefit.
+- **Status:** accepted; supersedes D-0019's provisional exclusion. Implementation pending.

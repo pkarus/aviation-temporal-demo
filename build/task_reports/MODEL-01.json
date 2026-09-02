@@ -1,0 +1,263 @@
+{
+ "task_id": "MODEL-01",
+ "status": "green",
+ "summary": "Strict-mode modular ontology at rai_code/aviation_model/: 44 concepts, 1292 properties, 21 concept relationships plus 11 bare, 170 define rules, 5 documentary require rules, over 34 bound Snowflake objects and 749 explicitly typed columns. Loads live under RAI_DEMO_AVIATION_TEMPORAL on aviation_temporal_logic_s with zero relationalai warnings. Every concept count equals its SQL source row count. 92 of 93 gate tests green on the final run; the one red was a stale generated artifact and is green after regeneration.",
+ "sdk_version": "1.20.1",
+ "engine": "aviation_temporal_logic_s (HIGHMEM_X64_S)",
+ "model_name": "aviation_temporal",
+
+ "reproduce": [
+  ".venv/bin/rai reasoners resume --type Logic --name aviation_temporal_logic_s --wait",
+  "PYTHONPATH=rai_code .venv/bin/python -m aviation_model._regen_sources",
+  "PYTHONPATH=rai_code .venv/bin/python -m aviation_model._gen_standalone",
+  "PYTHONPATH=rai_code .venv/bin/python -m aviation_model.inventory",
+  "TERM=dumb .venv/bin/python -m pytest tests/test_model.py -q",
+  "PYTHONPATH=rai_code .venv/bin/python -m aviation_model._d0019_measure",
+  "TERM=dumb .venv/bin/python build/probes/verify_fidelity.py"
+ ],
+
+ "files_written": [
+  "rai_code/aviation_model/__init__.py",
+  "rai_code/aviation_model/constants.py",
+  "rai_code/aviation_model/config.py",
+  "rai_code/aviation_model/model.py",
+  "rai_code/aviation_model/_binding.py",
+  "rai_code/aviation_model/sources.py",
+  "rai_code/aviation_model/core_reference.py",
+  "rai_code/aviation_model/core_aircraft.py",
+  "rai_code/aviation_model/calendar_dates.py",
+  "rai_code/aviation_model/core_schedule.py",
+  "rai_code/aviation_model/core_flight.py",
+  "rai_code/aviation_model/temporal.py",
+  "rai_code/aviation_model/computed_aircraft.py",
+  "rai_code/aviation_model/computed_schedule.py",
+  "rai_code/aviation_model/computed_rotation.py",
+  "rai_code/aviation_model/constraints.py",
+  "rai_code/aviation_model/inventory.py",
+  "rai_code/aviation_model/_regen_sources.py",
+  "rai_code/aviation_model/_gen_standalone.py",
+  "rai_code/aviation_model/_parity_check.py",
+  "rai_code/aviation_model/_d0019_measure.py",
+  "rai_code/manual/aviation_temporal.py",
+  "tests/test_model.py",
+  "build/design/ontology_inventory.json",
+  "NEO4J_RAI_MAPPING.md (six factual corrections, FIDELITY-01 F4)",
+  "NEO4J_PARITY_MATRIX.md (one factual correction, FIDELITY-01 F4)"
+ ],
+
+ "success_criteria": {
+  "1_model_loads_live_counts_match_sql": {
+   "verdict": "PASS",
+   "evidence": "34 of 34 concept counts equal COUNT(*) on their Snowflake source, each asserted by a live SQL query in test_concept_count_matches_sql. Examples: Aircraft 999, AircraftEvent 48000, AircraftDimensionAuditAssignment 97983, AircraftDimensionDailyAssignment 97979, RouteState 12030, ScheduleObservation 69998, PassengerFlight 19996, AircraftFlight 3900, RotationLinkValidation 3900, FulfillmentGroupMember 23887, MonthEnd 600, SnapshotDate 10.",
+   "why_it_matters": "PROBE U-08: a row whose Concept.lookup() parent does not resolve produces no entity AND no error, so a quarantine is invisible without a count assertion."
+  },
+  "2_type_and_fd_tests": {
+   "verdict": "PASS",
+   "evidence": "test_declared_types_match_information_schema (749 columns re-derived live), test_per_column_non_null_matches_sql over 26 concepts and every bound scalar, G-01..G-06 zero-count FD probes, the daily-assignment multiplicity gate, and the four derived integrity guards all empty.",
+   "property_vs_relationship": "A functional Property is used only where the SOURCE_CONTRACT multiplicity gate passes. Every parent-to-children direction is unconstrained: an .alt() reading where this package declares the forward Property, an explicit multi-valued Relationship where the forward link is an identify_by component (identify_by names the owner slot after the lowercased concept, so an .alt() reading would have to spell 'aircraftdimensionauditassignment')."
+  },
+  "3_inventory_artifact": {
+   "verdict": "PASS",
+   "path": "build/design/ontology_inventory.json",
+   "concept_count": 44,
+   "table_count": 34,
+   "property_count": 1292,
+   "concept_relationship_count": 21,
+   "bare_relationship_count": 11,
+   "define_rule_count": 170,
+   "require_rule_count": 5,
+   "declared_column_count": 749,
+   "assertion_no_any_column": "PASS - zero Any-typed discovered columns",
+   "assertion_per_column_non_null": "PASS - every bound scalar's RAI non-null count equals COUNT(<col>) in SQL"
+  },
+  "4_no_warnings": {
+   "verdict": "PASS",
+   "evidence": "Importing the package under python -W always emits zero warnings whose file is inside relationalai. No implicit-property warning (strict mode on, every property declared), no deprecated-API warning (Concept.lookup throughout, never the deprecated filter_by the design brief used), no RuleLoopWarning (the batched-define pattern keeps every concept to one define call site)."
+  },
+  "5_multi_open_route_case": {
+   "verdict": "PASS",
+   "evidence": "1,339 route states are concurrently valid on SFO->LAX at knowledge date 2026-08-31, returned by ONE query, individually (1,339 rows, 1,339 distinct schedule keys) and as a per-route count, with no uniqueness failure. Independently confirmed in SQL. 10 of 10 routes have more than one concurrent state. Re-verified after the FIDELITY-01 additions.",
+   "narration_correction": "These are states concurrently valid AT A KNOWLEDGE DATE, not open-ended ones. The fixture's knowledge clock ends at 2026-10-26 and ZERO route states carry the model open sentinel 9999-01-01 (IS_OPEN_STATE is false on all 12,030 rows). A narration promising 'many open-ended versions' would be false. test_no_route_state_carries_the_open_sentinel pins this so the claim cannot drift."
+  },
+  "6_model_02_parity": {
+   "verdict": "PASS (see MODEL-02.json)",
+   "evidence": "Identical inspect.schema inventories and identical smoke-query results from the package and the generated standalone file, in separate processes."
+  }
+ },
+
+ "d0019_measurement": {
+  "question": "Must MODEL-01 bind the row-scoped CODE_RESOLUTION, given its size is the most likely cause of a slow CDC sync and cold start?",
+  "method": "Two fresh models in two separate processes on the same warm reasoner. Baseline binds the shipped 34 objects / 749 columns. Rowscoped binds those plus CODE_RESOLUTION (546,494 rows), CODE_RESOLUTION_CANDIDATE (424,605) and CODE_RESOLUTION_INPUT (546,494) - 1,517,593 extra rows and 29 extra columns. Fresh model names so no stale-source cleanup contaminates the timing; separate processes because a second Model in one interpreter changes the measurement.",
+  "result": {
+   "baseline_first_query_s": 18.24,
+   "rowscoped_first_query_s": 18.42,
+   "first_query_delta_s": 0.18,
+   "baseline_warm_query_s": [2.68, 2.409],
+   "rowscoped_warm_query_s": [2.616, 2.523],
+   "extra_rows": 1517593,
+   "extra_columns": 29
+  },
+  "verdict": "The performance premise of the exclusion is REFUTED. Binding 1.5M extra rows across three additional tables cost 0.18s on the first query and nothing measurable warm. Per D-0019's own terms ('if the measured cost is acceptable, bind both and delete this exclusion'), the exclusion should be superseded and both grains bound.",
+  "honest_caveat": "0.18s is a MARGINAL cost on already-CDC-synced sources: those three tables had been synced by earlier models in this account, so this is not a cold first-ever sync measurement. If the orchestrator wants the cold number, the measurement must run against tables no model in the account has ever bound.",
+  "action_taken": "The exclusion is left in place in the shipped ontology, because reversing it means adding a new row-scoped CodeResolution concept and identity rather than a regeneration, and the coordinator's standing instruction at the time was to stop adding surface. The number is recorded here so the orchestrator can decide; see proposed_decision_log_entries."
+ },
+
+ "fidelity_01_response": {
+  "F1_schedules_edge": {
+   "status": "BUILT",
+   "what": "RouteStateSchedules / RouteState.schedules, a derived multi-valued Relationship in computed_schedule.py, with the .alt() inverse PassengerFlight.scheduled_by.",
+   "rule": "The full P0-08 conjunction, one clause per line: (1) RouteState.schedule == PassengerFlight.schedule (PH-02 = SS-01, both resolving to the same Schedule entity); (2) knowledge_valid_from <= publish_date < knowledge_valid_to, the half-open version pin the audit identifies as the point of the edge; (3) operating_effective_date <= operating_date <= operating_discontinue_date, INCLUSIVE at both ends; (4) RouteStateOperatesOnWeekday(state, isoweekday(operating_date)).",
+   "note_on_the_audit_description": "The audit describes a two-predicate join. NEO4J_RAI_MAPPING.md:108 contracts four predicates (identity, publish date in DV-14/DV-15, operating date in inclusive SS-08/SS-09, matching weekday). The built rule implements all four, so it is the contract's shape and a strict subset of the audit's would-be matches.",
+   "live_row_count": 0,
+   "cause_of_zero": "Data, not the rule. PASSENGER_FLIGHT_CANONICAL.schedule_key is non-null on 1 of 19,996 rows, and that one key (SYN-SK-HIST_700, passenger flight SYN-MKT-A|700|SFO|LAX|2026-08-31) has NO ROUTE_STATE at all - it exists only on the passenger-historical side, not in the snapshot universe. Verified by a LEFT JOIN in SQL. The edge is declared, derived and evaluates without error; it is unexercised by the shipped fixture.",
+   "recommendation": "This is a fixture gap, not a model gap. If the demo needs to walk airport -> route -> route state -> airlines -> flights, DATA-01/DATA-02 must emit at least one passenger flight whose schedule_key matches a schedule present in SCHEDULE_SNAPSHOT."
+  },
+  "F2_dimension_scoped_edges": {
+   "status": "BUILT, additive",
+   "added": [
+    "Aircraft.state_assignments  -> 1004 assignments live",
+    "Aircraft.type_assignments   -> 47986 assignments live",
+    "Aircraft.engine_assignments -> 47986 assignments live",
+    "Aircraft.status_assignments -> 1003 assignments live"
+   ],
+   "note": "Four dimension-scoped multi-valued Relationships from Aircraft, so the four independently clocked Neo4j edges are four visibly distinct outbound edges rather than one unscoped relationship plus a subtype predicate. Aircraft.daily_assignments and Aircraft.audit_assignments are retained for the general case and the underlying AircraftDimensionDailyAssignment concept is untouched - purely additive, no existing query changes. Aircraft went from 2 outbound relationships to 9."
+  },
+  "F3_direct_one_hop_readings": {
+   "status": "BUILT, additive",
+   "added": [
+    "Aircraft.conformed_to(Aircraft, AircraftType, valid_from, valid_to)",
+    "Aircraft.equipped_with(Aircraft, EngineType, valid_from, valid_to)",
+    "Aircraft.assigned_status(Aircraft, AircraftStatus, valid_from, valid_to)",
+    "AircraftStatus.daily_assignments (the missing inverse)",
+    "AircraftConfiguration.daily_assignments (the missing inverse) -> 97975 live"
+   ],
+   "evidence": "Aircraft.conformed_to for 1001 returns exactly two rows, SYN-TYPE-A 2015-01-01..2019-01-01 and SYN-TYPE-B 2019-01-01..9999-01-01 - the supplied edge's own {valid_from, valid_to} payload on a one-hop reading. Aircraft.equipped_with returns SYN-ENGINE-A 2015-01-01..2021-07-01 and SYN-ENGINE-B 2021-07-01..9999-01-01, the independent second clock. Aircraft.assigned_status returns four rows including the In Service -> Storage -> In Service spell. 'Every aircraft ever in Storage', entered from the AircraftStatus node as it would be in Cypher, now returns [1001, 1002]; before F3 AircraftStatus had zero relationships and the question could not be entered from the status node at all.",
+   "trade_accepted": "These are four-field Relationships, one more than the reading-quality guidance likes. The extra fields are the supplied edge's own payload, so the trade buys exact structural correspondence. Consumers must run inspect.fields() before binding, as for any multi-field relationship."
+  },
+  "F4_document_corrections": {
+   "status": "DONE",
+   "NEO4J_RAI_MAPPING.md": [
+    "The SCHEDULES row now names the built object (RouteStateSchedules / RouteState.schedules plus the .alt() inverse) and states the zero live population with its data cause.",
+    "The blanket claim 'No supplied edge is omitted' is replaced with a true statement plus an explicit note that the earlier text asserted it while SCHEDULES had no implementation - a published parity claim with no code behind it is called out rather than quietly overwritten.",
+    "The four AIRCRAFT edge rows now state the built shape: one physical AircraftDimensionDailyAssignment discriminated by dimension, subtypes as extends= views with identity_includes_type=False, plus the four scoped relationships and the three direct one-hop readings.",
+    "QueryExecutionContext is marked NOT a model concept, with the reason (query-invocation identity, append-only model, the fifty-define warning) and its real home at the query API boundary.",
+    "CodeResolution is replaced by CodeResolutionCode at (domain, method, raw_code) grain under D-0019, with the row-scoped table's retained SQL reachability stated.",
+    "ScheduleAmendmentEvidence is marked as four built concepts and FulfillmentCandidateEvidence as two, with the reason no DV-41 group concept exists (nullable group id at member grain, D-0020 A6).",
+    "The OPERATES / COMMERCIALIZES inverses are corrected from 'inverse Relationship' to '.alt() reading over the same fields', with the note that .alt() adding no inverse FD IS the demo's headline argument."
+   ],
+   "NEO4J_PARITY_MATRIX.md": [
+    "Line 57's SCHEDULES row now names the built relationship, states the zero live pair count and its data cause, and says explicitly not to present the row as demonstrated parity until the fixture populates it."
+   ]
+  }
+ },
+
+ "where_the_design_brief_was_wrong_when_run": [
+  {
+   "item": "ONTOLOGY_DESIGN.md section 5.3, the DV-33 ordered | fallback chain",
+   "finding": "Confirmed non-compiling as PROBE D7 said, and the replacement had TWO further bugs that only live execution found. (a) model.not_(typ.aircraft_type == AircraftType) reads as 'there exists some AircraftType this is not equal to', which is true for every assignment once two types exist - aircraft 1001 at 2022-05-15 fired both OK and UNKNOWN_STATE. The correct negation is over the property's existence, model.not_(typ.aircraft_type). (b) The branches must be scoped to one dimension: AircraftDimensionDailyAssignment is one concept with a dimension discriminator, so an unscoped ref ranges over all four dimensions and the aircraft_state assignment covering the same date has no aircraft_type value. dv33_branches now takes a required scope parameter, folded into the covering clauses so it applies inside the negations too."
+  },
+  {
+   "item": "ONTOLOGY_DESIGN.md R2 - 'never batch attribute binds because all columns in one call are required'",
+   "finding": "True of .new(), not of chained entity.prop(column) statements batched into one define(). Measured against MODEL_INPUT.AIRCRAFT_ELIGIBLE (999 rows, AIRCRAFT_END_OF_LIFE_DATE non-null on exactly 1): the batched and the one-define-per-column forms both returned rows=999, eol_nn=1. Batching is what keeps the whole model to about forty rule-emitting call sites and avoids the fifty-define RuleLoopWarning."
+  },
+  {
+   "item": "ONTOLOGY_DESIGN.md section 0.2c - 'NUMBER(38,0) is Integer, a narrower NUMBER(p,0) needs Number.size(p, s)'",
+   "finding": "REFUTED, and this is the most dangerous of the set. The SDK's own CDC mapping buckets integer precision by bit width (relationalai/util/schema.py: digits_to_bits then sf_numeric_to_type_str), so NUMBER(p,0) with p<=18 discovers as Decimal(18,0) and with 19<=p<=38 as Decimal(38,0) = Integer. Declaring the faithful precision is wrong: MONTH_END_CALENDAR.MONTH_INDEX is NUMBER(19,0), was declared Number.size(19, 0) (which is Int64), and returned 600 rows with 0 non-null values and no error. The identical column declared Integer returns 600 of 600. Only the per-column non-null gate catches this; a row-count check passes happily."
+  },
+  {
+   "item": "ONTOLOGY_DESIGN.md section 2.1/2.13 - use .alt() for every parent-to-children inverse",
+   "finding": "Impossible for the inverse of an identify_by component. .alt() requires the new reading to reuse the underlying relationship's field names, and identify_by names an entity component's owner slot after the lowercased concept - so the inverse of AuditAssignment.aircraft would have to spell 'aircraftdimensionauditassignment' to be accepted. Those four inverses are explicit multi-valued Relationships instead. No cardinality difference; the reading is legible."
+  },
+  {
+   "item": "ONTOLOGY_DESIGN.md section 2.12 / QUERY_ROUTING.md - rotation_leg_distance as a Relationship",
+   "finding": "The recursion idiom requires the two-argument call form distance(u, n) inside the recursive step, which only exists on a Property. Declared as a Relationship it raises KeyError on the bracket form. It is a Property, which is also semantically right: the minimum hop count is functional per (from_leg, to_leg)."
+  },
+  {
+   "item": "ONTOLOGY_DESIGN.md section 2.1 - bind a resolved base airport on the aircraft dimension",
+   "finding": "There is nothing to bind. AH-24 BASE_AIRPORT is a descriptive label ('Synthetic base'), AH-25 BASE_AIRPORT_CODE_IATA is a public IATA code that AIRPORT_CURRENT does not key on, and DATA-04 emits no resolved BASE_AIRPORT_ID for the aircraft dimension. Joining on the IATA code would assert a link the contract never resolved, so no link is bound and both raw values stay as strings."
+  }
+ ],
+
+ "new_live_findings_not_in_probe_results": [
+  {
+   "id": "M-01",
+   "severity": "silent wrong answer",
+   "finding": "where(Concept.bool_property) matches EVERY entity that has the property, regardless of its value. Measured: where(RouteState.is_codeshare) returns all 12,030 route states; where(RouteState.is_codeshare == True) returns the correct 4. A bare property reference binds the value rather than testing it. Every boolean filter in this package is written == True / == False, and test_bool_property_needs_explicit_comparison pins the behaviour."
+  },
+  {
+   "id": "M-02",
+   "severity": "silently vacuous assertion",
+   "finding": "RAI Date properties arrive in pandas as Timestamp, not datetime.date. A comparison like df['event_date'] == dt.date(2020, 6, 1) matches nothing and set(df['d']) == {dt.date(...)} is never equal. Three gate assertions passed vacuously or failed spuriously on this before normalisation. Any QUERY-* comparison against EXPECTED_ANSWERS.yaml dates must normalise with pd.to_datetime(...).dt.date."
+  },
+  {
+   "id": "M-03",
+   "severity": "environment",
+   "finding": "MODEL_INPUT is NOT frozen. It was rebuilt at 12:09-12:11 CEST while MODEL-01 was building the model: every MODEL_INPUT table's CREATED timestamp is inside that window, build/task_reports/DATA-04a.json was rewritten at 11:43, and ROTATION_LINK_VALIDATION gained an IS_SELF_LOOP_LINK BOOLEAN column (27 columns to 28, 748 to 749). I did not modify MODEL_INPUT. Every row count and grain check was re-verified against the settled state and nothing else changed. The generate-from-INFORMATION_SCHEMA design plus test_declared_types_match_information_schema is exactly the guard this needs, and it is why the drift was caught rather than silently NaN-ing a column."
+  },
+  {
+   "id": "M-04",
+   "severity": "note",
+   "finding": "DIMENSION_SEQUENCE is a dense 1..n ordinal per (aircraft, dimension) on the audit stream - 3,996 groups, zero violations - so the DV-03 ordinal is bound rather than recomputed. EVENT_ORDER_RANK is NOT a substitute: it is dense per aircraft across all four dimensions on the audit stream (1 violating group of 999) and is not dense per (aircraft, dimension) on the daily stream (6 violating groups of 3,996). The daily ordinal therefore IS a real PyRel aggs.rank rule over VALID_FROM, which is unique per (aircraft, dimension). QUERY_ROUTING.md suggests DATA-04 should own it; DATA-04 does not, so MODEL-01 does."
+  }
+ ],
+
+ "timings_seconds": {
+  "engine_cold_resume_to_ready": 900,
+  "package_import_no_engine": 0.7,
+  "first_query_full_model_sync_plus_index": "170-270 (indexing 1m37s, validation 22.7s on the first full-model run)",
+  "warm_query_typical": "2.5-6",
+  "warm_query_wide_column_pull": "10-30",
+  "full_gate_93_tests": 1230,
+  "d0019_baseline_first_query": 18.24,
+  "d0019_rowscoped_first_query": 18.42
+ },
+
+ "engine_change_made": {
+  "what": "auto-suspend raised from 5 to 60 minutes on aviation_temporal_logic_s",
+  "why": "A 5-minute auto-suspend against a 631s cold start makes an iterative build impossible - every pause costs ten minutes. This is a reversible setting on the demo's own engine.",
+  "action_required": "The orchestrator should set it back to 5 before handoff: .venv/bin/rai reasoners alter --type Logic --name aviation_temporal_logic_s --auto-suspend-mins 5"
+ },
+
+ "proposed_decision_log_entries": [
+  {
+   "id": "proposed - supersede D-0019",
+   "subject": "Bind both CODE_RESOLUTION grains; the exclusion's performance premise is refuted",
+   "evidence": "Measured 0.18s delta on first query and no measurable warm delta for 1,517,593 extra rows across three tables. D-0019's own terms make this 'acceptable'.",
+   "caveat": "The measurement is marginal cost on already-CDC-synced sources, not a cold first-ever sync.",
+   "action": "Add CODE_RESOLUTION, CODE_RESOLUTION_CANDIDATE and CODE_RESOLUTION_INPUT to _regen_sources.BOUND_OBJECTS, regenerate, and add a row-scoped CodeResolution concept keyed on resolution_id with CodeResolutionCandidate at (resolution_id, candidate_id). Keep CodeResolutionCode for link semantics."
+  },
+  {
+   "id": "proposed - new",
+   "subject": "The Snowflake NUMBER-to-RAI integer mapping is bucketed by bit width, not by declared precision",
+   "evidence": "MONTH_END_CALENDAR.MONTH_INDEX NUMBER(19,0) declared Number.size(19, 0) returned 600 rows with 0 non-null values, silently; declared Integer it returns 600 of 600. relationalai/util/schema.py digits_to_bits is the authority.",
+   "action": "Binding rule: NUMBER(p,0) with p<=18 is Number.size(18, 0), with 19<=p<=38 is Integer, scale>0 is Number.size(p, s). Implemented in _regen_sources.derive_type. Every downstream task binding a Snowflake NUMBER must follow it."
+  },
+  {
+   "id": "proposed - new",
+   "subject": "A boolean Property must be compared, never used as a bare truth filter",
+   "evidence": "where(RouteState.is_codeshare) returns 12,030 of 12,030; where(... == True) returns the correct 4.",
+   "action": "Standing rule for QUERY-UC1/UC2/ROT and the notebook: == True / == False on every boolean Property. 104 boolean columns are bound."
+  },
+  {
+   "id": "proposed - new",
+   "subject": "The multi-open route beat must be narrated as concurrently valid at a knowledge date, not open-ended",
+   "evidence": "Zero of 12,030 route states carry knowledge_valid_to = 9999-01-01; IS_OPEN_STATE is false on all of them; the knowledge clock ends at 2026-10-26. The 1,339 figure is concurrency at a knowledge date.",
+   "action": "HTML-01, NOTEBOOK-01 and the talk track must say 'concurrently valid at knowledge date 2026-08-31'. Saying 'open-ended' would be checkable and false."
+  },
+  {
+   "id": "proposed - new",
+   "subject": "The SCHEDULES edge is built but unexercised; the fixture cannot populate it",
+   "evidence": "PASSENGER_FLIGHT_CANONICAL.schedule_key is non-null on 1 of 19,996 rows and that key (SYN-SK-HIST_700) has no ROUTE_STATE.",
+   "action": "Either DATA-01/DATA-02 emit a passenger flight whose schedule_key matches a snapshot schedule, or NEO4J_PARITY_MATRIX.md keeps the corrected 'declared but unexercised' wording. The document is already corrected either way."
+  }
+ ],
+
+ "open_issues_and_risks": [
+  "The MODEL-02 parity test was red on the final full gate run because the standalone artifact was regenerated before the F2/F3 additions and then went stale. Smoke queries were identical (sfo_lax_multi_open 1339, q03_rows 132, q03_month_ends 120); only the inventory diverged, at Aircraft.relationships 9 vs 2. The standalone has been regenerated and the parity test re-run; anyone editing the package must run _gen_standalone before trusting the artifact.",
+  "The SCHEDULES edge returns zero rows. Declared and correct, unexercised by data.",
+  "A4/A5/A7 from the fidelity audit are owned by the orchestrator: roughly 20 missing versioned AIRCRAFT_STATE attributes, FULFILLED being exact-only where theirs is a partial match, and the thin population of aircraft_state and aircraft_status (1.005 and 1.004 versions per aircraft, 2 of 999 with more than one). The ontology expresses golden question 2; the loaded data barely populates it.",
+  "PhysicalServiceDisagreement cannot fire when a carrier link is absent, because the != comparison does not bind. Moot today - all 12,030 route states resolve both carriers EXACT - but it is a guard with a blind spot.",
+  "require(unique(...)) is a documented no-op in 1.20.1. constraints.py says so in plain words. Nobody should be shown those five lines as live checks.",
+  "auto-suspend is at 60 minutes and must be returned to 5."
+ ]
+}

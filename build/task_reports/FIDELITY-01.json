@@ -1,0 +1,165 @@
+{
+  "task": "FIDELITY-01",
+  "title": "Neo4j-to-RAI structural fidelity audit",
+  "date": "2026-09-02",
+  "status": "complete",
+  "scope": "audit only; no code or ontology files modified",
+  "deliverables": [
+    "NEO4J_FIDELITY_AUDIT.md",
+    "build/task_reports/FIDELITY-01.json"
+  ],
+  "evidence_basis": {
+    "built_code": [
+      "rai_code/aviation_model/core_reference.py",
+      "rai_code/aviation_model/core_aircraft.py",
+      "rai_code/aviation_model/core_schedule.py",
+      "rai_code/aviation_model/core_flight.py",
+      "rai_code/aviation_model/computed_aircraft.py",
+      "rai_code/aviation_model/computed_schedule.py",
+      "rai_code/aviation_model/computed_rotation.py",
+      "rai_code/aviation_model/temporal.py",
+      "rai_code/manual/aviation_temporal.py"
+    ],
+    "live_inventory": "build/design/ontology_inventory.json (44 concepts, 1292 properties, 11 bare relationships, SDK 1.20.1)",
+    "live_snowflake": "SELECT-only against PK_AVIATION_TEMPORAL.MODEL_INPUT under RAI_DEMO_AVIATION_TEMPORAL"
+  },
+  "counts": {
+    "neo4j_node_labels": 11,
+    "neo4j_edge_definitions": 13,
+    "neo4j_distinct_edge_type_names": 12,
+    "total_elements_audited": 24,
+    "verdicts": {
+      "IDENTICAL": 10,
+      "RENAMED": 6,
+      "RESHAPED": 5,
+      "MERGED": 2,
+      "SPLIT": 0,
+      "MISSING": 1
+    },
+    "verdicts_labels": {
+      "IDENTICAL": 8,
+      "RENAMED": 0,
+      "RESHAPED": 2,
+      "MERGED": 1,
+      "SPLIT": 0,
+      "MISSING": 0
+    },
+    "verdicts_edges": {
+      "IDENTICAL": 2,
+      "RENAMED": 6,
+      "RESHAPED": 3,
+      "MERGED": 1,
+      "SPLIT": 0,
+      "MISSING": 1
+    },
+    "added_concepts": 33,
+    "built_concepts_total": 44
+  },
+  "element_verdicts": {
+    "labels": {
+      "AIRCRAFT": "RESHAPED",
+      "AIRCRAFT_STATE": "MERGED",
+      "AIRCRAFT_TYPE": "IDENTICAL",
+      "ENGINE_TYPE": "IDENTICAL",
+      "AIRCRAFT_STATUS": "IDENTICAL",
+      "ROUTE": "IDENTICAL",
+      "ROUTE_STATE": "RESHAPED",
+      "PASSENGER_FLIGHT": "IDENTICAL",
+      "AIRCRAFT_FLIGHT": "IDENTICAL",
+      "AIRPORT": "IDENTICAL",
+      "AIRLINE": "IDENTICAL"
+    },
+    "edges": {
+      "AIRCRAFT-HAS-AIRCRAFT_STATE": "MERGED",
+      "AIRCRAFT-CONFORMED-AIRCRAFT_TYPE": "RESHAPED",
+      "AIRCRAFT-EQUIPPED-ENGINE_TYPE": "RESHAPED",
+      "AIRCRAFT-ASSIGNED-AIRCRAFT_STATUS": "RESHAPED",
+      "ROUTE-HAS-ROUTE_STATE": "RENAMED",
+      "ROUTE-STARTS-AIRPORT": "RENAMED",
+      "ROUTE-ENDS-AIRPORT": "RENAMED",
+      "AIRLINE-OPERATES-ROUTE_STATE": "IDENTICAL",
+      "AIRLINE-COMMERCIALIZES-ROUTE_STATE": "IDENTICAL",
+      "ROUTE_STATE-SCHEDULES-PASSENGER_FLIGHT": "MISSING",
+      "AIRCRAFT_FLIGHT-FULFILLED-PASSENGER_FLIGHT": "RENAMED",
+      "AIRCRAFT_FLIGHT-STARTED-AIRPORT": "RENAMED",
+      "AIRCRAFT_FLIGHT-ENDED-AIRPORT": "RENAMED"
+    }
+  },
+  "expressiveness_deviations_ranked": [
+    {
+      "id": "A1",
+      "severity": "blocking",
+      "summary": "ROUTE_STATE-[:SCHEDULES]->PASSENGER_FLIGHT is not built at all. No relationship, property or derived rule connects RouteState to PassengerFlight. PassengerFlight.schedule reaches the schedule identity, not the version, so the publish-date temporal pin cannot be traversed.",
+      "fix_cost": "one model.Relationship plus one define().where() using the existing temporal.known_on predicate",
+      "data_caveat": "PASSENGER_FLIGHT_CANONICAL.schedule_key is non-null on 1 of 19996 rows, so the edge would be nearly empty"
+    },
+    {
+      "id": "A2",
+      "severity": "high",
+      "summary": "The four independent Neo4j edges are one physical concept (AircraftDimensionDailyAssignment) with a dimension String discriminator and 61 shared properties; the four subtypes are views with identity_includes_type=False. An unscoped assignment query silently answers a different question (already caused a live wrong answer), and the ontology does not show which properties belong to which dimension."
+    },
+    {
+      "id": "A3",
+      "severity": "medium",
+      "summary": "No direct Aircraft -> AircraftType / EngineType / AircraftStatus hop; every CONFORMED/EQUIPPED/ASSIGNED pattern becomes two hops plus a dimension predicate. AircraftStatus and AircraftConfiguration have no inverse relationship at all."
+    },
+    {
+      "id": "A4",
+      "severity": "medium",
+      "summary": "AIRCRAFT_STATE carries roughly 20 of the customer's ~38 versioned attributes; and D-0005 moved width, APU type and both MTOWs from immutable AIRCRAFT into the versioned stream with master copies prohibited from historical reconstruction. Point-in-time answers differ."
+    },
+    {
+      "id": "A5",
+      "severity": "medium",
+      "summary": "AircraftFlight.fulfils is derived from ExactFulfillment only; heuristic and ambiguous candidates never satisfy it. The customer's FULFILLED is a partial match by design. Live: 4 of 3900 aircraft flights carry the link."
+    },
+    {
+      "id": "A6",
+      "severity": "low",
+      "summary": "The state identity is (dimension, aircraft, valid_from, event) versus their aircraft_id||'_'||valid_from. Same-day observations mint two entities in ours, one node in theirs. Ours is correct (D-0004) but row counts will not match."
+    },
+    {
+      "id": "A7",
+      "severity": "data, not structure",
+      "summary": "The fixture barely exercises two of four dimensions: aircraft_state averages 1.005 versions per aircraft (2 of 999 aircraft with more than one), aircraft_status 1.004 (2 of 999); status vocabulary is In Service 1001, Storage 3, Maintenance 2. aircraft_type/engine_type average 48 versions but the bulk is synthetic SYN-TYPE-FILL-NNN daily churn. Golden question 2 has almost no population."
+    }
+  ],
+  "mapping_document_defects": [
+    {
+      "location": "NEO4J_RAI_MAPPING.md:108, :113; NEO4J_PARITY_MATRIX.md:57; build/design/ONTOLOGY_DESIGN.md:451,:581,:742",
+      "defect": "Claims a built RouteState-to-PassengerFlight scheduling Relationship. It does not exist. Line 113's 'No supplied edge is omitted' is false.",
+      "severity": "high - a published parity claim not backed by code"
+    },
+    {
+      "location": "NEO4J_RAI_MAPPING.md:99-102",
+      "defect": "Implies four dimension-scoped edges from Aircraft. Built code has two unscoped relationships (daily_assignments, audit_assignments). The per-dimension edges specified in ONTOLOGY_DESIGN.md sections 2.1/2.2 (Aircraft.state_assignments, Aircraft.type_assignments) were never written.",
+      "severity": "high"
+    },
+    {
+      "location": "NEO4J_RAI_MAPPING.md:68, :156",
+      "defect": "Lists QueryExecutionContext as an RAI concept. Not in the model; ONTOLOGY_DESIGN.md section 9 item 4 moved it to the query API boundary.",
+      "severity": "medium"
+    },
+    {
+      "location": "NEO4J_RAI_MAPPING.md:57-58",
+      "defect": "Describes CodeResolution at row-scoped resolution-context-hash grain. Built as CodeResolutionCode keyed (domain, method, raw_code) per D-0019.",
+      "severity": "medium"
+    },
+    {
+      "location": "NEO4J_RAI_MAPPING.md:62, :66",
+      "defect": "Names ScheduleAmendmentEvidence and FulfillmentCandidateEvidence as single concepts; built as four and three concepts respectively. Naming only.",
+      "severity": "low"
+    },
+    {
+      "location": "NEO4J_RAI_MAPPING.md:106-107",
+      "defect": "Calls the OPERATES/COMMERCIALIZES inverses 'inverse Relationship's; they are .alt() readings. Same cardinality, but .alt() adding no inverse FD is the demo's headline argument and should be named.",
+      "severity": "low"
+    },
+    {
+      "location": "NEO4J_RAI_MAPPING.md:78-79",
+      "defect": "Says AIRCRAFT is 'direct identity parity' without noting D-0005 moved four immutable attributes into the versioned stream, and does not say roughly 18 of the ~38 AIRCRAFT_STATE versioned attributes are not carried.",
+      "severity": "low"
+    }
+  ],
+  "confidential_material_handling": "The four Cirium source documents were read outside the repo. No prose was copied. Only Neo4j label names, relationship type names, property names and source column names appear in the deliverables."
+}
