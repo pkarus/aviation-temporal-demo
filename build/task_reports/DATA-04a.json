@@ -670,6 +670,34 @@
         "status": "passed"
       },
       {
+        "gate_id": "AT-33",
+        "description": "D-0022: a self-loop is not a cycle component",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-34",
+        "description": "D-0022: the self-loop stays classified SELF_LOOP and auditable through its own flag",
+        "expected": "1",
+        "observed": "1",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-35",
+        "description": "D-0022: every cycle edge stays inside one selected (aircraft, AF-06) chain",
+        "expected": "0",
+        "observed": "0",
+        "status": "passed"
+      },
+      {
+        "gate_id": "AT-36",
+        "description": "D-0022: exactly one cycle component with two members survives the scoped rule",
+        "expected": "1/2",
+        "observed": "1/2",
+        "status": "passed"
+      },
+      {
         "gate_id": "AT-26",
         "description": "Exact fulfillment stays separate from heuristic and ambiguous evidence",
         "expected": "0",
@@ -721,8 +749,8 @@
       {
         "gate_id": "MD-01",
         "description": "Every MODEL_INPUT column carries a Field-ID or declared-derivation comment",
-        "expected": "800",
-        "observed": "800",
+        "expected": "801",
+        "observed": "801",
         "status": "passed"
       },
       {
@@ -867,7 +895,7 @@
       {
         "OBJECT_NAME": "ROTATION_LINK_VALIDATION",
         "ROW_COUNT": 3900,
-        "CONTENT_FINGERPRINT": "3754449804575593023"
+        "CONTENT_FINGERPRINT": "6489708170451050513"
       },
       {
         "OBJECT_NAME": "ROUTE",
@@ -921,14 +949,14 @@
       }
     ],
     "column_metadata": {
-      "TOTAL_COLUMNS": 800,
-      "COMMENTED_COLUMNS": 800
+      "TOTAL_COLUMNS": 801,
+      "COMMENTED_COLUMNS": 801
     },
     "annotation": {
-      "columns_commented": 800,
+      "columns_commented": 801,
       "tables_annotated": 37,
       "traced_to_source_field_id": 363,
-      "traced_to_declared_derivation": 437
+      "traced_to_declared_derivation": 438
     },
     "consistency_diagnostics": {
       "q05_window_exact_change_rows": "22",
@@ -972,9 +1000,11 @@
     {
       "id": "A5",
       "question": "What happens when a rotation target leg is itself cancelled or missing times?",
-      "chosen": "A new typed anomaly TARGET_NOT_OPERATED, ranked below BROKEN_CONTINUITY.",
+      "chosen": "A new typed anomaly TARGET_NOT_OPERATED, ranked last, below the whole DV-25 vocabulary.",
       "why": "P0-11.3 keeps cancelled and missing-time legs out of the strict operated chain; the contract's five link conditions do not name the target's own operability. Zero rows hit this branch in the shipped fixtures.",
-      "visible_as": "ROTATION_LINK_VALIDATION.rotation_anomaly_class"
+      "visible_as": "ROTATION_LINK_VALIDATION.rotation_anomaly_class",
+      "status": "implemented but unexercised by the shipped fixtures",
+      "cross_reference": "D-0021 R5. TARGET_NOT_OPERATED is outside the DV-25 vocabulary and the independent DATA-04b oracle has no branch for it, so a QUERY-ROT versus oracle conformance harness will diverge the first time a rotation target is cancelled or loses its times. Either add the class to the oracle or fence it behind an explicit beyond-the-frozen-vocabulary flag before that harness is trusted."
     },
     {
       "id": "A6",
@@ -989,30 +1019,59 @@
       "chosen": "No. It is quarantined with reason NOT_FOR_USE_EVENT or UNKNOWN_ELIGIBILITY_FLAG, mirroring the explicit AM-15 rule.",
       "why": "AH-32 is contracted as an 'event eligibility/quality flag' and AM-15 states that null is not silently treated as false. Zero rows hit this branch in the shipped fixtures.",
       "visible_as": "AIRCRAFT_EVENT_QUARANTINE.quarantine_reason"
+    },
+    {
+      "id": "A8",
+      "question": "Over what scope is a rotation cycle detected?",
+      "chosen": "RESOLVED by D-0022: scoped to the selected (AF-02 aircraft, AF-06 local date). Previously detected globally, which was declared here as a difference; that is superseded.",
+      "why": "Q08 reconstructs one aircraft's chain for one local date, so a cycle is a property of that chain. A link to a different aircraft or date is DIFFERENT_AIRCRAFT (DV-25 rank 4) or OUTSIDE_SELECTED_DAY (rank 5), which is the actionable diagnosis; because CYCLE outranks both, global detection could silently mask them. This also aligns with the independent DATA-04b oracle, but D-0022 decides it on the principle, not on provenance.",
+      "visible_as": "ROTATION_LINK_VALIDATION.cycle_component_id / rotation_anomaly_class",
+      "status": "RESOLVED by D-0022, not a declared difference. Implemented and proven zero-movement; the scoping itself remains unexercised because the shipped fixtures contain no cross-aircraft or cross-day cycle, so REDTEAM-01 should treat the decision as reasoned rather than tested.",
+      "cross_reference": "D-0022 (supersedes the A8 declaration made under D-0021 R4). Rollback: widen the two join predicates on the `edges` CTE in data/model_input/60_actual_flight.sql."
+    },
+    {
+      "id": "A9",
+      "question": "Is a self-loop a cycle component?",
+      "chosen": "RESOLVED by D-0022: no. The self-edge is excluded from the cycle graph, so a self-referencing leg gets no cycle_component_id and is not a representative. The degenerate case stays queryable through the new is_self_loop_link Boolean.",
+      "why": "DV-25 ranks SELF_LOOP above CYCLE precisely to keep the classes disjoint, so counting a self-edge as a length-one component double-reports one defect under two structural headings. This was the one live disagreement with the independent oracle: a consumer counting cycle components previously got 2 here and 1 from the oracle. It now gets 1 from both.",
+      "visible_as": "ROTATION_LINK_VALIDATION.is_self_loop_link (new) / cycle_component_id / is_cycle_representative",
+      "status": "RESOLVED by D-0022. Exercised by fixture 8101 and no longer divergent: cycle_component_id and is_cycle_representative moved for exactly that one row, and the classification projection over all 3900 rows is unchanged.",
+      "cross_reference": "D-0022 (supersedes the A9 declaration made under D-0021 R4). Rollback: drop the `f.next_flight_id <> f.flight_id` predicate on the `edges` CTE."
+    },
+    {
+      "id": "A10",
+      "question": "Where does DIVERSION_ENDPOINT_CONFLICT rank?",
+      "chosen": "DV-25 rank 8, after BROKEN_CONTINUITY, per the D-0021 R3 decision. Evaluated whether or not a next link exists, so a diverted leg with a null AF-20 still reports the conflict rather than a silent TERMINAL_NO_TARGET.",
+      "why": "An earlier revision of this layer hoisted the conflict above every link class because SOURCE_CONTRACT.md:358-359 says the mismatch terminates continuity, which reads as a property of the leg rather than of the link. That hoist was not contract-forced, it disagreed with both DV-25 and the oracle, and D-0021 R1 made DV-25 the ordering authority. Zero fixture movement: 8109 clears all seven higher classes either way, and the raw evidence survives regardless because diversion_endpoint_conflict is a standalone Boolean on AIRCRAFT_FLIGHT and ROTATION_LINK_VALIDATION.",
+      "visible_as": "ROTATION_LINK_VALIDATION.rotation_anomaly_class / diversion_endpoint_conflict",
+      "status": "implemented; the ranking itself is unexercised because nothing competes with it in the shipped fixtures",
+      "cross_reference": "D-0021 R3 / REVIEW-D0021 Axis 4 and U1. Rollback: move the single WHEN branch back into the leg tier and realign the oracle."
     }
   ],
   "timings_seconds": {
-    "00_setup.sql": 10.981,
-    "10_reference.sql": 8.669,
-    "15_passenger_source.sql": 8.515,
-    "20_code_resolution.sql": 18.682,
-    "30_aircraft.sql": 13.731,
-    "31_aircraft_assignments.sql": 10.761,
-    "40_schedule.sql": 18.523,
-    "41_schedule_changes.sql": 13.379,
-    "50_passenger.sql": 8.414,
-    "60_actual_flight.sql": 4.923,
-    "70_fulfillment.sql": 10.539,
-    "90_metadata.sql": 31.832,
-    "annotate_columns": 21.473,
-    "verify": 35.397,
-    "wall_total": 215.82
+    "00_setup.sql": 7.818,
+    "10_reference.sql": 7.319,
+    "15_passenger_source.sql": 10.256,
+    "20_code_resolution.sql": 17.089,
+    "30_aircraft.sql": 13.183,
+    "31_aircraft_assignments.sql": 14.263,
+    "40_schedule.sql": 16.057,
+    "41_schedule_changes.sql": 10.475,
+    "50_passenger.sql": 9.531,
+    "60_actual_flight.sql": 6.849,
+    "70_fulfillment.sql": 10.323,
+    "90_metadata.sql": 23.67,
+    "annotate_columns": 23.493,
+    "verify": 34.841,
+    "wall_total": 205.166
   },
   "open_issues": [],
   "notes": [
     "CODE_RESOLUTION is row-scoped as the contract requires (resolution_id includes the DV-46 source row token), so it is by far the largest object at ~546k rows, of which ~122k are INVALID_INPUT results for legitimately null raw codes. MODEL-01 should decide deliberately whether to bind it at full grain or to bind CODE_RESOLUTION_CODE plus the per-object resolved id/status columns that every other table already carries.",
     "AIRCRAFT_EVENT_QUARANTINE is empty. Every quarantine branch is implemented (MISSING_REQUIRED_FIELD, UNKNOWN_FUTURE_EVENT_DATE, UNKNOWN_ELIGIBILITY_FLAG, NOT_FOR_USE_EVENT, INELIGIBLE_OR_UNKNOWN_AIRCRAFT, EVENT_BEFORE_EXISTENCE, EVENT_ON_OR_AFTER_END_OF_LIFE) but the shipped fixtures contain no ineligible aircraft event, so those branches are unexercised by data. The passenger quarantine path is exercised (1 row).",
     "No ROUTE_STATE is open. The final eligible snapshot 2026-10-26 is declared present and complete with zero rows, which proves absence for every schedule key, so every knowledge segment closes. This is a fixture consequence, not a derivation defect: HT-18 multi-open is demonstrated at a knowledge date (1339 concurrent states on SFO->LAX at 2026-08-31), and the model open sentinel is exercised by 3992 open daily aircraft assignments.",
+    "D-0021: rotation anomaly precedence is NOT derived in this layer. It is contracted by ATTRIBUTE_AUTHORITY.md:338 (DV-25) and SOURCE_CONTRACT.md:363-366, both shipped in commit 15d8f35 before EXPECTED_ANSWERS.yaml existed, and 8103's suppression is fully determined by DEMO_QUESTIONS.md:312. An earlier DATA-04a disclosure claimed the contract did not order the classes and that CYCLE over BACKWARD_TIME was the only ordering yielding an 11-row Q08. Both claims were false and are retracted: pairing BACKWARD_TIME over CYCLE with component-gated rather than class-gated suppression gives byte-identical output, so the row count discriminates neither degree of freedom. The shipped classification is unchanged and correct.",
+    "D-0022: cycle detection is scoped to the selected (AF-02, AF-06) chain and a self-loop is not a cycle component, because Q08 reconstructs one aircraft's chain for one date and DV-25 keeps SELF_LOOP and CYCLE disjoint. This supersedes the A8 and A9 declarations: they are resolved, not declared. Measured movement: the classification projection (flight_id, target_token, rotation_link_status, rotation_anomaly_class, is_accepted_link) over all 3900 rows is unchanged; cycle_component_id and is_cycle_representative moved for exactly one row (8101); cycle members went 3 -> 2, distinct components 2 -> 1, representatives 2 -> 1; one new column is_self_loop_link was added. No frozen result set moved.",
     "Filler schedules disappear at 2026-09-07, which is a complete snapshot carrying only four rows. That produces 12012 exact presence removals and 12012 unpaired removals at that comparison. It is outside every frozen Q05 and Q06 window and is the contract-correct reading of a complete snapshot."
   ]
 }

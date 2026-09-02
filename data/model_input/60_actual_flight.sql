@@ -87,25 +87,85 @@ WHERE a.flight_id IS NOT NULL;
 -- ---------------------------------------------------------------------------------------------
 -- ROTATION_LINK_VALIDATION.
 -- A null next link is a terminal fact, not a nullable identity, so target_token is the literal
--- NO_TARGET.  Anomaly precedence, highest first:
---   leg level : UNKNOWN_OR_INVALID_CANCELLATION_FLAG, CANCELLED, MISSING_TIME  (link_outcome EXCLUDED)
---               DIVERSION_ENDPOINT_CONFLICT                                    (link_outcome REJECTED)
---   link level: SELF_LOOP, CYCLE, MISSING_TARGET, DIFFERENT_AIRCRAFT,
---               OUTSIDE_SELECTED_DAY, BACKWARD_TIME, BROKEN_CONTINUITY,
---               TARGET_NOT_OPERATED                                            (link_outcome REJECTED)
--- CYCLE outranks BACKWARD_TIME and BROKEN_CONTINUITY so both members of a cycle carry the same
--- class; all member evidence is retained and is_cycle_representative marks the minimum flight_id
--- so a consumer can emit exactly one component-level row.
+-- NO_TARGET.
+--
+-- ANOMALY PRECEDENCE IS CONTRACTED, NOT DERIVED HERE (D-0021).  DV-25 is single-valued, so a
+-- precedence is required for it to be well defined, and the contract supplies exactly one ordering
+-- of its vocabulary, twice:
+--   ATTRIBUTE_AUTHORITY.md:338 (DV-25) "Typed self/cycle/missing/different/day/time/continuity/
+--     diversion-conflict/cancel/missing-time reason."
+--   SOURCE_CONTRACT.md:363-366  the same sequence in prose.
+-- Both ship in commit 15d8f35, before EXPECTED_ANSWERS.yaml existed, so the manifest was written
+-- from this enumeration rather than the reverse.  Do not re-derive it; cite it.
+--
+-- Two independent supports for CYCLE above BACKWARD_TIME, neither of which needs the manifest:
+--   * subsumption.  Gate times are totally ordered, so every timed directed cycle must contain at
+--     least one link whose target departs before the source arrives.  BACKWARD_TIME is a necessary
+--     consequence of CYCLE and never the reverse, so the consequence cannot outrank its cause.
+--     Ranking time above cycle would also split one indivisible structural defect across two
+--     diagnoses, one per cycle arm.
+--   * actionability.  No timestamp correction can repair 8102 -> 8103 -> 8102.
+--
+-- Applied order, highest first:
+--   leg tier   : UNKNOWN_OR_INVALID_CANCELLATION_FLAG, CANCELLED, MISSING_TIME  -> EXCLUDED.
+--                Hoisted above the link classes deliberately and on contract authority: DV-52 says
+--                an invalid or true cancellation flag "excludes the leg from the strict operated
+--                chain", and P0-11.3 states non-cancelled plus present actual times as chain
+--                membership preconditions.  The manifest's EXCLUDED versus REJECTED split cannot be
+--                produced any other way.  DV-53 carries no equivalent exclusion wording.
+--   link tier  : SELF_LOOP, CYCLE, MISSING_TARGET, DIFFERENT_AIRCRAFT, OUTSIDE_SELECTED_DAY,
+--                BACKWARD_TIME, BROKEN_CONTINUITY, DIVERSION_ENDPOINT_CONFLICT (DV-25 rank 8),
+--                then TARGET_NOT_OPERATED  -> REJECTED.
+--
+-- DIVERSION_ENDPOINT_CONFLICT sits at DV-25 rank 8 under D-0021 R3.  An earlier revision hoisted it
+-- into the leg tier because SOURCE_CONTRACT.md:358-359 says the mismatch "terminates continuity",
+-- which reads as a property of the leg.  That hoist was not contract-forced, it disagreed with both
+-- DV-25 and the independent oracle, and citing DV-25 for every other class while overriding it for
+-- this one is incoherent.  No result moves: 8109 clears all seven higher classes, and the raw
+-- evidence is never lost because diversion_endpoint_conflict is a standalone Boolean on both
+-- AIRCRAFT_FLIGHT and this table.  Rollback if a later fixture proves the conflict must outrank the
+-- link classes: move the single WHEN branch back into the leg tier here and align the oracle.
+--
+-- The conflict branch is evaluated whether or not a target exists, so a diverted leg with a null
+-- AF-20 still reports the conflict instead of a silent TERMINAL_NO_TARGET.  Every link-tier branch
+-- is therefore guarded on next_flight_id rather than short-circuiting on it.
+--
+-- Cycle members all carry class CYCLE; all member/link evidence is retained per
+-- DEMO_QUESTIONS.md:312 and is_cycle_representative marks the minimum flight_id so a consumer emits
+-- exactly one component-level row.  The suppression is presentation-side; nothing is dropped here.
+--
+-- CYCLE SCOPE AND SELF-LOOPS ARE SETTLED BY D-0022, on one principle: Q08 reconstructs one
+-- aircraft's chain for one local date, so a cycle is a property of that chain.
+--   * detection is scoped to the selected (AF-02, AF-06).  A link to a different aircraft or a
+--     different local date is not a cycle that happens to cross them; it is DIFFERENT_AIRCRAFT
+--     (DV-25 rank 4) or OUTSIDE_SELECTED_DAY (rank 5), which is also the diagnosis an operator can
+--     act on.  Global detection would let an incidental mutual reference between two aircraft mask
+--     the anomaly that matters, and it would do so silently because CYCLE outranks both.
+--     Rollback: widen the two join predicates on `edges` below.
+--   * a self-loop is NOT a cycle component.  DV-25 ranks SELF_LOOP above CYCLE precisely to keep
+--     the two classes disjoint, so counting a self-edge as a length-one component would
+--     double-report one defect under two structural headings.  The self-edge is excluded from
+--     `edges`, so a self-referencing leg receives no cycle_component_id and is not a
+--     representative.  The degenerate case stays queryable through the dedicated
+--     is_self_loop_link Boolean rather than through the cycle-component columns.
+--     Rollback: drop the `f.next_flight_id <> f.flight_id` predicate on `edges`.
+-- Both alignments also match the independent DATA-04b oracle, which is a corroboration rather than
+-- the reason: D-0022 decides on the principle above, not on which artifact was written first.
 -- ---------------------------------------------------------------------------------------------
 
 CREATE OR REPLACE TABLE MODEL_INPUT.ROTATION_LINK_VALIDATION
   COMMENT = 'Validated actual rotation self-reference. Grain (AF-01, target_token) where target_token is AF-20 rendered as text or the literal NO_TARGET. Carries DV-24 link status, DV-25 anomaly class, the selected local date basis AF-06 and actual endpoint/time evidence only. Planned values are never used.'
 AS
 WITH edges AS (
+  -- D-0022: the cycle graph is the selected per-aircraft, per-local-date chain, and a self-edge is
+  -- SELF_LOOP rather than a length-one cycle.  Both restrictions live here and nowhere else.
   SELECT f.flight_id AS src, f.next_flight_id AS dst
   FROM MODEL_INPUT.AIRCRAFT_FLIGHT f
   JOIN MODEL_INPUT.AIRCRAFT_FLIGHT t ON t.flight_id = f.next_flight_id
   WHERE f.next_flight_id IS NOT NULL
+    AND f.next_flight_id <> f.flight_id
+    AND t.aircraft_id = f.aircraft_id
+    AND t.flight_departure_date = f.flight_departure_date
 ), reach (src, dst, depth) AS (
   SELECT e.src, e.dst, 1 FROM edges e
   UNION ALL
@@ -144,33 +204,41 @@ WITH edges AS (
     t.cancellation_flag_status                                   AS target_cancellation_flag_status,
     cc.cycle_component_id,
     CASE
-      -- leg-level exclusions: the leg is retained but never joins a strict operated chain
+      -- leg tier: DV-52 / P0-11.3 chain-membership preconditions, contract-forced above the links
       WHEN f.cancellation_flag_status = 'UNKNOWN_OR_INVALID_CANCELLATION_FLAG'
                                                        THEN 'UNKNOWN_OR_INVALID_CANCELLATION_FLAG'
       WHEN f.is_cancelled_boolean                      THEN 'CANCELLED'
       WHEN f.actual_gate_departure_time_utc IS NULL
         OR f.actual_gate_arrival_time_utc IS NULL      THEN 'MISSING_TIME'
-      -- leg-level reconciliation failure terminates continuity
-      WHEN f.diversion_endpoint_conflict               THEN 'DIVERSION_ENDPOINT_CONFLICT'
-      -- link-level
-      WHEN f.next_flight_id IS NULL                    THEN NULL
-      WHEN f.next_flight_id = f.flight_id              THEN 'SELF_LOOP'
-      WHEN cc.cycle_component_id IS NOT NULL           THEN 'CYCLE'
-      WHEN t.flight_id IS NULL                         THEN 'MISSING_TARGET'
-      WHEN f.aircraft_id IS NULL OR t.aircraft_id IS NULL
-        OR t.aircraft_id <> f.aircraft_id              THEN 'DIFFERENT_AIRCRAFT'
-      WHEN NOT EQUAL_NULL(t.flight_departure_date, f.flight_departure_date)
-                                                       THEN 'OUTSIDE_SELECTED_DAY'
-      WHEN t.actual_gate_departure_time_utc IS NULL
-        OR t.actual_gate_departure_time_utc < f.actual_gate_arrival_time_utc
-                                                       THEN 'BACKWARD_TIME'
-      WHEN f.actual_continuity_arrival_code IS NULL
-        OR t.departure_airport_code IS NULL
-        OR t.departure_airport_code <> f.actual_continuity_arrival_code
-                                                       THEN 'BROKEN_CONTINUITY'
-      WHEN t.cancellation_flag_status <> 'NORMALIZED'
-        OR t.is_cancelled_boolean
-        OR t.actual_gate_arrival_time_utc IS NULL      THEN 'TARGET_NOT_OPERATED'
+      -- link tier, in DV-25 order.  Every branch is guarded on next_flight_id so that a leg with no
+      -- target still reaches the DV-25 rank 8 diversion branch below.
+      WHEN f.next_flight_id IS NOT NULL
+       AND f.next_flight_id = f.flight_id              THEN 'SELF_LOOP'          -- DV-25 rank 1
+      WHEN f.next_flight_id IS NOT NULL
+       AND cc.cycle_component_id IS NOT NULL           THEN 'CYCLE'              -- DV-25 rank 2
+      WHEN f.next_flight_id IS NOT NULL
+       AND t.flight_id IS NULL                         THEN 'MISSING_TARGET'     -- DV-25 rank 3
+      WHEN f.next_flight_id IS NOT NULL
+       AND (f.aircraft_id IS NULL OR t.aircraft_id IS NULL
+            OR t.aircraft_id <> f.aircraft_id)         THEN 'DIFFERENT_AIRCRAFT' -- DV-25 rank 4
+      WHEN f.next_flight_id IS NOT NULL
+       AND NOT EQUAL_NULL(t.flight_departure_date, f.flight_departure_date)
+                                                       THEN 'OUTSIDE_SELECTED_DAY'  -- DV-25 rank 5
+      WHEN f.next_flight_id IS NOT NULL
+       AND (t.actual_gate_departure_time_utc IS NULL
+            OR t.actual_gate_departure_time_utc < f.actual_gate_arrival_time_utc)
+                                                       THEN 'BACKWARD_TIME'      -- DV-25 rank 6
+      WHEN f.next_flight_id IS NOT NULL
+       AND (f.actual_continuity_arrival_code IS NULL
+            OR t.departure_airport_code IS NULL
+            OR t.departure_airport_code <> f.actual_continuity_arrival_code)
+                                                       THEN 'BROKEN_CONTINUITY'  -- DV-25 rank 7
+      WHEN f.diversion_endpoint_conflict               THEN 'DIVERSION_ENDPOINT_CONFLICT'  -- rank 8
+      -- Beyond the DV-25 vocabulary; see D-0020 A5 and the D-0021 R5 cross-reference.
+      WHEN f.next_flight_id IS NOT NULL
+       AND (t.cancellation_flag_status <> 'NORMALIZED'
+            OR t.is_cancelled_boolean
+            OR t.actual_gate_arrival_time_utc IS NULL) THEN 'TARGET_NOT_OPERATED'
       ELSE NULL
     END::VARCHAR                                                 AS rotation_anomaly_class
   FROM MODEL_INPUT.AIRCRAFT_FLIGHT f
@@ -196,6 +264,8 @@ SELECT
   v.cycle_component_id,
   (v.cycle_component_id IS NOT NULL AND v.cycle_component_id = v.flight_id)
                                                                  AS is_cycle_representative,
+  (v.next_flight_id IS NOT NULL AND v.next_flight_id = v.flight_id)
+                                                                 AS is_self_loop_link,
   v.actual_origin_code,
   v.actual_continuity_arrival_code,
   v.diverted_airport_code,
