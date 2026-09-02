@@ -165,3 +165,53 @@ here would have been built on top of.
 The descoped tasks remain fully specified in `TASK_GRAPH.md` with their dependencies intact, so a
 later session can resume any of them without re-deriving anything. Nothing about the retained work
 forecloses them.
+
+## Completion state, 2026-09-02
+
+All eight golden questions answer live against the ontology. Under the reduced scope agreed this
+session (ontology plus queries), the retained work is **done**.
+
+| Layer | Evidence |
+|---|---|
+| `SOURCE` | 182,039 rows, 204 columns, content hashes equal to manifest 1.2.0 |
+| `MODEL_INPUT` | 37 objects, 801+ traced columns, 88/88 integrity gates |
+| Independent SQL oracles | 49/49 result sets, `all_green=True` |
+| Ontology | 46 concepts, 1,292 properties, 32 relationships, 93/93 gates |
+| Q01-Q04 + Q02F | 23/23 result sets, 46 tests |
+| Q05-Q07 | 21/21 checks, 91 tests |
+| Q08 | 6/6 result sets, 41 tests |
+
+Every gate was rerun by the orchestrator rather than accepted on a sub-agent's report.
+
+### Known issues carried forward, in the order they would bite
+
+1. **Q02F writes a dimension into the shared named model from a query module.** A sibling importing
+   `aviation_model` rewrites the model without `Q02FStorageSpellBucket`, and Q02F then returns
+   **empty rather than erroring**. Guarded by a named assertion that raises first, but the fix is to
+   move the bucket dimension into `rai_code/aviation_model/`. Silent-empty is the worst failure mode
+   available to a demo, so this is first on the list.
+2. **The query modules cannot run in parallel.** Importing one is a write transaction; a concurrent
+   read fails with `prepareIndex: model is currently locked` rather than waiting. All three modules
+   now carry a narrow retry, but any combined runner must serialise them or inherit intermittent red.
+3. **Q01 is 19-29s warm** against Q03 returning 985 rows in 3.7s. DV-33 against an arbitrary date
+   cannot be one derived property, because two of its four values are the absence of a covering row,
+   so Q01 costs up to nine round-trips for a one-row answer. The fix is materialising
+   `NO_RECORDED_STATE` intervals in `MODEL_INPUT`, not a query rewrite. Q01 is the natural demo
+   opener, so this matters more than the number suggests.
+4. **`TARGET_NOT_OPERATED` is live with four rows** and the SQL oracle still has no branch for it
+   (D-0030). Fenced behind a manifest-vocabulary check, not closed.
+5. **Three precedence and scope divergences** between `MODEL_INPUT` and the independent oracle
+   (D-0021, D-0022, D-0030). All unexercised by the shipped fixtures. They matter because "an
+   independent oracle reproduces the RAI answer" is a claim the demo makes, and it is only
+   demonstrated where the fixtures reach.
+6. **`Q05-CANONICAL`'s declared row order is unverifiable in principle** (D-0018). Disclosed, not
+   fixed. The enriched Q05 sets are order-derivable, so this is confined to the one frozen set.
+7. **Roughly 9 of the 38 supplied versioned attributes are still not carried**, each named in
+   `NEO4J_FIDELITY_AUDIT.md`. D-0024 took coverage from about 20 to about 29.
+
+### Narration constraints
+
+Say "concurrently valid at knowledge date", never "open-ended": zero route states carry the
+`9999-01-01` sentinel. Do not present the five `require(unique(...))` lines as live checks; they are a
+documented no-op in 1.20.1. Q07's operating clock visibly undercounts marketing and that is
+contractually correct (D-0029) — say it rather than explain it away.
