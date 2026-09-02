@@ -228,6 +228,11 @@ def test_two_clean_runs_and_reordered_input_are_byte_identical(tmp_path: Path) -
     gen.generate("smoke", tmp_path, reordered_input=True)
     reordered = tree_hashes(tmp_path / "smoke")
     assert first == second == reordered
+    gen.generate("demo", tmp_path)
+    demo_first = tree_hashes(tmp_path / "demo")
+    gen.generate("demo", tmp_path, reordered_input=True)
+    demo_reordered = tree_hashes(tmp_path / "demo")
+    assert demo_first == demo_reordered
 
 
 def test_fault_before_publish_never_exposes_partial_manifest(tmp_path: Path) -> None:

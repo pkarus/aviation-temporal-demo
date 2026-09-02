@@ -38,30 +38,44 @@
     "EXPECTED_ANSWERS.yaml_sha256": "412d6bd4443b12b64d4def4a26becd08a478ef75b4a8bda90b3244e75de6105f",
     "SOURCE_CONTRACT.md_sha256": "838b965e7a715a80b029fdda51dad186a65e55f32ea48be6ce391abdbd6a4078",
     "ATTRIBUTE_AUTHORITY.md_sha256": "5795d8fb93b1fe7912c6c0394f2101afa7fef3051e1a30ee9718df0dc0c446a1",
-    "DECISION_LOG.md_sha256": "b7b23c0ca211b6795dd7b1e375d982c07793963d323a88ed2b6c805b27925ce1",
+    "DECISION_LOG.md_authority_baseline_through_D-0014_sha256": "2bcce37e71fb21de30174e1de599c7d0abb3e228359eca4fafd892de38b7f843",
+    "DECISION_LOG.md_authority_baseline_bytes": 35385,
+    "DECISION_LOG.md_current_at_D-0015_review_sha256": "ecc82096535888de033448c83ef1585a11dc5090f7e6d6023bd2c85d7287660a",
     "data/SYNTHETIC_DATA_SPEC.md_sha256": "b2d520a3fa1fcf6490b9e534cc0c799ef47b8877a490ad3d5469e90efabeaf32",
     "build/task_reports/DATA-01.json_sha256": "eb0fb2b270f845bfc21e97ce7b6520ea46d725d8cdbb9a28b56eb2909b22c7e6",
-    "binding_decisions": ["D-0003", "D-0004", "D-0006", "D-0008", "D-0009", "D-0010", "D-0011", "D-0012", "D-0013"]
+    "binding_decisions": [
+      "D-0003",
+      "D-0004",
+      "D-0006",
+      "D-0008",
+      "D-0009",
+      "D-0010",
+      "D-0011",
+      "D-0012",
+      "D-0013",
+      "D-0014",
+      "D-0015"
+    ]
   },
   "implementation_artifacts": {
     "data/generate_synthetic_data.py": {
-      "sha256": "05ed849c662dbd15e1b8def830950816f6aa4e66a53392dc4b8783a5b825a065",
-      "lines": 1416,
-      "evidence": "Pure deterministic constructors and assertions for all ten SOURCE objects; CLI --scale smoke|demo; sf-csv-v1 and typed-row-lp-v1; dv43-lp-v1; canonical sorting/hashing; source-derived Q03/Q05/Q06/Q07 validation; atomic publication."
+      "sha256": "e1eb7de43ef76fadc7d178565dfd8f3fe031504e3af65227dd563732372ead4f",
+      "lines": 1450,
+      "evidence": "Pure deterministic constructors and assertions for all ten SOURCE objects; CLI --scale smoke|demo; sf-csv-v1 and typed-row-lp-v1; dv43-lp-v1; canonical sorting/hashing; source-derived Q03/Q05/Q06/Q07 validation; atomic publication; D-0015 versioned decision-authority baseline with strict append-only decision grammar."
     },
     "data/__init__.py": {
       "sha256": "d7e33fee7e3b6c9027992ea805c813b68951bb590d3cf44d6ee55ddaf4fe0bf9"
     },
     "tests/test_synthetic_data.py": {
-      "sha256": "bdd1c457faf074d1053cea2c25bb8ce6201797638452e1ad8e56e6b188c7ce9c",
-      "tests": 23,
-      "evidence": "Independent scalar/CSV/LP/hash recomputation, exact headers and row widths, both scales, cross-scale containment, raw reorder proof, byte repeatability, failure injection, namespace/NF closure, generated ignore, and canonical JSON."
+      "sha256": "71c3889c50e23b25dd0635765cd2a8e708f1821699da68b9b69300524ad7ea1f",
+      "tests": 24,
+      "evidence": "Independent scalar/CSV/LP/hash recomputation, exact headers and row widths, both scales, cross-scale containment, raw reorder proof, byte repeatability for clean/reordered smoke and demo, failure injection, namespace/NF closure, generated ignore, canonical JSON, and D-0015 exact/valid-suffix/tamper/truncation/invalid-suffix authority tests."
     }
   },
   "generated_packages": {
     "smoke": {
       "path": "build/generated_data/smoke",
-      "manifest_sha256": "30cdda2e1bb5c32bd61e7076f79c45b4c4b12f98c5099fa447ab02f9dc4b916f",
+      "manifest_sha256": "9186965b4f17bdd68dd2b0082ccfc84e1c4004ecad020050d94042fa7312f361",
       "rows": 249,
       "counts": {
         "AIRCRAFT_MASTER": 6,
@@ -78,7 +92,7 @@
     },
     "demo": {
       "path": "build/generated_data/demo",
-      "manifest_sha256": "e8a826e7400a999e1d0f2b1bd20ceba35fcd6bb5513f3baf060768548637c828",
+      "manifest_sha256": "7c35a1483e6c87205a508c31a213b0ab720d448d5bb1a704794723df33328834",
       "rows": 145054,
       "counts": {
         "AIRCRAFT_MASTER": 999,
@@ -98,7 +112,7 @@
     "generated_files_tracked": false
   },
   "serialization_and_publication": {
-    "decision": "D-0013",
+    "decision": "D-0013 serialization/publication and D-0015 append-compatible authority baseline",
     "csv_version": "sf-csv-v1",
     "typed_row_version": "typed-row-lp-v1",
     "json": "UTF-8, sorted keys, compact separators, ensure_ascii=false, allow_nan=false, one final LF",
@@ -118,13 +132,41 @@
     "q03_rows": 132,
     "q03_source_materialization_sha256": "5b7eac141abc7daa656677352a14e5037d19666860a49dfbe6fd7ebd34904242",
     "q05_rows": 35,
-    "q05_adjacent_counts": [7, 5, 9, 14],
+    "q05_adjacent_counts": [
+      7,
+      5,
+      9,
+      14
+    ],
     "q05_source_materialization_sha256": "4f68d59fce6346e8f7064f55cec737fda8b961fc48d8e10a927afff02738d92a",
     "q06_rows": 2,
     "q06_source_materialization_sha256": "a09b8063c946b36ba58f18f61edca1e0e2cb8dea52a3fc0cf8d8dec12506d20c",
     "q07_rows": 5,
     "q07_source_materialization_sha256": "22851f74fb472960098b347fc0a696baa87a484312a43d0a09704299",
-    "negative_fixture_classes": ["NF-A01", "NF-A02", "NF-A03", "NF-A04", "NF-A05", "NF-S01", "NF-S02", "NF-S03", "NF-S04", "NF-S05", "NF-S06", "NF-S07", "NF-S08", "NF-S09", "NF-S10", "NF-F01", "NF-F02", "NF-R01", "NF-R02", "NF-X01", "NF-X02", "NF-E01"],
+    "negative_fixture_classes": [
+      "NF-A01",
+      "NF-A02",
+      "NF-A03",
+      "NF-A04",
+      "NF-A05",
+      "NF-S01",
+      "NF-S02",
+      "NF-S03",
+      "NF-S04",
+      "NF-S05",
+      "NF-S06",
+      "NF-S07",
+      "NF-S08",
+      "NF-S09",
+      "NF-S10",
+      "NF-F01",
+      "NF-F02",
+      "NF-R01",
+      "NF-R02",
+      "NF-X01",
+      "NF-X02",
+      "NF-E01"
+    ],
     "negative_fixture_class_count": 22,
     "identity_namespace_validation": "passed",
     "cross_scale_smoke_contained_in_demo": true,
@@ -147,7 +189,14 @@
     "two_clean_runs_byte_identical": true,
     "reordered_raw_input_proven_different": true,
     "reordered_canonical_packages_byte_identical": true,
-    "both_scales_confirmed": true
+    "both_scales_confirmed": true,
+    "decision_log_authority_baseline": {
+      "through_decision": "D-0014",
+      "bytes": 35385,
+      "sha256": "2bcce37e71fb21de30174e1de599c7d0abb3e228359eca4fafd892de38b7f843",
+      "strict_utf8_and_monotonic_decision_suffix_tested": true,
+      "full_current_sha256_recorded_separately": true
+    }
   },
   "commands": [
     "Read AGENTS.md first-action authorities, DATA-02 definition, D-0013, final DATA-01 report, and data/SYNTHETIC_DATA_SPEC.md completely; use no skill.",
@@ -161,9 +210,16 @@
     "git check-ignore build/generated_data/smoke/manifest.json build/generated_data/demo/aircraft_master.csv",
     "git diff --check",
     "shasum -a 256 implementation, authority, and generated manifest artifacts",
-    "Independent read-only adversarial review by /root/data_01/data02_adversarial"
+    "Independent read-only adversarial review by /root/data_01/data02_adversarial",
+    "Independent D-0015 cold-regeneration compatibility review by /root/spec_03"
   ],
   "test_evidence": [
+    {
+      "name": "D-0015 compatibility rerun",
+      "exit_code": 0,
+      "duration_seconds": 60.65,
+      "output": "24 passed; strict UTF-8 D-0014 authority baseline and monotonic D-0015+ suffix gates pass; clean/reordered smoke and demo trees remain byte-identical; manifests remain exactly 8e24fcf1... and c05c732e...."
+    },
     {
       "name": "final repository suite",
       "exit_code": 0,
@@ -174,13 +230,13 @@
       "name": "final smoke generation",
       "exit_code": 0,
       "duration_seconds": 0.17,
-      "output": "249 rows; manifest 30cdda2e1bb5c32bd61e7076f79c45b4c4b12f98c5099fa447ab02f9dc4b916f."
+      "output": "249 rows; D-0015-compatible manifest 8e24fcf1581d89958a8b8bbab0683372817bbe01c42b3c89ac7f2a56d980383e."
     },
     {
       "name": "final demo generation",
       "exit_code": 0,
       "duration_seconds": 15.78,
-      "output": "145054 rows; manifest e8a826e7400a999e1d0f2b1bd20ceba35fcd6bb5513f3baf060768548637c828."
+      "output": "145054 rows; D-0015-compatible manifest c05c732e158298b3c04e432a8e428ebc8e93a60e59fb2b53f4ca45c558dbd119."
     },
     {
       "name": "both-scale clean/reordered determinism",
@@ -224,13 +280,33 @@
       }
     ],
     "final_verdict": "PASS",
-    "severity_counts": {"Sev1": 0, "Sev2": 0, "Sev3": 0},
+    "severity_counts": {
+      "Sev1": 0,
+      "Sev2": 0,
+      "Sev3": 0
+    },
     "reviewed_hashes": {
       "generator": "05ed849c662dbd15e1b8def830950816f6aa4e66a53392dc4b8783a5b825a065",
       "tests": "bdd1c457faf074d1053cea2c25bb8ce6201797638452e1ad8e56e6b188c7ce9c",
       "smoke_manifest": "30cdda2e1bb5c32bd61e7076f79c45b4c4b12f98c5099fa447ab02f9dc4b916f",
       "demo_manifest": "e8a826e7400a999e1d0f2b1bd20ceba35fcd6bb5513f3baf060768548637c828"
     }
+  },
+  "d0015_compatibility_review": {
+    "reviewer": "/root/spec_03",
+    "initial_verdict": "FAIL with two Sev2 amendments",
+    "required_repairs": [
+      "Label the manifest DECISION_LOG hash as the D-0014 baseline, record the full current hash separately, and require package re-versioning for later source-affecting decisions.",
+      "Require strict UTF-8 and a unique strictly increasing D-0015+ decision-heading suffix; cross-check generator/loader constants and test exact, appended, tampered, truncated, and malformed cases."
+    ],
+    "repairs_implemented": true,
+    "final_verdict": "PASS",
+    "severity_counts": {
+      "Sev1": 0,
+      "Sev2": 0,
+      "Sev3": 0
+    },
+    "independent_evidence": "Focused authority plus clean/reordered both-scale checks: 2 passed; all 10 DATA-03 loader tests and cold preflight passed; ephemeral smoke/demo trees matched all 11 frozen files per scale byte-for-byte; git diff --check passed."
   },
   "timings": {
     "final_smoke_generation_seconds": 0.17,
@@ -241,5 +317,19 @@
     "snowflake_state_changed": false,
     "procedure": "Delete only build/generated_data/<scale>/ and regenerate with data/generate_synthetic_data.py. Reverting the serializer or file-format boundary requires a versioned decision/manifest change and renewed DATA-02/DATA-03 byte and load gates. Frozen expected answers remain untouched."
   },
-  "unresolved_issues": []
+  "unresolved_issues": [],
+  "d0017_supersession": {
+    "decision": "D-0017 supersedes the D-0014 publication apparatus, the D-0015 decision-log authority baseline, and the D-0016 in-place reconciliation procedure.",
+    "manifest_version": "1.1.0",
+    "authority_set": [
+      "EXPECTED_ANSWERS.yaml",
+      "SOURCE_CONTRACT.md",
+      "ATTRIBUTE_AUTHORITY.md",
+      "data/SYNTHETIC_DATA_SPEC.md",
+      "build/task_reports/DATA-01.json"
+    ],
+    "decision_log_binding_removed": "DECISION_LOG.md is governance prose, not a determinant of the generated data.",
+    "regeneration_evidence": "Both scales regenerated after the patch; all 20 CSV file hashes and all 20 ordered typed-row hashes are byte-identical to manifest 1.0.1. Only manifest.json bytes differ.",
+    "tests": "36 passed (tests/) after removing the decision-log authority gate."
+  }
 }

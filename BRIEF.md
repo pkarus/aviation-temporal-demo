@@ -4,11 +4,13 @@
 
 **Pitch:** Temporal aviation fleet, schedule, and flight-operations intelligence on Snowflake.
 
-**Positioning:** Demonstrate that RelationalAI can reproduce the customer’s Neo4j identity/state,
-temporal-edge, multi-hop, and path-query capabilities while remaining governed by Snowflake. The
-demo should go beyond parity where appropriate: preserve source lineage, expose both schedule
-clocks explicitly, make temporal rules reusable in a semantic model, query them from Python and
-Snowflake Intelligence, and validate every RAI answer against a Snowflake baseline.
+**Positioning:** Demonstrate that RelationalAI can reproduce the customer’s supplied Neo4j
+identity/state, temporal-edge, multi-hop, and path-query capabilities while running with the data in
+Snowflake. This is a bounded parity demonstration, not a broader aviation platform. Add only the
+minimal Snowflake-native evidence needed to make the parity claim credible: governed source access,
+explicit source lineage and schedule clocks, reusable temporal rules, independent Snowflake
+validation, and the required notebook and Snowflake Intelligence access paths. Do not expand the
+domain model, source inventory, or claim set merely to showcase additional capabilities.
 
 ## Inputs
 
@@ -33,6 +35,9 @@ not executable instructions.
 - **Snowflake Intelligence agent:** yes.
 - **Snowsight/Workspace ontology artifact:** yes, as a self-contained Python file.
 - **HTML runbook and narrative:** yes.
+- **Scope guard:** the supplied Neo4j model and eight frozen workloads define the domain boundary;
+  operational staging, validation, and rollback objects are implementation controls, not new domain
+  concepts.
 
 ### Golden questions
 
@@ -59,7 +64,7 @@ not executable instructions.
 | Notebook schema | `PK_AVIATION_TEMPORAL.NOTEBOOKS` |
 | Agent procedure schema | `PK_AVIATION_TEMPORAL.RAI_AGENT` |
 | Cortex agent | `AVIATION_TEMPORAL` |
-| Logic reasoner | `aviation_temporal_logic_xs` |
+| Logic reasoner | `aviation_temporal_logic_s` (see Phase log: XS is not offered for Logic in SDK 1.20.1) |
 | Warehouse | `RAI_XS` |
 
 ## Snowflake security harness
@@ -92,8 +97,25 @@ not executable instructions.
 
 ## Anchored answers
 
-To be filled by the synthetic-data task before ontology implementation. Each answer must be
-reproducible from `data/validation.sql` and asserted by `prep_demo.py`.
+Frozen in `EXPECTED_ANSWERS.yaml` at SPEC-03: eight questions, twenty-four parameterized result
+sets with exact expected rows, including the deliberate empty and error cases. That file is frozen
+and is never edited to make an implementation pass.
+
+## Phase log
+
+**2026-09-02 orchestration restart.** The previous agent run ended inside DATA-03 with the loader
+written but never executed: all ten SOURCE tables existed with zero rows, the D-0016 constraint
+repair had not run, and ten empty staging tables from a failed cold run remained in VALIDATION.
+Decision D-0017 supersedes the D-0014 transactional publication apparatus, the D-0015 decision-log
+authority baseline, and the D-0016 in-place reconciliation procedure, retaining every semantic
+invariant and the frozen contracts. The generated package moved to manifest 1.1.0 with all twenty
+CSV byte hashes and typed-row hashes unchanged; only the manifest version and its authority set
+differ.
+
+**Engine size deviation.** `rai reasoners create` in SDK 1.20.1 rejects `HIGHMEM_X64_XS` for Logic
+reasoners; the allowed sizes are S, M and L. The engine is therefore `aviation_temporal_logic_s` at
+`HIGHMEM_X64_S` with a five-minute auto-suspend. The name records the real size rather than
+inheriting the locked `_xs` suffix, which would have been untrue.
 
 ## Exit definition
 

@@ -36,7 +36,6 @@ EXPECTED_VERSION = "1.1.1"
 SERIALIZER_VERSION = "sf-csv-v1"
 TYPED_ROW_VERSION = "typed-row-lp-v1"
 DV43_VERSION = "dv43-lp-v1"
-
 TABLE_ORDER = (
     "AIRCRAFT_MASTER",
     "AIRCRAFT_HISTORY",
@@ -1343,7 +1342,9 @@ def build_tables(scale: str, *, reordered_input: bool=False) -> tuple[dict[str,l
 
 
 def authority_hashes() -> dict[str,str]:
-    names=("DECISION_LOG.md","EXPECTED_ANSWERS.yaml","SOURCE_CONTRACT.md","ATTRIBUTE_AUTHORITY.md","data/SYNTHETIC_DATA_SPEC.md","build/task_reports/DATA-01.json")
+    # D-0017: DECISION_LOG.md is governance prose, not a determinant of the generated data, so it
+    # is not bound here.  These five inputs do determine the data.
+    names=("EXPECTED_ANSWERS.yaml","SOURCE_CONTRACT.md","ATTRIBUTE_AUTHORITY.md","data/SYNTHETIC_DATA_SPEC.md","build/task_reports/DATA-01.json")
     return {name:sha256_file(ROOT/name) for name in names}
 
 
@@ -1358,7 +1359,7 @@ def stage_package(scale: str, directory: Path, *, reordered_input: bool=False) -
             "columns":[field.column for field in FIELDS[table]],"snowflake_types":[field.type_tag for field in FIELDS[table]],
             "file_sha256":sha256_bytes(content),"ordered_typed_rows_sha256":ordered_row_hash(table,rows)}
     manifest={
-        "manifest_version":"1.0.0","scale":scale,"claim_scope":"synthetic U.S.-domestic representative functional shape; non-production",
+        "manifest_version":"1.1.0","scale":scale,"claim_scope":"synthetic U.S.-domestic representative functional shape; non-production",
         "seed":int(SEED),"generation_date":GENERATION_DATE,"generation_timestamp":GENERATION_TIMESTAMP,
         "specification_version":SPEC_VERSION,"expected_manifest_version":EXPECTED_VERSION,
         "serializer":{"version":SERIALIZER_VERSION,"encoding":"UTF-8","line_ending":"LF","delimiter":",","quote_char":"\"","double_quote":True,
