@@ -1,0 +1,116 @@
+{
+  "artifacts": {
+    "added": [
+      "data/load_source.py",
+      "data/test_load_source.py",
+      "build/data03_rerun.json"
+    ],
+    "modified": [
+      "pyproject.toml (testpaths now include data/)"
+    ],
+    "removed": [
+      "data/load_snowflake_source.py",
+      "data/test_load_snowflake_source.py"
+    ]
+  },
+  "commands": [
+    ".venv/bin/python -m pytest data/test_load_source.py -q",
+    ".venv/bin/python data/load_source.py --scale demo --preflight",
+    ".venv/bin/python data/load_source.py --scale demo --apply",
+    ".venv/bin/python data/load_source.py --scale demo --apply  # idempotent rerun",
+    "snow sql -c rai --role RAI_DEMO_AVIATION_TEMPORAL -q \"show tables in schema PK_AVIATION_TEMPORAL.SOURCE\"",
+    "snow sql -c rai --role RAI_DEMO_AVIATION_TEMPORAL -q \"select count(*), count(comment) from PK_AVIATION_TEMPORAL.information_schema.columns where table_schema='SOURCE'\""
+  ],
+  "completed_at": "2026-09-02",
+  "decision_authority": [
+    "D-0013",
+    "D-0016 (finding only)",
+    "D-0017"
+  ],
+  "evidence": {
+    "change_tracking": {
+      "AIRCRAFT_CONFIGURATION": "ON",
+      "AIRCRAFT_FLIGHT": "ON",
+      "AIRCRAFT_HISTORY": "ON",
+      "AIRCRAFT_MASTER": "ON",
+      "AIRLINE_REFERENCE": "ON",
+      "AIRPORT_REFERENCE": "ON",
+      "PASSENGER_FORWARD": "ON",
+      "PASSENGER_HISTORICAL": "ON",
+      "SCHEDULE_SNAPSHOT": "ON",
+      "SCHEDULE_SNAPSHOT_CALENDAR": "ON"
+    },
+    "columns_commented": 195,
+    "columns_total": 195,
+    "constraints": {
+      "foreign_key": [
+        "FK_AIRCRAFT_HISTORY_MASTER",
+        "FK_SCHEDULE_SNAPSHOT_CALENDAR"
+      ],
+      "note": "SCHEDULE_SNAPSHOT declares no raw key: semantic duplicate rows are deliberate fixture evidence.",
+      "primary_key": [
+        "PK_SCHEDULE_SNAPSHOT_CALENDAR"
+      ],
+      "unique_not_enforced_norely": [
+        "UQ_AIRCRAFT_MASTER_ID",
+        "UQ_AIRCRAFT_HISTORY_ID",
+        "UQ_AIRCRAFT_CONFIGURATION_ID",
+        "UQ_PASSENGER_FORWARD_SOURCE_ID",
+        "UQ_PASSENGER_HISTORICAL_SOURCE_ID",
+        "UQ_AIRCRAFT_FLIGHT_ID",
+        "UQ_AIRPORT_REFERENCE_ID",
+        "UQ_AIRLINE_REFERENCE_ID"
+      ]
+    },
+    "content_hash_matches_manifest": true,
+    "contract_fields": 195,
+    "idempotent_rerun": {
+      "hashes_match": true,
+      "rows": 145054,
+      "status": "PASSED"
+    },
+    "manifest_sha256": "7c35a1483e6c87205a508c31a213b0ab720d448d5bb1a704794723df33328834",
+    "rows_by_table": {
+      "AIRCRAFT_CONFIGURATION": 2000,
+      "AIRCRAFT_FLIGHT": 3900,
+      "AIRCRAFT_HISTORY": 48000,
+      "AIRCRAFT_MASTER": 999,
+      "AIRLINE_REFERENCE": 100,
+      "AIRPORT_REFERENCE": 45,
+      "PASSENGER_FORWARD": 10000,
+      "PASSENGER_HISTORICAL": 10000,
+      "SCHEDULE_SNAPSHOT": 70000,
+      "SCHEDULE_SNAPSHOT_CALENDAR": 10
+    },
+    "source_contract_sha256": "838b965e7a715a80b029fdda51dad186a65e55f32ea48be6ce391abdbd6a4078",
+    "total_rows": 145054,
+    "unit_tests": "49 passed in 16.70s (data/test_load_source.py)"
+  },
+  "open_issues": [],
+  "owner": "orchestrator",
+  "repairs_applied": [
+    "data/test_load_source.py::test_ddl_has_no_transaction_or_staging_ceremony banned the substring '_STAGE', which falsely matched the one scoped internal stage DATA03_CSV_STAGE that D-0017 explicitly prescribes for the PUT/COPY path. The ban is now on 'STAGING' plus an explicit assertion that exactly one stage is created and no per-table <TABLE>_STAGE object exists.",
+    "pyproject.toml testpaths extended to include data/ so the loader suite runs under a bare pytest."
+  ],
+  "scope": {
+    "connection": "rai",
+    "database": "PK_AVIATION_TEMPORAL",
+    "role": "RAI_DEMO_AVIATION_TEMPORAL",
+    "warehouse": "RAI_XS"
+  },
+  "status": "passed",
+  "summary": "The D-0017 lean loader data/load_source.py replaced the superseded D-0014 publication apparatus. Local preflight verified the demo package against manifest 1.1.0, the ten SOURCE tables were recreated with full column comments, named UNIQUE/PK/FK NOT ENFORCED NORELY metadata and CHANGE_TRACKING=TRUE, the exact CSV bytes were staged and copied, and every loaded table's in-Snowflake content hash matched its manifest multiset hash. The load was then rerun end to end to prove idempotency.",
+  "task_id": "DATA-03",
+  "timings_seconds": {
+    "change_tracking": 3.313,
+    "content_hash": 8.518,
+    "copy": 17.829,
+    "ddl": 17.273,
+    "preflight": 10.206,
+    "put_total": 59.851
+  },
+  "title": "Create and load the Snowflake source layer",
+  "unblocks": [
+    "DATA-04"
+  ]
+}

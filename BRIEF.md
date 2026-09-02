@@ -122,3 +122,11 @@ inheriting the locked `_xs` suffix, which would have been untrue.
 The demo is complete only when a clean environment can generate data, load Snowflake, build and
 inspect the RAI ontology, execute all eight RAI queries, compare them with Snowflake baselines,
 exercise the Cortex Agent, render the HTML runbook, and pass `prep_demo.py` without manual repair.
+
+**2026-09-02 DATA-03 green.** The D-0017 lean loader executed live under
+`RAI_DEMO_AVIATION_TEMPORAL`: 145,054 rows across the ten SOURCE tables, every in-Snowflake content
+hash equal to its manifest 1.1.0 multiset hash, 195 of 195 columns commented, named
+UNIQUE/PK/FK NOT ENFORCED NORELY metadata in place, and CHANGE_TRACKING ON everywhere. The load was
+rerun end to end to prove idempotency. One repair was needed: the loader's own DDL test banned the
+substring `_STAGE`, which falsely matched the single scoped internal stage that D-0017 prescribes
+for the PUT/COPY path; the assertion now bans `STAGING` and pins the stage count instead.
