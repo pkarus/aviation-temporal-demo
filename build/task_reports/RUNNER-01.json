@@ -1,0 +1,102 @@
+{
+  "task": "RUNNER-01",
+  "title": "Generated self-contained query runner for a Snowsight Workspace",
+  "date": "2026-09-03",
+  "status": "complete",
+  "scope": "Two new files under rai_code/manual/ plus this report. Nothing under rai_code/aviation_model/, rai_code/queries/, rai_code/notebooks/, data/ or EXPECTED_ANSWERS.yaml was modified, no test suite was re-run, and no data was changed. One throwaway Snowflake notebook object, PK_AVIATION_TEMPORAL.NOTEBOOKS.RUNNER_SMOKE, was created purely to execute the runner server-side; it is not part of the demo.",
+  "deliverables": [
+    "rai_code/manual/_gen_run_all_queries.py",
+    "rai_code/manual/run_all_queries.py",
+    "build/task_reports/RUNNER-01.json"
+  ],
+  "requirement": "One self-contained .py file that runs every question in both use cases plus the rotation, prints question, parameters, row count, elapsed time and result rows, and executes both locally and inside a Snowsight Workspace.",
+  "design": {
+    "generated_not_hand_written": "run_all_queries.py is emitted by _gen_run_all_queries.py, following the _gen_standalone.py precedent. The generator copies no query logic. It embeds aviation_model._gen_standalone.render() (the live ontology, not the checked-in artifact) and the byte-for-byte text of rai_code/queries/{uc1,uc2,rotation}.py, then dispatches through the tables those modules already publish.",
+    "dispatch": {
+      "Q01,Q02,Q02F,Q03,Q04": "uc1.CATALOG[qid]['callable'] with uc1.CATALOG[qid]['parameters'] as the keyword order",
+      "Q05,Q06,Q07": "uc2.invoke_result_set(qid, {'parameters': ...}), which already resolves uc2.QUESTION_FUNCTIONS and uc2._PARAMETER_ORDER and converts Uc2InvocationError into a status triple",
+      "Q08": "rotation.invoke(*manifest parameter_schema order, am=<ontology module>)"
+    },
+    "no_flat_concatenation": "The four sources are exec'd into separate types.ModuleType namespaces rather than concatenated. uc1, uc2 and rotation each define warm_model, main, REPO_ROOT and _records, and uc1._records(df, columns) and uc2._records(df) do not take the same arguments, so flattening would silently keep whichever module came last.",
+    "package_aliasing": "sys.modules['aviation_model'] and sys.modules['aviation_model.computed_schedule'] both point at the single exec'd ontology module. One Model per interpreter; a second one makes the free distinct(...) raise [Ambiguous model].",
+    "parameters": "Read from EXPECTED_ANSWERS.yaml at generation time and emitted as Python literals, so the runner needs no manifest at run time. Default selection is the 25 manifest v1.2.0 enriched sets; INCLUDE_FROZEN / --all-parameter-sets adds the 24 frozen v1.1.1 sets including the deliberate parameter-error cases.",
+    "ordering": "DISPLAY_ORDER = Q03, Q04, Q02, Q08, Q06, Q07, Q05, Q01, Q02F. Slowest last so output starts moving immediately.",
+    "failure_isolation": "Every parameter set is wrapped; a failure is printed with a truncated traceback, recorded as FAILED in the summary, and the run continues.",
+    "warm_once": "uc1.warm_model() is called once before the first question, reusing the existing retry through 'prepareIndex: model is currently locked'."
+  },
+  "verification": {
+    "local": {
+      "command": ".venv/bin/python rai_code/manual/run_all_queries.py",
+      "engine": "aviation_temporal_logic_s (HIGHMEM_X64_S), READY and warm",
+      "result": "25/25 enriched parameter sets returned, 1636 rows, 8.7 min wall clock including a 135.0s model sync",
+      "row_counts_vs_manifest": "every one of the 25 matched the frozen expected_cardinality",
+      "per_question_seconds": {
+        "Q03-ENRICHED": 4.3,
+        "Q04-ENRICHED-ENGINE-ONLY": 5.2,
+        "Q04-ENRICHED-TYPE-ONLY": 4.3,
+        "Q04-ENRICHED-INDEPENDENT": 3.8,
+        "Q04-ENRICHED-COUPLED": 3.9,
+        "Q02-ENRICHED-MULTI-SPELL": 5.6,
+        "Q02-ENRICHED-LONG-SPELL": 5.9,
+        "Q02-ENRICHED-SAME-DAY": 4.7,
+        "Q02-ENRICHED-STATUS-BUT-NO-STORAGE": 4.6,
+        "Q08-ENRICHED-ROTATION": 12.1,
+        "Q08-ENRICHED-ANOMALIES": 10.8,
+        "Q08-ENRICHED-CLEAN": 10.9,
+        "Q06-ENRICHED-MARKETING": 11.4,
+        "Q06-ENRICHED-OPERATING": 7.4,
+        "Q07-ENRICHED-KNOWLEDGE-LATE": 10.5,
+        "Q07-ENRICHED-KNOWLEDGE-EARLY": 71.2,
+        "Q07-ENRICHED-OPERATING-SHIFT": 9.0,
+        "Q07-ENRICHED-ROLE": 8.7,
+        "Q05-ENRICHED": 23.5,
+        "Q05-ENRICHED-GAP-PAIRS": 22.9,
+        "Q01-ENRICHED-MID-STORAGE": 18.3,
+        "Q01-ENRICHED-RETURN-DAY": 17.4,
+        "Q01-ENRICHED-CONVERSION-DAY": 17.3,
+        "Q01-ENRICHED-POST-EOL": 3.4,
+        "Q02F-FLEET-DISTRIBUTION": 102.9
+      },
+      "second_run_final_bytes": "Q04 only, 4/4 OK, confirms the file as delivered still executes after the entry-point and summary changes made since the full run",
+      "log": "build/run_all_queries_local.log, build/run_all_queries_q04.log"
+    },
+    "snowflake_side": {
+      "how": "The same file was staged to @PK_AVIATION_TEMPORAL.NOTEBOOKS.AVIATION_NOTEBOOK_STAGE/runner_smoke/ and imported by a two-cell throwaway notebook PK_AVIATION_TEMPORAL.NOTEBOOKS.RUNNER_SMOKE (SYSTEM$BASIC_RUNTIME, SYSTEM_COMPUTE_POOL_CPU, EXTERNAL_ACCESS_INTEGRATIONS = (PYPI_ACCESS)) executed headless with snow notebook execute. The notebook deliberately has no !pip cell so that the runner's own ensure_runtime() bootstrap is what is under test.",
+      "result": "PASS. snow notebook execute returned exit 0 in 14.6 minutes. The final cell is `failed = run_all_queries.run(); assert failed == 0`, so exit 0 means all 25 enriched parameter sets returned inside the Snowflake container. The runner's own ensure_runtime() supplied relationalai and protobuf there with no !pip cell; ConfigFromActiveSession supplied the credentials.",
+      "control_experiment": "A one-cell notebook with `failed = 3; assert failed == 0` was created, executed and dropped. It returned exit 1 with 'User app execution error ABORTED: AssertionError: 3 parameter set(s) failed', proving the exit code of the real run is load-bearing rather than vacuous.",
+      "caveat": "Headless execution does not persist cell output, so the printed tables from the Snowflake-side run are not retrievable; the assertion is the evidence. This is the SYSTEM$BASIC_RUNTIME notebook container, not the Workspaces notebook service, and the two ship different protobuf versions.",
+      "log": "build/runner_smoke_snowflake.log"
+    },
+    "workspace": {
+      "delivered_to": "snow://workspace/\"USER$piotr.kraus@relational.ai\".PUBLIC.\"DEFAULT$\"/versions/live/aviation/queires/run_all_queries.py",
+      "mechanism": "snow sql PUT into the workspace URI, verified with LS. There is no `snow workspace` command in Snowflake CLI 3.16.0; the workspace filesystem is addressable over SQL and that is the repeatable route.",
+      "existing_user_file_untouched": "aviation/queires/run_uc1_samples.py was read but not modified or overwritten.",
+      "executed_in_workspaces": false,
+      "why_not": "Running a .py in Workspaces requires connecting a notebook service and pressing Run in the Snowsight UI. There is no CLI or SQL entry point for that, so it could not be driven from here."
+    }
+  },
+  "workspaces_runtime_findings": {
+    "compute": "A .py in Workspaces runs on a Snowflake-managed notebook service, a container on an x86 SPCS compute pool whose ALLOWED_SPCS_WORKLOAD_TYPES include NOTEBOOK. Not a warehouse. SQL goes to a separate query warehouse.",
+    "cwd": "The user's own aviation/queires/run_uc1_samples.py comments that the kernel CWD is the file's directory, not the workspace root. The runner does not depend on CWD at all.",
+    "packages": "relationalai is PyPI-only and not in Snowflake's Anaconda channel. The notebook service needs either snowflake.snowpark.pypi_shared_repository (managed artifact repository, no egress required) or an external access integration with PyPI egress (this account has PYPI_ACCESS). Selecting an artifact repository disables integration-based installs, so it is one or the other. Package installs do not survive the weekend maintenance restart.",
+    "pip": "No !pip magic in a .py file. subprocess [sys.executable, -m, pip, install, ...] is the route, and the user's existing workspace file proves it works there.",
+    "config": "ConfigFromActiveSession is correct and needs no change; get_active_session() is documented for .py files in Workspaces and the ontology's _build_config() already branches on it.",
+    "protobuf": "The legacy notebook problem (protobuf below 5.27, missing google.protobuf.runtime_version) is inverted in the Workspaces container runtime, which ships protobuf 6.x while lqp pins protobuf<6 with gencode built against 5.28. The runner probes `from google.protobuf import runtime_version` and `import lqp.proto.v1.logic_pb2` up front, then repairs in two escalating steps: TEMPORARILY_DISABLE_PROTOBUF_VERSION_CHECK, then a pinned protobuf into /tmp on the front of sys.path. Unverified in the Workspaces runtime specifically."
+  },
+  "known_weaknesses": [
+    "Not executed in Snowsight Workspaces itself. Running a .py there requires connecting a notebook service and pressing Run in the UI, and there is no CLI or SQL entry point for it. The Snowflake-side evidence is the SYSTEM$BASIC_RUNTIME notebook container, which ships a different protobuf, so the too-new-protobuf branch that matters for Workspaces is reasoned about rather than observed.",
+    "The Snowflake-side run took 14.6 minutes against 8.7 locally. That gap is container start plus a pip install plus a colder model sync, not a query regression, but it was not broken down.",
+    "The runner is 9,577 lines because it inlines the ontology and all three query modules. That is the cost of self-containment; it is generated, so it is not maintained by hand, but it is not pleasant to read in a Workspace editor.",
+    "Row counts are compared against the frozen manifest cardinality only. The row-by-row comparison stays in tests/; this is a runner, not an oracle.",
+    "The RelationalAI progress spinner writes carriage-return animation to stdout in a terminal. It renders as a wall of block characters in a redirected local log. In a notebook or Workspace runtime RAI switches to NotebookTaskProgress and this does not happen.",
+    "Wide result sets (Q05 has 19 columns, Q07 has 16) print as one long line each; display.width is deliberately unbounded so the table is not wrapped mid-row."
+  ],
+  "commands": {
+    "regenerate": ".venv/bin/python rai_code/manual/_gen_run_all_queries.py",
+    "run_local_all": ".venv/bin/python rai_code/manual/run_all_queries.py",
+    "run_local_subset": ".venv/bin/python rai_code/manual/run_all_queries.py Q03 Q08",
+    "run_local_with_frozen_sets": ".venv/bin/python rai_code/manual/run_all_queries.py --all-parameter-sets",
+    "deliver_to_workspace": "snow sql -c rai --role RAI_DEMO_AVIATION_TEMPORAL -q \"PUT 'file://$PWD/rai_code/manual/run_all_queries.py' 'snow://workspace/\\\"USER$piotr.kraus@relational.ai\\\".PUBLIC.\\\"DEFAULT$\\\"/versions/live/aviation/queires/' AUTO_COMPRESS=FALSE OVERWRITE=TRUE;\"",
+    "list_workspace": "snow sql -c rai --role RAI_DEMO_AVIATION_TEMPORAL -q \"LS 'snow://workspace/\\\"USER$piotr.kraus@relational.ai\\\".PUBLIC.\\\"DEFAULT$\\\"/versions/head/aviation/queires/';\""
+  }
+}
