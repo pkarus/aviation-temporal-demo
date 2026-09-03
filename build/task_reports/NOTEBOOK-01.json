@@ -1,0 +1,124 @@
+{
+  "task": "NOTEBOOK-01",
+  "title": "Snowsight notebook: ontology graph plus all nine questions, each with a visualization",
+  "date": "2026-09-03",
+  "status": "complete",
+  "verdict": "GREEN - snow notebook execute finishes with exit 0, all 19 code cells run, all 13 figures are produced",
+  "scope": "rai_code/notebooks/ (new) and the notebook + stage objects in PK_AVIATION_TEMPORAL.NOTEBOOKS. No ontology, query-module, EXPECTED_ANSWERS.yaml, data or test change. No new tests written and no existing test suite run.",
+  "deliverables": [
+    "rai_code/notebooks/aviation_viz.py",
+    "rai_code/notebooks/build_notebook.py",
+    "rai_code/notebooks/aviation_temporal_demo.ipynb",
+    "rai_code/notebooks/deploy.py",
+    "build/task_reports/NOTEBOOK-01.json"
+  ],
+  "snowflake_objects": {
+    "notebook": "PK_AVIATION_TEMPORAL.NOTEBOOKS.AVIATION_TEMPORAL_DEMO",
+    "stage": "PK_AVIATION_TEMPORAL.NOTEBOOKS.AVIATION_NOTEBOOK_STAGE",
+    "stage_folder": "aviation/",
+    "url": "https://app.snowflake.com/NDSOEBE/rai_sales_engineering_aws_us_west_2/#/notebooks/PK_AVIATION_TEMPORAL.NOTEBOOKS.AVIATION_TEMPORAL_DEMO",
+    "runtime": "SYSTEM$BASIC_RUNTIME on SYSTEM_COMPUTE_POOL_CPU",
+    "query_warehouse": "RAI_XS",
+    "external_access": "PYPI_ACCESS",
+    "role_used": "RAI_DEMO_AVIATION_TEMPORAL"
+  },
+  "how_to_run": {
+    "redeploy": ".venv/bin/python rai_code/notebooks/deploy.py",
+    "redeploy_and_execute": ".venv/bin/python rai_code/notebooks/deploy.py --execute",
+    "execute_only": "snow notebook execute PK_AVIATION_TEMPORAL.NOTEBOOKS.AVIATION_TEMPORAL_DEMO -c rai --role RAI_DEMO_AVIATION_TEMPORAL",
+    "prerequisite": ".venv/bin/rai reasoners resume --name aviation_temporal_logic_s --type Logic --wait"
+  },
+  "staged_files": [
+    "aviation_temporal_demo.ipynb",
+    "aviation_viz.py",
+    "aviation_temporal.py (from rai_code/manual/, the generated standalone artifact)",
+    "uc1.py, uc2.py, rotation.py (from rai_code/queries/, unmodified)",
+    "ontology_inventory.json (from build/design/)"
+  ],
+  "figures": [
+    {"id": "ontology", "form": "node-link graph", "encodes": "46 concepts, 105 weighted relationships; node area = property count, node colour = one of four demo domains, edge width and colour = relationship weight on a sequential blue ramp"},
+    {"id": "Q01", "form": "state matrix", "encodes": "5 as-of reconstructions x 4 dimension streams, cell colour = DV-33 state on the reserved status palette, state name written in every cell"},
+    {"id": "Q02 (x2)", "form": "spell timeline", "encodes": "storage spells as bars; a same-day (zero-day) reversion as a diamond, because a zero-width bar would be invisible"},
+    {"id": "Q02F", "form": "grouped horizontal bar", "encodes": "spell_count against distinct aircraft_count per duration bucket"},
+    {"id": "Q03 (x2)", "form": "area line + heatmap", "encodes": "fleet total at 120 month ends; then month-end x exact type on one sequential ramp, rows ordered by first appearance so the generational turnover reads off the picture"},
+    {"id": "Q04", "form": "two-lane Gantt, two aircraft", "encodes": "type clock over engine clock with dotted boundaries and hatching for an open interval; 1107 is the independent case, 1307 the coincident one"},
+    {"id": "Q05 (x2)", "form": "stacked bar over time + stacked horizontal bar", "encodes": "8 event classes across 23 weekly comparisons (exact layer at the base); then per class, how many had to reach across a missing snapshot"},
+    {"id": "Q06", "form": "diverging bar", "encodes": "market entries right in blue, exits left in red, marketing and operating in one chart"},
+    {"id": "Q07 (x2)", "form": "cabin-mix stack + grouped horizontal bar", "encodes": "weekly seats by cabin, with the 3 UNRECONCILED rows drawn as a hatched total rather than a stack containing a negative segment; then the same operating week from two knowledge dates, routes that disagree pulled to the top"},
+    {"id": "Q08 (x2)", "form": "rotation Gantt + arc diagram", "encodes": "a clean 5-leg day with ground time; then 11 named failure modes as arcs - above the axis for forward links, below for backward and self-loops, rings for failures with no successor"}
+  ],
+  "palette": {
+    "source": "the dataviz skill's validated default palette",
+    "validator_runs": [
+      "categorical 4-slot subset #eda100,#e87ba4,#008300,#4a3aa7 light --pairs all: ALL CHECKS PASS (contrast WARN on yellow 2.11 and magenta 2.62, relief discharged by direct labels on every node plus ontology_table)",
+      "the same four stepped for dark #c98500,#d55181,#008300,#9085e9 --pairs all: ALL CHECKS PASS (CVD WARN 6.9 green/yellow, secondary encoding present)"
+    ],
+    "note": "a node-link diagram is an all-pairs form, and only a four-slot subset of the eight-slot default clears the floors in both modes, which is why the ontology has exactly four domains. Sequential blue carries edge weight and is deliberately absent from the node palette. The reserved status palette carries DV-33 states and rotation link outcomes and is always doubled by a text label."
+  },
+  "timings": {
+    "local_nbconvert_end_to_end_seconds": 570,
+    "snowsight_headless_wall_clock_minutes": 15,
+    "per_cell_local_seconds": {
+      "load_model": 0.8,
+      "warm (model sync)": 128.9,
+      "q01 (5 reconstructions)": 128.3,
+      "q02 (2 aircraft)": 13.2,
+      "q02f (fleet)": 112.5,
+      "q03 (985 rows)": 4.9,
+      "q04 (2 aircraft)": 12.5,
+      "q05 (392 events)": 28.0,
+      "q06 (2 roles)": 15.3,
+      "q07 (2 knowledge dates)": 18.2,
+      "q07_truth_table": 37.0,
+      "q08 (2 rotations)": 29.4
+    }
+  },
+  "findings": [
+    {
+      "id": "NB-F1",
+      "title": "The query modules import the aviation_model package; Snowsight gets the standalone artifact under an alias",
+      "detail": "uc1.py imports aviation_model at module level and uc2.py imports aviation_model.computed_schedule. Neither can resolve on a stage, where a package of relative imports does not survive being flattened. The notebook imports rai_code/manual/aviation_temporal.py (the generated standalone) and registers it in sys.modules under both aviation_model and aviation_model.computed_schedule. It is an alias, not a copy, so there is still exactly one Model in the interpreter - which matters because a second one makes the free distinct(...) raise [Ambiguous model]. All 18 query invocations return correct shapes through this shim.",
+      "status": "resolved, verified locally and in Snowsight"
+    },
+    {
+      "id": "NB-F2",
+      "title": "The Snowsight container's protobuf is older than 5.27 and breaks the RAI query executor",
+      "detail": "google.protobuf resolves out of the system interpreter's site-packages, not the venv !pip writes to, at a version below 5.27. google.protobuf.runtime_version was introduced in 5.27. RelationalAI reaches that import lazily inside create_executor, the first time a query is actually run rather than when the Model is built, so the notebook loaded the entire ontology and then died on the first to_df() with 'ImportError: cannot import name runtime_version from google.protobuf'. pip does not fix it as a side effect of installing relationalai, because it sees a protobuf on the path and calls the requirement satisfied. The bootstrap cell now installs protobuf>=5.29,<6 with --target /tmp/nblibs, puts that directory at the front of sys.path and drops google.* from sys.modules so the namespace package is rebuilt against it.",
+      "status": "resolved"
+    },
+    {
+      "id": "NB-F3",
+      "title": "The !pip install line is also the dependency declaration",
+      "detail": "Removing '!pip install relationalai' in favour of a subprocess call made the container come up without the package at all: 'ModuleNotFoundError: Module Not Found: relationalai'. Snowflake's notebook dependency scanner reads the !pip magic. Both installs in the bootstrap cell therefore use the magic form rather than sys.executable -m pip, which is also more reliable because the kernel's sys.executable is not necessarily the interpreter whose site-packages !pip writes to.",
+      "status": "resolved"
+    },
+    {
+      "id": "NB-F4",
+      "title": "Open validity intervals arrive as NaT in Snowsight and as the 9999-01-01 sentinel locally",
+      "detail": "Q04's open interval came back as the model sentinel under the local pandas and as a bare NaT under the Snowsight runtime, and NaT.strftime raises 'ValueError: NaTType does not support strftime'. The cell was green locally and red in Snowsight. Fixed at the source: open_ended now tests isna() as well as the sentinel year, and every scalar number or timestamp label in aviation_viz.py goes through _n(), _d() or _hours(), which render a missing value rather than raising. That is a general hardening, not a Q04 patch: the same local/Snowsight null divergence could have hit Q02's storage_days, Q07's weekly_frequency or Q08's ground-time arithmetic.",
+      "status": "resolved"
+    },
+    {
+      "id": "NB-F5",
+      "title": "Q07's negative economy residual is real source data, not a rendering bug",
+      "detail": "Three of Q07's 30 enriched rows carry cabin_quality = UNRECONCILED, and SFO->BOS SYN-MKT-W27-CSH-06 has weekly_economy_excluding_premium_seats = -70 because the source's premium-economy figure exceeds what the stated total leaves room for. A stacked bar with a negative segment draws a bar that lies about the data. fig_q07_cabin stacks only the RECONCILED rows and renders the other three as a single hatched total in the reserved warning colour with the reason spelled out beside them.",
+      "status": "resolved by design; the data itself is untouched"
+    },
+    {
+      "id": "NB-F6",
+      "title": "PyRel progress reporting emits empty display outputs",
+      "detail": "jobs.print_progress defaults to true, and each query leaves an empty text/plain display output behind - about thirty of them in the Q01 cell under headless execution. They are harmless and in an interactive Snowsight run they are the live progress indicator the audience watches during Q01's two minutes, so they were left on deliberately rather than suppressed.",
+      "status": "accepted, not a defect"
+    }
+  ],
+  "not_verified": [
+    "Whether the 13 plotly figures visually render in the Snowsight UI. snow notebook execute returning 0 proves every cell ran and every figure object was constructed and emitted, and the local nbconvert run confirms each viz.show() produces an application/vnd.plotly.v1+json output bundle. Neither proves the Snowsight frontend painted them. A human opening the notebook and running all cells is still required to close that gap.",
+    "The per-cell timings under Snowsight. The headless CLI does not return cell stdout, so the timings recorded here are from the local nbconvert run against the same live database and reasoner; only the 15-minute wall clock is a Snowsight measurement.",
+    "Interactive hover behaviour on the ontology graph and the arc diagram."
+  ],
+  "weakest_points": [
+    "Q02F sits on a 112-second first touch of the spell relations and Q01 on 128 seconds for five one-row answers. Both are structural, both are early in the notebook, and together they are four minutes of spinner in the first third of the demo.",
+    "The ontology graph is legible but not beautiful: the force layout leaves the lower-left quadrant sparse where the six low-degree concepts land, and two captions (RouteState and Schedule near the centre) sit closer together than the collision pass would ideally allow.",
+    "Q06's chart carries twelve rows for what is really two facts repeated across two carrier roles; on the canonical rather than enriched parameters it would be two rows and barely worth a chart."
+  ]
+}
